@@ -18,9 +18,9 @@ header h1 {
 
 .logo {
     position: absolute;
-    top: -20px; /* Adjust this to move the image up/down */
-    left: 0; /* Adjust this if you want the logo further left or right */
-    height: 40px; /* Change the logo size */
+    top: -30px; /* Adjust this to move the image up/down */
+    left: 30; /* Adjust this if you want the logo further left or right */
+    height: 50px; /* Change the logo size */
     z-index: 2; /* Makes sure the logo appears above the header and dropdown */
 }
 
