@@ -20,7 +20,7 @@ header h1 {
     position: absolute;
     top: -20px; /* Adjust this to move the image up/down */
     left: 40; /* Adjust this if you want the logo further left or right */
-    height: 10px; /* Make the logo twice as large */
+    height: 10px; /* Change the logo size */
     z-index: 2; /* Makes sure the logo appears above the header and dropdown */
 }
 
