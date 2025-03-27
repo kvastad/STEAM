@@ -16,12 +16,13 @@ header h1 {
     z-index: 1; /* Ensures the text stays above the image */
 }
 
+/* Logo class to position the logo */
 .logo {
     position: absolute;
-    top: -30px; /* Adjust this to move the image up/down */
-    right: 0; /* Adjust this if you want the logo further left or right */
-    height: 50px; /* Change the logo size */
-    z-index: 2; /* Makes sure the logo appears above the header and dropdown */
+    top: -20px;  /* Adjust up/down */
+    left: 10px;  /* Adjust to center the logo or move it left/right */
+    height: 80px;  /* Change logo size */
+    z-index: 2;    /* Make sure the logo appears above the header */
 }
 
 nav ul {
