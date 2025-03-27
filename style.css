@@ -32,6 +32,7 @@ nav ul .dropdown-menu {
     padding: 0;
     top: 100%;
     left: 0;
+    min-width: 300px;
 }
 nav ul .dropdown-menu li {
     display: block;
