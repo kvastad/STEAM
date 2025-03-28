@@ -20,7 +20,7 @@ header h1 {
 .logo {
     position: absolute;
     top: -15px;  /* Adjust up/down */
-    left: 350px;  /* Adjust to center the logo or move it left/right */
+    center: 0px;  /* Adjust to center the logo or move it left/right, left: 350px looks good */
     height: 120px;  /* Change logo size */
     z-index: 2;    /* Make sure the logo appears above the header */
 }
