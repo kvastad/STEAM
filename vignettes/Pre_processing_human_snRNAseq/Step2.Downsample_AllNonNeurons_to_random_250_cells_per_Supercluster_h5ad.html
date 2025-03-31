@@ -11,7 +11,7 @@
 
 
 
-<title>Step1: Downsample AllNeurons</title>
+<title>Step2: Downsample AllNonNeurons</title>
 
 <script>// Pandoc 2.9 adds attributes on both header and div. We remove the former (to
 // be compatible with the behavior of Pandoc < 2.8).
@@ -1495,7 +1495,7 @@ border-radius: 0px;
 
 
 
-<h1 class="title toc-ignore">Step1: Downsample AllNeurons</h1>
+<h1 class="title toc-ignore">Step2: Downsample AllNonNeurons</h1>
 
 </div>
 
@@ -1508,7 +1508,7 @@ Science (<a href="https://doi.org/10.1126/science.add7046" class="uri">https://d
 <p>The full snRNA-seq dataset can be found here from BRAIN Initiative,
 Chan Zuckerberg Initiative (CZI) Cell Science, of the adult human brain.
 Click this link for the data download page: <a href="https://cellxgene.cziscience.com/collections/283d65eb-dd53-496d-adb7-7570c7caa443" class="uri">https://cellxgene.cziscience.com/collections/283d65eb-dd53-496d-adb7-7570c7caa443</a></p>
-<p>Here we downsample from the All neurons cell data of 2 480 956
+<p>Here we downsample from the All non-neuronal cells data of 888 263
 cells.</p>
 <div id="loading-the-dataset" class="section level1" number="1">
 <h1><span class="header-section-number">1</span> Loading the
@@ -1521,19 +1521,19 @@ library(HDF5Array)
 library(dplyr)
 library(biomaRt)
 library(MASS)</code></pre>
-<p>Load and view the metadata.</p>
-<pre class="r"><code>sce_object &lt;- readH5AD(&quot;AllNeurons/c2f66cd5-4ff4-4578-876c-55783a57cf8f.h5ad&quot;,use_hdf5 = TRUE)
+<p>Load and view metadata.</p>
+<pre class="r"><code>sce_object &lt;- readH5AD(&quot;AllNonNeurons/99f27be8-9fac-451e-9723-9e4c7191589e.h5ad&quot;,use_hdf5 = TRUE)
 head(sce_object) </code></pre>
 <pre><code>## class: SingleCellExperiment 
-## dim: 6 2480956 
+## dim: 6 888263 
 ## metadata(5): batch_condition citation schema_reference schema_version
 ##   title
 ## assays(1): X
 ## rownames(6): ENSG00000000003 ENSG00000000005 ... ENSG00000000460
 ##   ENSG00000000938
 ## rowData names(11): Biotype Chromosome ... feature_length feature_type
-## colnames(2480956): 10X386_2:CATGGATTCTCGACGG 10X383_5:TCTTGCGGTGAATTGA
-##   ... 10X391_8:CGGGTCAAGCACACAG 10X376_7:GAACGTTGTATCGCTA
+## colnames(888263): 10X362_3:TCAGTGAGTATTGACC 10X362_5:TCCGTGTGTGAAAGTT
+##   ... 10X221_5:TTGAACGCAGCCTTCT 10X385_3:CTACCCAGTGGCGCTT
 ## colData names(35): ROIGroup ROIGroupCoarse ... development_stage
 ##   observation_joinid
 ## reducedDimNames(2): X_UMAP X_tSNE
@@ -1578,142 +1578,123 @@ head(sce_object) </code></pre>
 <p>Convert metadata to a data.frame for easy filtering.</p>
 <pre class="r"><code>metadata &lt;- as.data.frame(colData(sce_object))
 head(metadata)</code></pre>
-<pre><code>##                            ROIGroup ROIGroupCoarse   ROIGroupFine
-## 10X386_2:CATGGATTCTCGACGG Hindbrain Myelencephalon Myelencephalon
-## 10X383_5:TCTTGCGGTGAATTGA Hindbrain Myelencephalon Myelencephalon
-## 10X386_2:CTCATCGGTCGAGCAA Hindbrain Myelencephalon Myelencephalon
-## 10X378_8:TTGGATGAGACAAGCC Hindbrain           Pons           Pons
-## 10X387_7:TGAACGTAGTATTCCG Hindbrain Myelencephalon Myelencephalon
-## 10X391_2:GCACGGTTCTAGAACC Hindbrain Myelencephalon Myelencephalon
-##                                       roi organism_ontology_term_id
-## 10X386_2:CATGGATTCTCGACGG      Human MoAN            NCBITaxon:9606
-## 10X383_5:TCTTGCGGTGAATTGA      Human MoSR            NCBITaxon:9606
-## 10X386_2:CTCATCGGTCGAGCAA      Human MoAN            NCBITaxon:9606
-## 10X378_8:TTGGATGAGACAAGCC      Human PnAN            NCBITaxon:9606
-## 10X387_7:TGAACGTAGTATTCCG      Human MoAN            NCBITaxon:9606
-## 10X391_2:GCACGGTTCTAGAACC Human MoRF-MoEN            NCBITaxon:9606
-##                           disease_ontology_term_id
-## 10X386_2:CATGGATTCTCGACGG             PATO:0000461
-## 10X383_5:TCTTGCGGTGAATTGA             PATO:0000461
-## 10X386_2:CTCATCGGTCGAGCAA             PATO:0000461
-## 10X378_8:TTGGATGAGACAAGCC             PATO:0000461
-## 10X387_7:TGAACGTAGTATTCCG             PATO:0000461
-## 10X391_2:GCACGGTTCTAGAACC             PATO:0000461
+<pre><code>##                               ROIGroup ROIGroupCoarse ROIGroupFine      roi
+## 10X362_3:TCAGTGAGTATTGACC Hypothalamus   Hypothalamus Hypothalamus Human MN
+## 10X362_5:TCCGTGTGTGAAAGTT Hypothalamus   Hypothalamus Hypothalamus Human MN
+## 10X362_5:CACGGGTAGAGCAGAA Hypothalamus   Hypothalamus Hypothalamus Human MN
+## 10X362_5:GATTCTTGTATGTCAC Hypothalamus   Hypothalamus Hypothalamus Human MN
+## 10X362_6:AGGACTTGTATCCTTT Hypothalamus   Hypothalamus Hypothalamus Human MN
+## 10X418_2:TTCCTTCTCTCGTCGT    Hindbrain           Pons         Pons Human PB
+##                           organism_ontology_term_id disease_ontology_term_id
+## 10X362_3:TCAGTGAGTATTGACC            NCBITaxon:9606             PATO:0000461
+## 10X362_5:TCCGTGTGTGAAAGTT            NCBITaxon:9606             PATO:0000461
+## 10X362_5:CACGGGTAGAGCAGAA            NCBITaxon:9606             PATO:0000461
+## 10X362_5:GATTCTTGTATGTCAC            NCBITaxon:9606             PATO:0000461
+## 10X362_6:AGGACTTGTATCCTTT            NCBITaxon:9606             PATO:0000461
+## 10X418_2:TTCCTTCTCTCGTCGT            NCBITaxon:9606             PATO:0000461
 ##                           self_reported_ethnicity_ontology_term_id
-## 10X386_2:CATGGATTCTCGACGG                           HANCESTRO:0005
-## 10X383_5:TCTTGCGGTGAATTGA                           HANCESTRO:0005
-## 10X386_2:CTCATCGGTCGAGCAA                           HANCESTRO:0005
-## 10X378_8:TTGGATGAGACAAGCC                           HANCESTRO:0005
-## 10X387_7:TGAACGTAGTATTCCG                           HANCESTRO:0005
-## 10X391_2:GCACGGTTCTAGAACC                           HANCESTRO:0005
+## 10X362_3:TCAGTGAGTATTGACC                           HANCESTRO:0005
+## 10X362_5:TCCGTGTGTGAAAGTT                           HANCESTRO:0005
+## 10X362_5:CACGGGTAGAGCAGAA                           HANCESTRO:0005
+## 10X362_5:GATTCTTGTATGTCAC                           HANCESTRO:0005
+## 10X362_6:AGGACTTGTATCCTTT                           HANCESTRO:0005
+## 10X418_2:TTCCTTCTCTCGTCGT                           HANCESTRO:0005
 ##                           assay_ontology_term_id sex_ontology_term_id
-## 10X386_2:CATGGATTCTCGACGG            EFO:0009922         PATO:0000384
-## 10X383_5:TCTTGCGGTGAATTGA            EFO:0009922         PATO:0000384
-## 10X386_2:CTCATCGGTCGAGCAA            EFO:0009922         PATO:0000384
-## 10X378_8:TTGGATGAGACAAGCC            EFO:0009922         PATO:0000384
-## 10X387_7:TGAACGTAGTATTCCG            EFO:0009922         PATO:0000384
-## 10X391_2:GCACGGTTCTAGAACC            EFO:0009922         PATO:0000384
+## 10X362_3:TCAGTGAGTATTGACC            EFO:0009922         PATO:0000384
+## 10X362_5:TCCGTGTGTGAAAGTT            EFO:0009922         PATO:0000384
+## 10X362_5:CACGGGTAGAGCAGAA            EFO:0009922         PATO:0000384
+## 10X362_5:GATTCTTGTATGTCAC            EFO:0009922         PATO:0000384
+## 10X362_6:AGGACTTGTATCCTTT            EFO:0009922         PATO:0000384
+## 10X418_2:TTCCTTCTCTCGTCGT            EFO:0009922         PATO:0000384
 ##                           development_stage_ontology_term_id   donor_id
-## 10X386_2:CATGGATTCTCGACGG                     HsapDv:0000136 H19.30.001
-## 10X383_5:TCTTGCGGTGAATTGA                     HsapDv:0000123 H19.30.002
-## 10X386_2:CTCATCGGTCGAGCAA                     HsapDv:0000136 H19.30.001
-## 10X378_8:TTGGATGAGACAAGCC                     HsapDv:0000123 H19.30.002
-## 10X387_7:TGAACGTAGTATTCCG                     HsapDv:0000136 H19.30.001
-## 10X391_2:GCACGGTTCTAGAACC                     HsapDv:0000136 H19.30.001
+## 10X362_3:TCAGTGAGTATTGACC                     HsapDv:0000123 H19.30.002
+## 10X362_5:TCCGTGTGTGAAAGTT                     HsapDv:0000136 H19.30.001
+## 10X362_5:CACGGGTAGAGCAGAA                     HsapDv:0000136 H19.30.001
+## 10X362_5:GATTCTTGTATGTCAC                     HsapDv:0000136 H19.30.001
+## 10X362_6:AGGACTTGTATCCTTT                     HsapDv:0000136 H19.30.001
+## 10X418_2:TTCCTTCTCTCGTCGT                     HsapDv:0000123 H19.30.002
 ##                           suspension_type
-## 10X386_2:CATGGATTCTCGACGG         nucleus
-## 10X383_5:TCTTGCGGTGAATTGA         nucleus
-## 10X386_2:CTCATCGGTCGAGCAA         nucleus
-## 10X378_8:TTGGATGAGACAAGCC         nucleus
-## 10X387_7:TGAACGTAGTATTCCG         nucleus
-## 10X391_2:GCACGGTTCTAGAACC         nucleus
-##                                                                                                                                                                               dissection
-## 10X386_2:CATGGATTCTCGACGG                                                        Myelencephalon (medulla oblongata) (Mo) - afferent nuclei of cranial nerves in medulla oblongata - MoAN
-## 10X383_5:TCTTGCGGTGAATTGA                                                                     Myelencephalon (medulla oblongata) (Mo) - sensory relay nuclei in medulla oblongata - MoSR
-## 10X386_2:CTCATCGGTCGAGCAA                                                        Myelencephalon (medulla oblongata) (Mo) - afferent nuclei of cranial nerves in medulla oblongata - MoAN
-## 10X378_8:TTGGATGAGACAAGCC                                                                                                   Pons (Pn) - afferent nuclei of cranial nerves in pons - PnAN
-## 10X387_7:TGAACGTAGTATTCCG                                                        Myelencephalon (medulla oblongata) (Mo) - afferent nuclei of cranial nerves in medulla oblongata - MoAN
-## 10X391_2:GCACGGTTCTAGAACC Myelencephalon (medulla oblongata) (Mo) - medullary reticular formation (MoRF) &amp; efferent nuclei of cranial nerves in the medulla oblongata (MoEN) - MoRF-MoEN
+## 10X362_3:TCAGTGAGTATTGACC         nucleus
+## 10X362_5:TCCGTGTGTGAAAGTT         nucleus
+## 10X362_5:CACGGGTAGAGCAGAA         nucleus
+## 10X362_5:GATTCTTGTATGTCAC         nucleus
+## 10X362_6:AGGACTTGTATCCTTT         nucleus
+## 10X418_2:TTCCTTCTCTCGTCGT         nucleus
+##                                                                                                dissection
+## 10X362_3:TCAGTGAGTATTGACC Hypothalamus (HTH) - mammillary region of HTH (HTHma) - mammillary nucleus - MN
+## 10X362_5:TCCGTGTGTGAAAGTT Hypothalamus (HTH) - mammillary region of HTH (HTHma) - mammillary nucleus - MN
+## 10X362_5:CACGGGTAGAGCAGAA Hypothalamus (HTH) - mammillary region of HTH (HTHma) - mammillary nucleus - MN
+## 10X362_5:GATTCTTGTATGTCAC Hypothalamus (HTH) - mammillary region of HTH (HTHma) - mammillary nucleus - MN
+## 10X362_6:AGGACTTGTATCCTTT Hypothalamus (HTH) - mammillary region of HTH (HTHma) - mammillary nucleus - MN
+## 10X418_2:TTCCTTCTCTCGTCGT                                                                                
 ##                           fraction_mitochondrial fraction_unspliced
-## 10X386_2:CATGGATTCTCGACGG           0.0028612303          0.6373391
-## 10X383_5:TCTTGCGGTGAATTGA           0.0014316392          0.7652112
-## 10X386_2:CTCATCGGTCGAGCAA           0.0016447368          0.6274671
-## 10X378_8:TTGGATGAGACAAGCC           0.0091145833          0.6236979
-## 10X387_7:TGAACGTAGTATTCCG           0.0019505852          0.6879064
-## 10X391_2:GCACGGTTCTAGAACC           0.0002005214          0.7152597
+## 10X362_3:TCAGTGAGTATTGACC           0.0004450774          0.8283781
+## 10X362_5:TCCGTGTGTGAAAGTT           0.0001532097          0.8484756
+## 10X362_5:CACGGGTAGAGCAGAA           0.0000000000          0.8010240
+## 10X362_5:GATTCTTGTATGTCAC           0.0000000000          0.8516319
+## 10X362_6:AGGACTTGTATCCTTT           0.0000000000          0.8480836
+## 10X418_2:TTCCTTCTCTCGTCGT           0.0000000000          0.7300745
 ##                           cell_cycle_score total_genes total_UMIs sample_id
-## 10X386_2:CATGGATTCTCGACGG      0.002145923         889       1398  10X386_2
-## 10X383_5:TCTTGCGGTGAATTGA      0.001789549        1480       2794  10X383_5
-## 10X386_2:CTCATCGGTCGAGCAA      0.000000000         775       1216  10X386_2
-## 10X378_8:TTGGATGAGACAAGCC      0.002278646        1723       3072  10X378_8
-## 10X387_7:TGAACGTAGTATTCCG      0.002275683        1767       3076  10X387_7
-## 10X391_2:GCACGGTTCTAGAACC      0.001203128        2376       4987  10X391_2
+## 10X362_3:TCAGTGAGTATTGACC      0.001513263        3100      11234  10X362_3
+## 10X362_5:TCCGTGTGTGAAAGTT      0.002144936        2303       6527  10X362_5
+## 10X362_5:CACGGGTAGAGCAGAA      0.001280046        2733       7031  10X362_5
+## 10X362_5:GATTCTTGTATGTCAC      0.001994560        4771      22060  10X362_5
+## 10X362_6:AGGACTTGTATCCTTT      0.001935734        3241      12915  10X362_6
+## 10X418_2:TTCCTTCTCTCGTCGT      0.001540964        3943      11681  10X418_2
 ##                           supercluster_term cluster_id subcluster_id
-## 10X386_2:CATGGATTCTCGACGG Upper rhombic lip        312            20
-## 10X383_5:TCTTGCGGTGAATTGA Upper rhombic lip        312            20
-## 10X386_2:CTCATCGGTCGAGCAA Upper rhombic lip        312            17
-## 10X378_8:TTGGATGAGACAAGCC Upper rhombic lip        312            18
-## 10X387_7:TGAACGTAGTATTCCG Upper rhombic lip        312            16
-## 10X391_2:GCACGGTTCTAGAACC Upper rhombic lip        312            17
+## 10X362_3:TCAGTGAGTATTGACC   Oligodendrocyte         50          2996
+## 10X362_5:TCCGTGTGTGAAAGTT   Oligodendrocyte         50          2996
+## 10X362_5:CACGGGTAGAGCAGAA   Oligodendrocyte         50          2996
+## 10X362_5:GATTCTTGTATGTCAC   Oligodendrocyte         50          2998
+## 10X362_6:AGGACTTGTATCCTTT   Oligodendrocyte         50          2996
+## 10X418_2:TTCCTTCTCTCGTCGT   Oligodendrocyte         50          2998
 ##                           cell_type_ontology_term_id tissue_ontology_term_id
-## 10X386_2:CATGGATTCTCGACGG                 CL:0000540          UBERON:0005290
-## 10X383_5:TCTTGCGGTGAATTGA                 CL:0000540          UBERON:0005290
-## 10X386_2:CTCATCGGTCGAGCAA                 CL:0000540          UBERON:0005290
-## 10X378_8:TTGGATGAGACAAGCC                 CL:0000540          UBERON:0000988
-## 10X387_7:TGAACGTAGTATTCCG                 CL:0000540          UBERON:0005290
-## 10X391_2:GCACGGTTCTAGAACC                 CL:0000540          UBERON:0005290
-##                           is_primary_data tissue_type cell_type     assay
-## 10X386_2:CATGGATTCTCGACGG           FALSE      tissue    neuron 10x 3&#39; v3
-## 10X383_5:TCTTGCGGTGAATTGA           FALSE      tissue    neuron 10x 3&#39; v3
-## 10X386_2:CTCATCGGTCGAGCAA           FALSE      tissue    neuron 10x 3&#39; v3
-## 10X378_8:TTGGATGAGACAAGCC           FALSE      tissue    neuron 10x 3&#39; v3
-## 10X387_7:TGAACGTAGTATTCCG           FALSE      tissue    neuron 10x 3&#39; v3
-## 10X391_2:GCACGGTTCTAGAACC           FALSE      tissue    neuron 10x 3&#39; v3
-##                           disease     organism  sex         tissue
-## 10X386_2:CATGGATTCTCGACGG  normal Homo sapiens male myelencephalon
-## 10X383_5:TCTTGCGGTGAATTGA  normal Homo sapiens male myelencephalon
-## 10X386_2:CTCATCGGTCGAGCAA  normal Homo sapiens male myelencephalon
-## 10X378_8:TTGGATGAGACAAGCC  normal Homo sapiens male           pons
-## 10X387_7:TGAACGTAGTATTCCG  normal Homo sapiens male myelencephalon
-## 10X391_2:GCACGGTTCTAGAACC  normal Homo sapiens male myelencephalon
+## 10X362_3:TCAGTGAGTATTGACC                 CL:0000128          UBERON:0001898
+## 10X362_5:TCCGTGTGTGAAAGTT                 CL:0000128          UBERON:0001898
+## 10X362_5:CACGGGTAGAGCAGAA                 CL:0000128          UBERON:0001898
+## 10X362_5:GATTCTTGTATGTCAC                 CL:0000128          UBERON:0001898
+## 10X362_6:AGGACTTGTATCCTTT                 CL:0000128          UBERON:0001898
+## 10X418_2:TTCCTTCTCTCGTCGT                 CL:0000128          UBERON:0000988
+##                           is_primary_data tissue_type       cell_type     assay
+## 10X362_3:TCAGTGAGTATTGACC           FALSE      tissue oligodendrocyte 10x 3&#39; v3
+## 10X362_5:TCCGTGTGTGAAAGTT           FALSE      tissue oligodendrocyte 10x 3&#39; v3
+## 10X362_5:CACGGGTAGAGCAGAA           FALSE      tissue oligodendrocyte 10x 3&#39; v3
+## 10X362_5:GATTCTTGTATGTCAC           FALSE      tissue oligodendrocyte 10x 3&#39; v3
+## 10X362_6:AGGACTTGTATCCTTT           FALSE      tissue oligodendrocyte 10x 3&#39; v3
+## 10X418_2:TTCCTTCTCTCGTCGT           FALSE      tissue oligodendrocyte 10x 3&#39; v3
+##                           disease     organism  sex       tissue
+## 10X362_3:TCAGTGAGTATTGACC  normal Homo sapiens male hypothalamus
+## 10X362_5:TCCGTGTGTGAAAGTT  normal Homo sapiens male hypothalamus
+## 10X362_5:CACGGGTAGAGCAGAA  normal Homo sapiens male hypothalamus
+## 10X362_5:GATTCTTGTATGTCAC  normal Homo sapiens male hypothalamus
+## 10X362_6:AGGACTTGTATCCTTT  normal Homo sapiens male hypothalamus
+## 10X418_2:TTCCTTCTCTCGTCGT  normal Homo sapiens male         pons
 ##                           self_reported_ethnicity development_stage
-## 10X386_2:CATGGATTCTCGACGG                European 42-year-old stage
-## 10X383_5:TCTTGCGGTGAATTGA                European 29-year-old stage
-## 10X386_2:CTCATCGGTCGAGCAA                European 42-year-old stage
-## 10X378_8:TTGGATGAGACAAGCC                European 29-year-old stage
-## 10X387_7:TGAACGTAGTATTCCG                European 42-year-old stage
-## 10X391_2:GCACGGTTCTAGAACC                European 42-year-old stage
+## 10X362_3:TCAGTGAGTATTGACC                European 29-year-old stage
+## 10X362_5:TCCGTGTGTGAAAGTT                European 42-year-old stage
+## 10X362_5:CACGGGTAGAGCAGAA                European 42-year-old stage
+## 10X362_5:GATTCTTGTATGTCAC                European 42-year-old stage
+## 10X362_6:AGGACTTGTATCCTTT                European 42-year-old stage
+## 10X418_2:TTCCTTCTCTCGTCGT                European 29-year-old stage
 ##                           observation_joinid
-## 10X386_2:CATGGATTCTCGACGG         )22S&lt;p`8;A
-## 10X383_5:TCTTGCGGTGAATTGA         =uMCx7dMUz
-## 10X386_2:CTCATCGGTCGAGCAA         Zo@MxaoVFn
-## 10X378_8:TTGGATGAGACAAGCC         2NB_O&amp;YA*6
-## 10X387_7:TGAACGTAGTATTCCG         3zvCbeT@YM
-## 10X391_2:GCACGGTTCTAGAACC         PaC|36A{R^</code></pre>
+## 10X362_3:TCAGTGAGTATTGACC         {98R6UpEqS
+## 10X362_5:TCCGTGTGTGAAAGTT         @Emos2s5K+
+## 10X362_5:CACGGGTAGAGCAGAA         ba|aw+&gt;z=F
+## 10X362_5:GATTCTTGTATGTCAC         r$+8sBgKyG
+## 10X362_6:AGGACTTGTATCCTTT         sw*$Gke{CL
+## 10X418_2:TTCCTTCTCTCGTCGT         kyr`yn2z96</code></pre>
 <pre class="r"><code>table(metadata$supercluster_term)</code></pre>
 <pre><code>## 
-##               Amygdala excitatory                   CGE interneuron 
-##                            109452                            227671 
-##             Cerebellar inhibitory Deep-layer corticothalamic and 6b 
-##                             14411                             78396 
-##     Deep-layer intratelencephalic        Deep-layer near-projecting 
-##                            228467                             18856 
-##     Eccentric medium spiny neuron                 Hippocampal CA1-3 
-##                             40144                             74979 
-##                   Hippocampal CA4         Hippocampal dentate gyrus 
-##                             10654                             67533 
-##         LAMP5-LHX6 and Chandelier                 Lower rhombic lip 
-##                             45118                             52650 
-##                   MGE interneuron                   Mammillary body 
-##                            222434                             16602 
-##               Medium spiny neuron       Midbrain-derived inhibitory 
-##                            152189                            126782 
-##                     Miscellaneous                          Splatter 
-##                             25071                            291833 
-##               Thalamic excitatory                 Upper rhombic lip 
-##                             85546                            137162 
-##    Upper-layer intratelencephalic 
-##                            455006</code></pre>
+##                           Astrocyte                       Bergmann glia 
+##                              155025                                8041 
+##                      Choroid plexus Committed oligodendrocyte precursor 
+##                                7689                                4720 
+##                           Ependymal                          Fibroblast 
+##                                5882                                9156 
+##                           Microglia                     Oligodendrocyte 
+##                               91838                              490246 
+##           Oligodendrocyte precursor                            Vascular 
+##                              105734                                9932</code></pre>
 </div>
 <div id="random-downsampling" class="section level1" number="2">
 <h1><span class="header-section-number">2</span> Random
@@ -1738,178 +1719,154 @@ selected_cells &lt;- rownames(sampled_cells)
 
 table(sampled_cells$supercluster_term)</code></pre>
 <pre><code>## 
-##               Amygdala excitatory                   CGE interneuron 
-##                               250                               250 
-##             Cerebellar inhibitory Deep-layer corticothalamic and 6b 
-##                               250                               250 
-##     Deep-layer intratelencephalic        Deep-layer near-projecting 
-##                               250                               250 
-##     Eccentric medium spiny neuron                 Hippocampal CA1-3 
-##                               250                               250 
-##                   Hippocampal CA4         Hippocampal dentate gyrus 
-##                               250                               250 
-##         LAMP5-LHX6 and Chandelier                 Lower rhombic lip 
-##                               250                               250 
-##                   MGE interneuron                   Mammillary body 
-##                               250                               250 
-##               Medium spiny neuron       Midbrain-derived inhibitory 
-##                               250                               250 
-##                     Miscellaneous                          Splatter 
-##                               250                               250 
-##               Thalamic excitatory                 Upper rhombic lip 
-##                               250                               250 
-##    Upper-layer intratelencephalic 
-##                               250</code></pre>
+##                           Astrocyte                       Bergmann glia 
+##                                 250                                 250 
+##                      Choroid plexus Committed oligodendrocyte precursor 
+##                                 250                                 250 
+##                           Ependymal                          Fibroblast 
+##                                 250                                 250 
+##                           Microglia                     Oligodendrocyte 
+##                                 250                                 250 
+##           Oligodendrocyte precursor                            Vascular 
+##                                 250                                 250</code></pre>
 <p>Subset the SingleCellExperiment object by selected cell names (i.e.,
 barcodes).</p>
 <pre class="r"><code>sce_subset &lt;- sce_object[, colnames(sce_object) %in% selected_cells]
 dim(sce_object)</code></pre>
-<pre><code>## [1]   59236 2480956</code></pre>
+<pre><code>## [1]  59236 888263</code></pre>
 <pre class="r"><code>dim(sce_subset)</code></pre>
-<pre><code>## [1] 59236  5250</code></pre>
+<pre><code>## [1] 59236  2500</code></pre>
 <p>Extract the subsetted counts and metadata.</p>
 <pre class="r"><code>counts_sub &lt;- assay(sce_subset, &quot;X&quot;)
 counts_sub[1:5,1:5]</code></pre>
 <pre><code>## &lt;5 x 5&gt; sparse matrix of class DelayedMatrix and type &quot;double&quot;:
-##                 10X227_1:CTATCCGAGTGCACCC ... 10X386_2:AAAGGTACATCCGATA
+##                 10X362_5:CACTAAGTCTTCGGTC ... 10X383_6:GCGTGCACATACATCG
 ## ENSG00000000003                         0   .                         0
 ## ENSG00000000005                         0   .                         0
-## ENSG00000000419                         0   .                         0
+## ENSG00000000419                         2   .                         0
 ## ENSG00000000457                         0   .                         0
-## ENSG00000000460                         0   .                         0</code></pre>
+## ENSG00000000460                         2   .                         0</code></pre>
 <p>Convert the subsetted metadata to a data.frame for easy
 filtering.</p>
 <pre class="r"><code>metadata_sub &lt;- as.data.frame(colData(sce_subset))
 head(metadata_sub)</code></pre>
-<pre><code>##                            ROIGroup ROIGroupCoarse   ROIGroupFine        roi
-## 10X227_1:CTATCCGAGTGCACCC Hindbrain           Pons           Pons Human PnAN
-## 10X387_7:AGCGTATGTAGCGTAG Hindbrain Myelencephalon Myelencephalon Human MoAN
-## 10X387_7:TGACGCGTCTTTGCAT Hindbrain Myelencephalon Myelencephalon Human MoAN
-## 10X383_6:GTAGCTAAGCAACAAT Hindbrain Myelencephalon Myelencephalon Human MoSR
-## 10X386_2:AAAGGTACATCCGATA Hindbrain Myelencephalon Myelencephalon Human MoAN
-## 10X227_1:TGCGGGTTCAGTGTTG Hindbrain           Pons           Pons Human PnAN
+<pre><code>##                               ROIGroup ROIGroupCoarse   ROIGroupFine        roi
+## 10X362_5:CACTAAGTCTTCGGTC Hypothalamus   Hypothalamus   Hypothalamus   Human MN
+## 10X361_1:ATGCGATCAAATGATG     Thalamus       Thalamus       Thalamus  Human STH
+## 10X194_7:AAGGAATAGCTGAAAT     Midbrain       Midbrain       Midbrain   Human SN
+## 10X218_6:CACGAATTCGGTTGTA    Hindbrain           Pons           Pons   Human PN
+## 10X383_6:GCGTGCACATACATCG    Hindbrain Myelencephalon Myelencephalon Human MoSR
+## 10X418_2:ATCGTGACATGACGGA    Hindbrain           Pons           Pons   Human PB
 ##                           organism_ontology_term_id disease_ontology_term_id
-## 10X227_1:CTATCCGAGTGCACCC            NCBITaxon:9606             PATO:0000461
-## 10X387_7:AGCGTATGTAGCGTAG            NCBITaxon:9606             PATO:0000461
-## 10X387_7:TGACGCGTCTTTGCAT            NCBITaxon:9606             PATO:0000461
-## 10X383_6:GTAGCTAAGCAACAAT            NCBITaxon:9606             PATO:0000461
-## 10X386_2:AAAGGTACATCCGATA            NCBITaxon:9606             PATO:0000461
-## 10X227_1:TGCGGGTTCAGTGTTG            NCBITaxon:9606             PATO:0000461
+## 10X362_5:CACTAAGTCTTCGGTC            NCBITaxon:9606             PATO:0000461
+## 10X361_1:ATGCGATCAAATGATG            NCBITaxon:9606             PATO:0000461
+## 10X194_7:AAGGAATAGCTGAAAT            NCBITaxon:9606             PATO:0000461
+## 10X218_6:CACGAATTCGGTTGTA            NCBITaxon:9606             PATO:0000461
+## 10X383_6:GCGTGCACATACATCG            NCBITaxon:9606             PATO:0000461
+## 10X418_2:ATCGTGACATGACGGA            NCBITaxon:9606             PATO:0000461
 ##                           self_reported_ethnicity_ontology_term_id
-## 10X227_1:CTATCCGAGTGCACCC                           HANCESTRO:0005
-## 10X387_7:AGCGTATGTAGCGTAG                           HANCESTRO:0005
-## 10X387_7:TGACGCGTCTTTGCAT                           HANCESTRO:0005
-## 10X383_6:GTAGCTAAGCAACAAT                           HANCESTRO:0005
-## 10X386_2:AAAGGTACATCCGATA                           HANCESTRO:0005
-## 10X227_1:TGCGGGTTCAGTGTTG                           HANCESTRO:0005
+## 10X362_5:CACTAAGTCTTCGGTC                           HANCESTRO:0005
+## 10X361_1:ATGCGATCAAATGATG                           HANCESTRO:0005
+## 10X194_7:AAGGAATAGCTGAAAT                           HANCESTRO:0005
+## 10X218_6:CACGAATTCGGTTGTA                           HANCESTRO:0005
+## 10X383_6:GCGTGCACATACATCG                           HANCESTRO:0005
+## 10X418_2:ATCGTGACATGACGGA                           HANCESTRO:0005
 ##                           assay_ontology_term_id sex_ontology_term_id
-## 10X227_1:CTATCCGAGTGCACCC            EFO:0009922         PATO:0000384
-## 10X387_7:AGCGTATGTAGCGTAG            EFO:0009922         PATO:0000384
-## 10X387_7:TGACGCGTCTTTGCAT            EFO:0009922         PATO:0000384
-## 10X383_6:GTAGCTAAGCAACAAT            EFO:0009922         PATO:0000384
-## 10X386_2:AAAGGTACATCCGATA            EFO:0009922         PATO:0000384
-## 10X227_1:TGCGGGTTCAGTGTTG            EFO:0009922         PATO:0000384
+## 10X362_5:CACTAAGTCTTCGGTC            EFO:0009922         PATO:0000384
+## 10X361_1:ATGCGATCAAATGATG            EFO:0009922         PATO:0000384
+## 10X194_7:AAGGAATAGCTGAAAT            EFO:0009922         PATO:0000384
+## 10X218_6:CACGAATTCGGTTGTA            EFO:0009922         PATO:0000384
+## 10X383_6:GCGTGCACATACATCG            EFO:0009922         PATO:0000384
+## 10X418_2:ATCGTGACATGACGGA            EFO:0009922         PATO:0000384
 ##                           development_stage_ontology_term_id   donor_id
-## 10X227_1:CTATCCGAGTGCACCC                     HsapDv:0000144 H18.30.002
-## 10X387_7:AGCGTATGTAGCGTAG                     HsapDv:0000136 H19.30.001
-## 10X387_7:TGACGCGTCTTTGCAT                     HsapDv:0000136 H19.30.001
-## 10X383_6:GTAGCTAAGCAACAAT                     HsapDv:0000123 H19.30.002
-## 10X386_2:AAAGGTACATCCGATA                     HsapDv:0000136 H19.30.001
-## 10X227_1:TGCGGGTTCAGTGTTG                     HsapDv:0000144 H18.30.002
+## 10X362_5:CACTAAGTCTTCGGTC                     HsapDv:0000136 H19.30.001
+## 10X361_1:ATGCGATCAAATGATG                     HsapDv:0000136 H19.30.001
+## 10X194_7:AAGGAATAGCTGAAAT                     HsapDv:0000144 H18.30.002
+## 10X218_6:CACGAATTCGGTTGTA                     HsapDv:0000144 H18.30.002
+## 10X383_6:GCGTGCACATACATCG                     HsapDv:0000123 H19.30.002
+## 10X418_2:ATCGTGACATGACGGA                     HsapDv:0000123 H19.30.002
 ##                           suspension_type
-## 10X227_1:CTATCCGAGTGCACCC         nucleus
-## 10X387_7:AGCGTATGTAGCGTAG         nucleus
-## 10X387_7:TGACGCGTCTTTGCAT         nucleus
-## 10X383_6:GTAGCTAAGCAACAAT         nucleus
-## 10X386_2:AAAGGTACATCCGATA         nucleus
-## 10X227_1:TGCGGGTTCAGTGTTG         nucleus
-##                                                                                                                        dissection
-## 10X227_1:CTATCCGAGTGCACCC                                            Pons (Pn) - afferent nuclei of cranial nerves in pons - PnAN
-## 10X387_7:AGCGTATGTAGCGTAG Myelencephalon (medulla oblongata) (Mo) - afferent nuclei of cranial nerves in medulla oblongata - MoAN
-## 10X387_7:TGACGCGTCTTTGCAT Myelencephalon (medulla oblongata) (Mo) - afferent nuclei of cranial nerves in medulla oblongata - MoAN
-## 10X383_6:GTAGCTAAGCAACAAT              Myelencephalon (medulla oblongata) (Mo) - sensory relay nuclei in medulla oblongata - MoSR
-## 10X386_2:AAAGGTACATCCGATA Myelencephalon (medulla oblongata) (Mo) - afferent nuclei of cranial nerves in medulla oblongata - MoAN
-## 10X227_1:TGCGGGTTCAGTGTTG                                            Pons (Pn) - afferent nuclei of cranial nerves in pons - PnAN
+## 10X362_5:CACTAAGTCTTCGGTC         nucleus
+## 10X361_1:ATGCGATCAAATGATG         nucleus
+## 10X194_7:AAGGAATAGCTGAAAT         nucleus
+## 10X218_6:CACGAATTCGGTTGTA         nucleus
+## 10X383_6:GCGTGCACATACATCG         nucleus
+## 10X418_2:ATCGTGACATGACGGA         nucleus
+##                                                                                                           dissection
+## 10X362_5:CACTAAGTCTTCGGTC            Hypothalamus (HTH) - mammillary region of HTH (HTHma) - mammillary nucleus - MN
+## 10X361_1:ATGCGATCAAATGATG                                      Thalamus (THM) - Subthalamic nucleus and nearby - STH
+## 10X194_7:AAGGAATAGCTGAAAT                                                       Midbrain (M) - Substantia Nigra - SN
+## 10X218_6:CACGAATTCGGTTGTA                                                           Pons (Pn) - Pontine Nucleus - PN
+## 10X383_6:GCGTGCACATACATCG Myelencephalon (medulla oblongata) (Mo) - sensory relay nuclei in medulla oblongata - MoSR
+## 10X418_2:ATCGTGACATGACGGA                                                                                           
 ##                           fraction_mitochondrial fraction_unspliced
-## 10X227_1:CTATCCGAGTGCACCC           0.0136292835          0.5811916
-## 10X387_7:AGCGTATGTAGCGTAG           0.0003790751          0.6474602
-## 10X387_7:TGACGCGTCTTTGCAT           0.0017889088          0.5551580
-## 10X383_6:GTAGCTAAGCAACAAT           0.0030888031          0.6015444
-## 10X386_2:AAAGGTACATCCGATA           0.0016366612          0.6640753
-## 10X227_1:TGCGGGTTCAGTGTTG           0.0145965299          0.5086753
+## 10X362_5:CACTAAGTCTTCGGTC           6.406971e-05          0.8470656
+## 10X361_1:ATGCGATCAAATGATG           0.000000e+00          0.7182800
+## 10X194_7:AAGGAATAGCTGAAAT           2.947244e-04          0.7129384
+## 10X218_6:CACGAATTCGGTTGTA           5.586202e-04          0.7240416
+## 10X383_6:GCGTGCACATACATCG           1.166861e-03          0.4848308
+## 10X418_2:ATCGTGACATGACGGA           2.552648e-04          0.6973835
 ##                           cell_cycle_score total_genes total_UMIs sample_id
-## 10X227_1:CTATCCGAGTGCACCC     0.0007788162        2509       5136  10X227_1
-## 10X387_7:AGCGTATGTAGCGTAG     0.0007581501        1630       2638  10X387_7
-## 10X387_7:TGACGCGTCTTTGCAT     0.0017889088        1177       1677  10X387_7
-## 10X383_6:GTAGCTAAGCAACAAT     0.0000000000         879       1295  10X383_6
-## 10X386_2:AAAGGTACATCCGATA     0.0008183306        1466       2444  10X386_2
-## 10X227_1:TGCGGGTTCAGTGTTG     0.0022032498        2107       3631  10X227_1
+## 10X362_5:CACTAAGTCTTCGGTC      0.001537673        3821      15608  10X362_5
+## 10X361_1:ATGCGATCAAATGATG      0.001735442        2550       5186  10X361_1
+## 10X194_7:AAGGAATAGCTGAAAT      0.002750761        3586      10179  10X194_7
+## 10X218_6:CACGAATTCGGTTGTA      0.001675861        4454      14321  10X218_6
+## 10X383_6:GCGTGCACATACATCG      0.001750292        1109       1714  10X383_6
+## 10X418_2:ATCGTGACATGACGGA      0.001786854        3431       7835  10X418_2
 ##                           supercluster_term cluster_id subcluster_id
-## 10X227_1:CTATCCGAGTGCACCC Upper rhombic lip        312            19
-## 10X387_7:AGCGTATGTAGCGTAG Upper rhombic lip        312            18
-## 10X387_7:TGACGCGTCTTTGCAT Upper rhombic lip        312            20
-## 10X383_6:GTAGCTAAGCAACAAT Upper rhombic lip        312            17
-## 10X386_2:AAAGGTACATCCGATA Upper rhombic lip        312            20
-## 10X227_1:TGCGGGTTCAGTGTTG Upper rhombic lip        312            20
+## 10X362_5:CACTAAGTCTTCGGTC   Oligodendrocyte         50          2996
+## 10X361_1:ATGCGATCAAATGATG   Oligodendrocyte         49          2999
+## 10X194_7:AAGGAATAGCTGAAAT   Oligodendrocyte         49          2999
+## 10X218_6:CACGAATTCGGTTGTA   Oligodendrocyte         49          3001
+## 10X383_6:GCGTGCACATACATCG   Oligodendrocyte         49          2999
+## 10X418_2:ATCGTGACATGACGGA   Oligodendrocyte         49          2999
 ##                           cell_type_ontology_term_id tissue_ontology_term_id
-## 10X227_1:CTATCCGAGTGCACCC                 CL:0000540          UBERON:0000988
-## 10X387_7:AGCGTATGTAGCGTAG                 CL:0000540          UBERON:0005290
-## 10X387_7:TGACGCGTCTTTGCAT                 CL:0000540          UBERON:0005290
-## 10X383_6:GTAGCTAAGCAACAAT                 CL:0000540          UBERON:0005290
-## 10X386_2:AAAGGTACATCCGATA                 CL:0000540          UBERON:0005290
-## 10X227_1:TGCGGGTTCAGTGTTG                 CL:0000540          UBERON:0000988
-##                           is_primary_data tissue_type cell_type     assay
-## 10X227_1:CTATCCGAGTGCACCC           FALSE      tissue    neuron 10x 3&#39; v3
-## 10X387_7:AGCGTATGTAGCGTAG           FALSE      tissue    neuron 10x 3&#39; v3
-## 10X387_7:TGACGCGTCTTTGCAT           FALSE      tissue    neuron 10x 3&#39; v3
-## 10X383_6:GTAGCTAAGCAACAAT           FALSE      tissue    neuron 10x 3&#39; v3
-## 10X386_2:AAAGGTACATCCGATA           FALSE      tissue    neuron 10x 3&#39; v3
-## 10X227_1:TGCGGGTTCAGTGTTG           FALSE      tissue    neuron 10x 3&#39; v3
-##                           disease     organism  sex         tissue
-## 10X227_1:CTATCCGAGTGCACCC  normal Homo sapiens male           pons
-## 10X387_7:AGCGTATGTAGCGTAG  normal Homo sapiens male myelencephalon
-## 10X387_7:TGACGCGTCTTTGCAT  normal Homo sapiens male myelencephalon
-## 10X383_6:GTAGCTAAGCAACAAT  normal Homo sapiens male myelencephalon
-## 10X386_2:AAAGGTACATCCGATA  normal Homo sapiens male myelencephalon
-## 10X227_1:TGCGGGTTCAGTGTTG  normal Homo sapiens male           pons
+## 10X362_5:CACTAAGTCTTCGGTC                 CL:0000128          UBERON:0001898
+## 10X361_1:ATGCGATCAAATGATG                 CL:0000128          UBERON:0010225
+## 10X194_7:AAGGAATAGCTGAAAT                 CL:0000128          UBERON:0001891
+## 10X218_6:CACGAATTCGGTTGTA                 CL:0000128          UBERON:0000988
+## 10X383_6:GCGTGCACATACATCG                 CL:0000128          UBERON:0005290
+## 10X418_2:ATCGTGACATGACGGA                 CL:0000128          UBERON:0000988
+##                           is_primary_data tissue_type       cell_type     assay
+## 10X362_5:CACTAAGTCTTCGGTC           FALSE      tissue oligodendrocyte 10x 3&#39; v3
+## 10X361_1:ATGCGATCAAATGATG           FALSE      tissue oligodendrocyte 10x 3&#39; v3
+## 10X194_7:AAGGAATAGCTGAAAT           FALSE      tissue oligodendrocyte 10x 3&#39; v3
+## 10X218_6:CACGAATTCGGTTGTA           FALSE      tissue oligodendrocyte 10x 3&#39; v3
+## 10X383_6:GCGTGCACATACATCG           FALSE      tissue oligodendrocyte 10x 3&#39; v3
+## 10X418_2:ATCGTGACATGACGGA           FALSE      tissue oligodendrocyte 10x 3&#39; v3
+##                           disease     organism  sex           tissue
+## 10X362_5:CACTAAGTCTTCGGTC  normal Homo sapiens male     hypothalamus
+## 10X361_1:ATGCGATCAAATGATG  normal Homo sapiens male thalamic complex
+## 10X194_7:AAGGAATAGCTGAAAT  normal Homo sapiens male         midbrain
+## 10X218_6:CACGAATTCGGTTGTA  normal Homo sapiens male             pons
+## 10X383_6:GCGTGCACATACATCG  normal Homo sapiens male   myelencephalon
+## 10X418_2:ATCGTGACATGACGGA  normal Homo sapiens male             pons
 ##                           self_reported_ethnicity development_stage
-## 10X227_1:CTATCCGAGTGCACCC                European 50-year-old stage
-## 10X387_7:AGCGTATGTAGCGTAG                European 42-year-old stage
-## 10X387_7:TGACGCGTCTTTGCAT                European 42-year-old stage
-## 10X383_6:GTAGCTAAGCAACAAT                European 29-year-old stage
-## 10X386_2:AAAGGTACATCCGATA                European 42-year-old stage
-## 10X227_1:TGCGGGTTCAGTGTTG                European 50-year-old stage
+## 10X362_5:CACTAAGTCTTCGGTC                European 42-year-old stage
+## 10X361_1:ATGCGATCAAATGATG                European 42-year-old stage
+## 10X194_7:AAGGAATAGCTGAAAT                European 50-year-old stage
+## 10X218_6:CACGAATTCGGTTGTA                European 50-year-old stage
+## 10X383_6:GCGTGCACATACATCG                European 29-year-old stage
+## 10X418_2:ATCGTGACATGACGGA                European 29-year-old stage
 ##                           observation_joinid
-## 10X227_1:CTATCCGAGTGCACCC         ^BxfW(*65)
-## 10X387_7:AGCGTATGTAGCGTAG         cII&gt;Gre!fw
-## 10X387_7:TGACGCGTCTTTGCAT         M%1q1|NpGe
-## 10X383_6:GTAGCTAAGCAACAAT         NgInVp!s37
-## 10X386_2:AAAGGTACATCCGATA         w!3f+7mUG1
-## 10X227_1:TGCGGGTTCAGTGTTG         Dg_}PJcQ+5</code></pre>
+## 10X362_5:CACTAAGTCTTCGGTC         bDU~1(J;Ik
+## 10X361_1:ATGCGATCAAATGATG         ;KlbV&lt;Dt1c
+## 10X194_7:AAGGAATAGCTGAAAT         ^crDf#{0uv
+## 10X218_6:CACGAATTCGGTTGTA         &amp;O+|h=kf&lt;!
+## 10X383_6:GCGTGCACATACATCG         r4yc9BUrh8
+## 10X418_2:ATCGTGACATGACGGA         ^H?8&gt;x`7`8</code></pre>
 <pre class="r"><code>table(metadata_sub$supercluster_term)</code></pre>
 <pre><code>## 
-##               Amygdala excitatory                   CGE interneuron 
-##                               250                               250 
-##             Cerebellar inhibitory Deep-layer corticothalamic and 6b 
-##                               250                               250 
-##     Deep-layer intratelencephalic        Deep-layer near-projecting 
-##                               250                               250 
-##     Eccentric medium spiny neuron                 Hippocampal CA1-3 
-##                               250                               250 
-##                   Hippocampal CA4         Hippocampal dentate gyrus 
-##                               250                               250 
-##         LAMP5-LHX6 and Chandelier                 Lower rhombic lip 
-##                               250                               250 
-##                   MGE interneuron                   Mammillary body 
-##                               250                               250 
-##               Medium spiny neuron       Midbrain-derived inhibitory 
-##                               250                               250 
-##                     Miscellaneous                          Splatter 
-##                               250                               250 
-##               Thalamic excitatory                 Upper rhombic lip 
-##                               250                               250 
-##    Upper-layer intratelencephalic 
-##                               250</code></pre>
+##                           Astrocyte                       Bergmann glia 
+##                                 250                                 250 
+##                      Choroid plexus Committed oligodendrocyte precursor 
+##                                 250                                 250 
+##                           Ependymal                          Fibroblast 
+##                                 250                                 250 
+##                           Microglia                     Oligodendrocyte 
+##                                 250                                 250 
+##           Oligodendrocyte precursor                            Vascular 
+##                                 250                                 250</code></pre>
 </div>
 <div id="convert-from-ensg-to-hgnc-symbols" class="section level1" number="3">
 <h1><span class="header-section-number">3</span> Convert from ENSG to
@@ -1931,10 +1888,10 @@ Knitting of the notebook.</p>
 # Inspect the first few rows of the mapping
 #head(gene_mapping)</code></pre>
 <p>Save gene_mapping.</p>
-<pre class="r"><code>#saveRDS(gene_mapping, file = &quot;vignette_output/AllNeurons/gene_mapping.RDS&quot;)
-#write.matrix(gene_mapping, file=paste0(&quot;vignette_output/AllNeurons/gene_mapping.csv&quot;), sep = &quot;;&quot;)</code></pre>
+<pre class="r"><code>#saveRDS(gene_mapping, file = &quot;vignette_output/AllNonNeurons/gene_mapping.RDS&quot;)
+#write.matrix(gene_mapping, file=paste0(&quot;vignette_output/AllNonNeurons/gene_mapping.csv&quot;), sep = &quot;;&quot;)</code></pre>
 <p>Load gene_mapping.</p>
-<pre class="r"><code>gene_mapping &lt;- readRDS(file = &quot;vignette_output/AllNeurons/gene_mapping.RDS&quot;)
+<pre class="r"><code>gene_mapping &lt;- readRDS(file = &quot;vignette_output/AllNonNeurons/gene_mapping.RDS&quot;)
 head(gene_mapping)</code></pre>
 <pre><code>##   ensembl_gene_id hgnc_symbol
 ## 1 ENSG00000000971         CFH
@@ -1947,6 +1904,7 @@ head(gene_mapping)</code></pre>
 ID.</p>
 <pre class="r"><code>gene_names &lt;- gene_mapping$hgnc_symbol
 names(gene_names) &lt;- gene_mapping$ensembl_gene_id
+#gene_names[is.na(gene_names)] &lt;- names(gene_names)[is.na(gene_names)]  # Keep ENSG IDs if HGNC is missing
 
 head(gene_names)</code></pre>
 <pre><code>## ENSG00000000971 ENSG00000001617 ENSG00000002745 ENSG00000003096 ENSG00000003436 
@@ -1959,13 +1917,13 @@ head(rownames(counts_sub))</code></pre>
 ## [5] &quot;ENSG00000000460&quot; &quot;ENSG00000000938&quot;</code></pre>
 <pre class="r"><code>counts_sub[1:5,1:5]</code></pre>
 <pre><code>## &lt;5 x 5&gt; sparse matrix of class DelayedMatrix and type &quot;double&quot;:
-##                 10X227_1:CTATCCGAGTGCACCC ... 10X386_2:AAAGGTACATCCGATA
+##                 10X362_5:CACTAAGTCTTCGGTC ... 10X383_6:GCGTGCACATACATCG
 ## ENSG00000000003                         0   .                         0
 ## ENSG00000000005                         0   .                         0
-## ENSG00000000419                         0   .                         0
+## ENSG00000000419                         2   .                         0
 ## ENSG00000000457                         0   .                         0
-## ENSG00000000460                         0   .                         0</code></pre>
-<pre class="r"><code># Replace ENSG IDs with HGNC symbols
+## ENSG00000000460                         2   .                         0</code></pre>
+<pre class="r"><code># Replace ENSG IDs with HGNC symbols in the Seurat object
 rownames(counts_sub) &lt;- gene_names[rownames(counts_sub)]
 
 # Check the result
@@ -1976,12 +1934,12 @@ head(rownames(counts_sub))</code></pre>
 ##           &quot;FGR&quot;</code></pre>
 <pre class="r"><code>counts_sub[1:5,1:5]</code></pre>
 <pre><code>## &lt;5 x 5&gt; sparse matrix of class DelayedMatrix and type &quot;double&quot;:
-##        10X227_1:CTATCCGAGTGCACCC ... 10X386_2:AAAGGTACATCCGATA
+##        10X362_5:CACTAAGTCTTCGGTC ... 10X383_6:GCGTGCACATACATCG
 ## TSPAN6                         0   .                         0
 ## TNMD                           0   .                         0
-## DPM1                           0   .                         0
+## DPM1                           2   .                         0
 ## SCYL3                          0   .                         0
-## FIRRM                          0   .                         0</code></pre>
+## FIRRM                          2   .                         0</code></pre>
 <p>Some ENSG are no longer in the database (n=994).</p>
 <pre class="r"><code>sum(is.na(rownames(counts_sub)))</code></pre>
 <pre><code>## [1] 994</code></pre>
@@ -2052,153 +2010,141 @@ se &lt;- CreateSeuratObject(counts = counts_matrix)</code></pre>
 ## (&#39;-&#39;)</code></pre>
 <pre class="r"><code>se</code></pre>
 <pre><code>## An object of class Seurat 
-## 59236 features across 5250 samples within 1 assay 
+## 59236 features across 2500 samples within 1 assay 
 ## Active assay: RNA (59236 features, 0 variable features)</code></pre>
 <pre class="r"><code># Add metadata_sub to the Seurat object
 se &lt;- AddMetaData(se, metadata = metadata_sub)
 head(se[[]])</code></pre>
-<pre><code>##                           orig.ident nCount_RNA nFeature_RNA  ROIGroup
-## 10X227_1:CTATCCGAGTGCACCC     10X227       5135         2508 Hindbrain
-## 10X387_7:AGCGTATGTAGCGTAG     10X387       2636         1628 Hindbrain
-## 10X387_7:TGACGCGTCTTTGCAT     10X387       1676         1176 Hindbrain
-## 10X383_6:GTAGCTAAGCAACAAT     10X383       1295          879 Hindbrain
-## 10X386_2:AAAGGTACATCCGATA     10X386       2442         1464 Hindbrain
-## 10X227_1:TGCGGGTTCAGTGTTG     10X227       3623         2102 Hindbrain
+<pre><code>##                           orig.ident nCount_RNA nFeature_RNA     ROIGroup
+## 10X362_5:CACTAAGTCTTCGGTC     10X362      15603         3817 Hypothalamus
+## 10X361_1:ATGCGATCAAATGATG     10X361       5184         2548     Thalamus
+## 10X194_7:AAGGAATAGCTGAAAT     10X194      10173         3583     Midbrain
+## 10X218_6:CACGAATTCGGTTGTA     10X218      14311         4447    Hindbrain
+## 10X383_6:GCGTGCACATACATCG     10X383       1713         1108    Hindbrain
+## 10X418_2:ATCGTGACATGACGGA     10X418       7830         3427    Hindbrain
 ##                           ROIGroupCoarse   ROIGroupFine        roi
-## 10X227_1:CTATCCGAGTGCACCC           Pons           Pons Human PnAN
-## 10X387_7:AGCGTATGTAGCGTAG Myelencephalon Myelencephalon Human MoAN
-## 10X387_7:TGACGCGTCTTTGCAT Myelencephalon Myelencephalon Human MoAN
-## 10X383_6:GTAGCTAAGCAACAAT Myelencephalon Myelencephalon Human MoSR
-## 10X386_2:AAAGGTACATCCGATA Myelencephalon Myelencephalon Human MoAN
-## 10X227_1:TGCGGGTTCAGTGTTG           Pons           Pons Human PnAN
+## 10X362_5:CACTAAGTCTTCGGTC   Hypothalamus   Hypothalamus   Human MN
+## 10X361_1:ATGCGATCAAATGATG       Thalamus       Thalamus  Human STH
+## 10X194_7:AAGGAATAGCTGAAAT       Midbrain       Midbrain   Human SN
+## 10X218_6:CACGAATTCGGTTGTA           Pons           Pons   Human PN
+## 10X383_6:GCGTGCACATACATCG Myelencephalon Myelencephalon Human MoSR
+## 10X418_2:ATCGTGACATGACGGA           Pons           Pons   Human PB
 ##                           organism_ontology_term_id disease_ontology_term_id
-## 10X227_1:CTATCCGAGTGCACCC            NCBITaxon:9606             PATO:0000461
-## 10X387_7:AGCGTATGTAGCGTAG            NCBITaxon:9606             PATO:0000461
-## 10X387_7:TGACGCGTCTTTGCAT            NCBITaxon:9606             PATO:0000461
-## 10X383_6:GTAGCTAAGCAACAAT            NCBITaxon:9606             PATO:0000461
-## 10X386_2:AAAGGTACATCCGATA            NCBITaxon:9606             PATO:0000461
-## 10X227_1:TGCGGGTTCAGTGTTG            NCBITaxon:9606             PATO:0000461
+## 10X362_5:CACTAAGTCTTCGGTC            NCBITaxon:9606             PATO:0000461
+## 10X361_1:ATGCGATCAAATGATG            NCBITaxon:9606             PATO:0000461
+## 10X194_7:AAGGAATAGCTGAAAT            NCBITaxon:9606             PATO:0000461
+## 10X218_6:CACGAATTCGGTTGTA            NCBITaxon:9606             PATO:0000461
+## 10X383_6:GCGTGCACATACATCG            NCBITaxon:9606             PATO:0000461
+## 10X418_2:ATCGTGACATGACGGA            NCBITaxon:9606             PATO:0000461
 ##                           self_reported_ethnicity_ontology_term_id
-## 10X227_1:CTATCCGAGTGCACCC                           HANCESTRO:0005
-## 10X387_7:AGCGTATGTAGCGTAG                           HANCESTRO:0005
-## 10X387_7:TGACGCGTCTTTGCAT                           HANCESTRO:0005
-## 10X383_6:GTAGCTAAGCAACAAT                           HANCESTRO:0005
-## 10X386_2:AAAGGTACATCCGATA                           HANCESTRO:0005
-## 10X227_1:TGCGGGTTCAGTGTTG                           HANCESTRO:0005
+## 10X362_5:CACTAAGTCTTCGGTC                           HANCESTRO:0005
+## 10X361_1:ATGCGATCAAATGATG                           HANCESTRO:0005
+## 10X194_7:AAGGAATAGCTGAAAT                           HANCESTRO:0005
+## 10X218_6:CACGAATTCGGTTGTA                           HANCESTRO:0005
+## 10X383_6:GCGTGCACATACATCG                           HANCESTRO:0005
+## 10X418_2:ATCGTGACATGACGGA                           HANCESTRO:0005
 ##                           assay_ontology_term_id sex_ontology_term_id
-## 10X227_1:CTATCCGAGTGCACCC            EFO:0009922         PATO:0000384
-## 10X387_7:AGCGTATGTAGCGTAG            EFO:0009922         PATO:0000384
-## 10X387_7:TGACGCGTCTTTGCAT            EFO:0009922         PATO:0000384
-## 10X383_6:GTAGCTAAGCAACAAT            EFO:0009922         PATO:0000384
-## 10X386_2:AAAGGTACATCCGATA            EFO:0009922         PATO:0000384
-## 10X227_1:TGCGGGTTCAGTGTTG            EFO:0009922         PATO:0000384
+## 10X362_5:CACTAAGTCTTCGGTC            EFO:0009922         PATO:0000384
+## 10X361_1:ATGCGATCAAATGATG            EFO:0009922         PATO:0000384
+## 10X194_7:AAGGAATAGCTGAAAT            EFO:0009922         PATO:0000384
+## 10X218_6:CACGAATTCGGTTGTA            EFO:0009922         PATO:0000384
+## 10X383_6:GCGTGCACATACATCG            EFO:0009922         PATO:0000384
+## 10X418_2:ATCGTGACATGACGGA            EFO:0009922         PATO:0000384
 ##                           development_stage_ontology_term_id   donor_id
-## 10X227_1:CTATCCGAGTGCACCC                     HsapDv:0000144 H18.30.002
-## 10X387_7:AGCGTATGTAGCGTAG                     HsapDv:0000136 H19.30.001
-## 10X387_7:TGACGCGTCTTTGCAT                     HsapDv:0000136 H19.30.001
-## 10X383_6:GTAGCTAAGCAACAAT                     HsapDv:0000123 H19.30.002
-## 10X386_2:AAAGGTACATCCGATA                     HsapDv:0000136 H19.30.001
-## 10X227_1:TGCGGGTTCAGTGTTG                     HsapDv:0000144 H18.30.002
+## 10X362_5:CACTAAGTCTTCGGTC                     HsapDv:0000136 H19.30.001
+## 10X361_1:ATGCGATCAAATGATG                     HsapDv:0000136 H19.30.001
+## 10X194_7:AAGGAATAGCTGAAAT                     HsapDv:0000144 H18.30.002
+## 10X218_6:CACGAATTCGGTTGTA                     HsapDv:0000144 H18.30.002
+## 10X383_6:GCGTGCACATACATCG                     HsapDv:0000123 H19.30.002
+## 10X418_2:ATCGTGACATGACGGA                     HsapDv:0000123 H19.30.002
 ##                           suspension_type
-## 10X227_1:CTATCCGAGTGCACCC         nucleus
-## 10X387_7:AGCGTATGTAGCGTAG         nucleus
-## 10X387_7:TGACGCGTCTTTGCAT         nucleus
-## 10X383_6:GTAGCTAAGCAACAAT         nucleus
-## 10X386_2:AAAGGTACATCCGATA         nucleus
-## 10X227_1:TGCGGGTTCAGTGTTG         nucleus
-##                                                                                                                        dissection
-## 10X227_1:CTATCCGAGTGCACCC                                            Pons (Pn) - afferent nuclei of cranial nerves in pons - PnAN
-## 10X387_7:AGCGTATGTAGCGTAG Myelencephalon (medulla oblongata) (Mo) - afferent nuclei of cranial nerves in medulla oblongata - MoAN
-## 10X387_7:TGACGCGTCTTTGCAT Myelencephalon (medulla oblongata) (Mo) - afferent nuclei of cranial nerves in medulla oblongata - MoAN
-## 10X383_6:GTAGCTAAGCAACAAT              Myelencephalon (medulla oblongata) (Mo) - sensory relay nuclei in medulla oblongata - MoSR
-## 10X386_2:AAAGGTACATCCGATA Myelencephalon (medulla oblongata) (Mo) - afferent nuclei of cranial nerves in medulla oblongata - MoAN
-## 10X227_1:TGCGGGTTCAGTGTTG                                            Pons (Pn) - afferent nuclei of cranial nerves in pons - PnAN
+## 10X362_5:CACTAAGTCTTCGGTC         nucleus
+## 10X361_1:ATGCGATCAAATGATG         nucleus
+## 10X194_7:AAGGAATAGCTGAAAT         nucleus
+## 10X218_6:CACGAATTCGGTTGTA         nucleus
+## 10X383_6:GCGTGCACATACATCG         nucleus
+## 10X418_2:ATCGTGACATGACGGA         nucleus
+##                                                                                                           dissection
+## 10X362_5:CACTAAGTCTTCGGTC            Hypothalamus (HTH) - mammillary region of HTH (HTHma) - mammillary nucleus - MN
+## 10X361_1:ATGCGATCAAATGATG                                      Thalamus (THM) - Subthalamic nucleus and nearby - STH
+## 10X194_7:AAGGAATAGCTGAAAT                                                       Midbrain (M) - Substantia Nigra - SN
+## 10X218_6:CACGAATTCGGTTGTA                                                           Pons (Pn) - Pontine Nucleus - PN
+## 10X383_6:GCGTGCACATACATCG Myelencephalon (medulla oblongata) (Mo) - sensory relay nuclei in medulla oblongata - MoSR
+## 10X418_2:ATCGTGACATGACGGA                                                                                           
 ##                           fraction_mitochondrial fraction_unspliced
-## 10X227_1:CTATCCGAGTGCACCC           0.0136292835          0.5811916
-## 10X387_7:AGCGTATGTAGCGTAG           0.0003790751          0.6474602
-## 10X387_7:TGACGCGTCTTTGCAT           0.0017889088          0.5551580
-## 10X383_6:GTAGCTAAGCAACAAT           0.0030888031          0.6015444
-## 10X386_2:AAAGGTACATCCGATA           0.0016366612          0.6640753
-## 10X227_1:TGCGGGTTCAGTGTTG           0.0145965299          0.5086753
+## 10X362_5:CACTAAGTCTTCGGTC           6.406971e-05          0.8470656
+## 10X361_1:ATGCGATCAAATGATG           0.000000e+00          0.7182800
+## 10X194_7:AAGGAATAGCTGAAAT           2.947244e-04          0.7129384
+## 10X218_6:CACGAATTCGGTTGTA           5.586202e-04          0.7240416
+## 10X383_6:GCGTGCACATACATCG           1.166861e-03          0.4848308
+## 10X418_2:ATCGTGACATGACGGA           2.552648e-04          0.6973835
 ##                           cell_cycle_score total_genes total_UMIs sample_id
-## 10X227_1:CTATCCGAGTGCACCC     0.0007788162        2509       5136  10X227_1
-## 10X387_7:AGCGTATGTAGCGTAG     0.0007581501        1630       2638  10X387_7
-## 10X387_7:TGACGCGTCTTTGCAT     0.0017889088        1177       1677  10X387_7
-## 10X383_6:GTAGCTAAGCAACAAT     0.0000000000         879       1295  10X383_6
-## 10X386_2:AAAGGTACATCCGATA     0.0008183306        1466       2444  10X386_2
-## 10X227_1:TGCGGGTTCAGTGTTG     0.0022032498        2107       3631  10X227_1
+## 10X362_5:CACTAAGTCTTCGGTC      0.001537673        3821      15608  10X362_5
+## 10X361_1:ATGCGATCAAATGATG      0.001735442        2550       5186  10X361_1
+## 10X194_7:AAGGAATAGCTGAAAT      0.002750761        3586      10179  10X194_7
+## 10X218_6:CACGAATTCGGTTGTA      0.001675861        4454      14321  10X218_6
+## 10X383_6:GCGTGCACATACATCG      0.001750292        1109       1714  10X383_6
+## 10X418_2:ATCGTGACATGACGGA      0.001786854        3431       7835  10X418_2
 ##                           supercluster_term cluster_id subcluster_id
-## 10X227_1:CTATCCGAGTGCACCC Upper rhombic lip        312            19
-## 10X387_7:AGCGTATGTAGCGTAG Upper rhombic lip        312            18
-## 10X387_7:TGACGCGTCTTTGCAT Upper rhombic lip        312            20
-## 10X383_6:GTAGCTAAGCAACAAT Upper rhombic lip        312            17
-## 10X386_2:AAAGGTACATCCGATA Upper rhombic lip        312            20
-## 10X227_1:TGCGGGTTCAGTGTTG Upper rhombic lip        312            20
+## 10X362_5:CACTAAGTCTTCGGTC   Oligodendrocyte         50          2996
+## 10X361_1:ATGCGATCAAATGATG   Oligodendrocyte         49          2999
+## 10X194_7:AAGGAATAGCTGAAAT   Oligodendrocyte         49          2999
+## 10X218_6:CACGAATTCGGTTGTA   Oligodendrocyte         49          3001
+## 10X383_6:GCGTGCACATACATCG   Oligodendrocyte         49          2999
+## 10X418_2:ATCGTGACATGACGGA   Oligodendrocyte         49          2999
 ##                           cell_type_ontology_term_id tissue_ontology_term_id
-## 10X227_1:CTATCCGAGTGCACCC                 CL:0000540          UBERON:0000988
-## 10X387_7:AGCGTATGTAGCGTAG                 CL:0000540          UBERON:0005290
-## 10X387_7:TGACGCGTCTTTGCAT                 CL:0000540          UBERON:0005290
-## 10X383_6:GTAGCTAAGCAACAAT                 CL:0000540          UBERON:0005290
-## 10X386_2:AAAGGTACATCCGATA                 CL:0000540          UBERON:0005290
-## 10X227_1:TGCGGGTTCAGTGTTG                 CL:0000540          UBERON:0000988
-##                           is_primary_data tissue_type cell_type     assay
-## 10X227_1:CTATCCGAGTGCACCC           FALSE      tissue    neuron 10x 3&#39; v3
-## 10X387_7:AGCGTATGTAGCGTAG           FALSE      tissue    neuron 10x 3&#39; v3
-## 10X387_7:TGACGCGTCTTTGCAT           FALSE      tissue    neuron 10x 3&#39; v3
-## 10X383_6:GTAGCTAAGCAACAAT           FALSE      tissue    neuron 10x 3&#39; v3
-## 10X386_2:AAAGGTACATCCGATA           FALSE      tissue    neuron 10x 3&#39; v3
-## 10X227_1:TGCGGGTTCAGTGTTG           FALSE      tissue    neuron 10x 3&#39; v3
-##                           disease     organism  sex         tissue
-## 10X227_1:CTATCCGAGTGCACCC  normal Homo sapiens male           pons
-## 10X387_7:AGCGTATGTAGCGTAG  normal Homo sapiens male myelencephalon
-## 10X387_7:TGACGCGTCTTTGCAT  normal Homo sapiens male myelencephalon
-## 10X383_6:GTAGCTAAGCAACAAT  normal Homo sapiens male myelencephalon
-## 10X386_2:AAAGGTACATCCGATA  normal Homo sapiens male myelencephalon
-## 10X227_1:TGCGGGTTCAGTGTTG  normal Homo sapiens male           pons
+## 10X362_5:CACTAAGTCTTCGGTC                 CL:0000128          UBERON:0001898
+## 10X361_1:ATGCGATCAAATGATG                 CL:0000128          UBERON:0010225
+## 10X194_7:AAGGAATAGCTGAAAT                 CL:0000128          UBERON:0001891
+## 10X218_6:CACGAATTCGGTTGTA                 CL:0000128          UBERON:0000988
+## 10X383_6:GCGTGCACATACATCG                 CL:0000128          UBERON:0005290
+## 10X418_2:ATCGTGACATGACGGA                 CL:0000128          UBERON:0000988
+##                           is_primary_data tissue_type       cell_type     assay
+## 10X362_5:CACTAAGTCTTCGGTC           FALSE      tissue oligodendrocyte 10x 3&#39; v3
+## 10X361_1:ATGCGATCAAATGATG           FALSE      tissue oligodendrocyte 10x 3&#39; v3
+## 10X194_7:AAGGAATAGCTGAAAT           FALSE      tissue oligodendrocyte 10x 3&#39; v3
+## 10X218_6:CACGAATTCGGTTGTA           FALSE      tissue oligodendrocyte 10x 3&#39; v3
+## 10X383_6:GCGTGCACATACATCG           FALSE      tissue oligodendrocyte 10x 3&#39; v3
+## 10X418_2:ATCGTGACATGACGGA           FALSE      tissue oligodendrocyte 10x 3&#39; v3
+##                           disease     organism  sex           tissue
+## 10X362_5:CACTAAGTCTTCGGTC  normal Homo sapiens male     hypothalamus
+## 10X361_1:ATGCGATCAAATGATG  normal Homo sapiens male thalamic complex
+## 10X194_7:AAGGAATAGCTGAAAT  normal Homo sapiens male         midbrain
+## 10X218_6:CACGAATTCGGTTGTA  normal Homo sapiens male             pons
+## 10X383_6:GCGTGCACATACATCG  normal Homo sapiens male   myelencephalon
+## 10X418_2:ATCGTGACATGACGGA  normal Homo sapiens male             pons
 ##                           self_reported_ethnicity development_stage
-## 10X227_1:CTATCCGAGTGCACCC                European 50-year-old stage
-## 10X387_7:AGCGTATGTAGCGTAG                European 42-year-old stage
-## 10X387_7:TGACGCGTCTTTGCAT                European 42-year-old stage
-## 10X383_6:GTAGCTAAGCAACAAT                European 29-year-old stage
-## 10X386_2:AAAGGTACATCCGATA                European 42-year-old stage
-## 10X227_1:TGCGGGTTCAGTGTTG                European 50-year-old stage
+## 10X362_5:CACTAAGTCTTCGGTC                European 42-year-old stage
+## 10X361_1:ATGCGATCAAATGATG                European 42-year-old stage
+## 10X194_7:AAGGAATAGCTGAAAT                European 50-year-old stage
+## 10X218_6:CACGAATTCGGTTGTA                European 50-year-old stage
+## 10X383_6:GCGTGCACATACATCG                European 29-year-old stage
+## 10X418_2:ATCGTGACATGACGGA                European 29-year-old stage
 ##                           observation_joinid
-## 10X227_1:CTATCCGAGTGCACCC         ^BxfW(*65)
-## 10X387_7:AGCGTATGTAGCGTAG         cII&gt;Gre!fw
-## 10X387_7:TGACGCGTCTTTGCAT         M%1q1|NpGe
-## 10X383_6:GTAGCTAAGCAACAAT         NgInVp!s37
-## 10X386_2:AAAGGTACATCCGATA         w!3f+7mUG1
-## 10X227_1:TGCGGGTTCAGTGTTG         Dg_}PJcQ+5</code></pre>
+## 10X362_5:CACTAAGTCTTCGGTC         bDU~1(J;Ik
+## 10X361_1:ATGCGATCAAATGATG         ;KlbV&lt;Dt1c
+## 10X194_7:AAGGAATAGCTGAAAT         ^crDf#{0uv
+## 10X218_6:CACGAATTCGGTTGTA         &amp;O+|h=kf&lt;!
+## 10X383_6:GCGTGCACATACATCG         r4yc9BUrh8
+## 10X418_2:ATCGTGACATGACGGA         ^H?8&gt;x`7`8</code></pre>
 <p>Check number of cells per supercluster_term. Should be max 250 cells
 per supercluster_term. Note that when creating Metacells, all annotated
 classes with less than 50 will be excluded. Here all classes have 250
 cells.</p>
 <pre class="r"><code>table(se$supercluster_term)</code></pre>
 <pre><code>## 
-##               Amygdala excitatory                   CGE interneuron 
-##                               250                               250 
-##             Cerebellar inhibitory Deep-layer corticothalamic and 6b 
-##                               250                               250 
-##     Deep-layer intratelencephalic        Deep-layer near-projecting 
-##                               250                               250 
-##     Eccentric medium spiny neuron                 Hippocampal CA1-3 
-##                               250                               250 
-##                   Hippocampal CA4         Hippocampal dentate gyrus 
-##                               250                               250 
-##         LAMP5-LHX6 and Chandelier                 Lower rhombic lip 
-##                               250                               250 
-##                   MGE interneuron                   Mammillary body 
-##                               250                               250 
-##               Medium spiny neuron       Midbrain-derived inhibitory 
-##                               250                               250 
-##                     Miscellaneous                          Splatter 
-##                               250                               250 
-##               Thalamic excitatory                 Upper rhombic lip 
-##                               250                               250 
-##    Upper-layer intratelencephalic 
-##                               250</code></pre>
+##                           Astrocyte                       Bergmann glia 
+##                                 250                                 250 
+##                      Choroid plexus Committed oligodendrocyte precursor 
+##                                 250                                 250 
+##                           Ependymal                          Fibroblast 
+##                                 250                                 250 
+##                           Microglia                     Oligodendrocyte 
+##                                 250                                 250 
+##           Oligodendrocyte precursor                            Vascular 
+##                                 250                                 250</code></pre>
 <p>Save Seurat Object.</p>
-<pre class="r"><code>saveRDS(se, file = &quot;vignette_output/AllNeurons/se_AllNeurons_250_cells.RDS&quot;)</code></pre>
+<pre class="r"><code>saveRDS(se, file = &quot;vignette_output/AllNonNeurons/se_AllNonNeurons_250_cells.RDS&quot;)</code></pre>
 <details>
 <summary>
 Click to show Session Info
