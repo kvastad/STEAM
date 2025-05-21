@@ -26,6 +26,18 @@ header h1 {
     z-index: 2;    /* Make sure the logo appears above the header */
 }
 
+.logo-in-text {
+    text-align: center;
+    margin-top: 40px;
+    margin-bottom: 10px;
+}
+
+.logo-in-text img {
+    max-height: 80px;
+    width: auto;
+}
+
+
 nav ul {
     list-style: none;
     padding: 0;
