@@ -11,4 +11,4 @@ To install the latest STEAM R-package version, visit: https://github.com/NBISwed
 
 For STEAM R-package vignettes, visit: https://kvastad.github.io/STEAM/
 
-![STEAM workflow](images/STEAM_workflow.png)
+For ranked genetically associated gene lists, visit the Open Targets platform: https://platform.opentargets.org/
