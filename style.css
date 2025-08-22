@@ -98,3 +98,9 @@ nav ul .dropdown-menu li a:hover {
     background-color: #ddd; /* Adds a hover effect for links */
 }
 
+.center-img {
+  display: block;
+  margin: 0 auto;
+  max-width: 80%;   /* scales nicely on smaller screens */
+  height: auto;     /* keep aspect ratio */
+}
