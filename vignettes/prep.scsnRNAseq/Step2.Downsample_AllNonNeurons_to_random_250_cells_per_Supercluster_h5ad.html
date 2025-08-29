@@ -11,7 +11,7 @@
 
 
 
-<title>Step1: Downsample Allen Brain Atlas Mouse CTX-HPF</title>
+<title>Step2: Downsample AllNonNeurons</title>
 
 <script>// Pandoc 2.9 adds attributes on both header and div. We remove the former (to
 // be compatible with the behavior of Pandoc < 2.8).
@@ -1489,389 +1489,673 @@ border-radius: 0px;
 
 
 
-<h1 class="title toc-ignore">Step1: Downsample Allen Brain Atlas Mouse
-CTX-HPF</h1>
+<h1 class="title toc-ignore">Step2: Downsample AllNonNeurons</h1>
 
 </div>
 
 
 <p>For generating Metacells we do not need the whole dataset, which is
 too big to load anyway. Instead we will randomly downsample the dataset
-to max 250 cells per ‘subclass label’ from a hdf5 file. We use the
-single cell RNA-seq dataset from Allen Brain Atlas of the whole mouse
-isocortex and hippocampal formation (CTX-HPF), Yao et al. Cell 2021 (<a href="https://doi.org/10.1016/j.cell.2021.04.021" class="uri">https://doi.org/10.1016/j.cell.2021.04.021</a>).</p>
-<p>The full scRNA-seq dataset can be found here from Allen Brain Maps of
-the mouse cortex and hippocampus. Click this link for the data download
-page: <a href="https://portal.brain-map.org/atlases-and-data/rnaseq/mouse-whole-cortex-and-hippocampus-10x" class="uri">https://portal.brain-map.org/atlases-and-data/rnaseq/mouse-whole-cortex-and-hippocampus-10x</a></p>
-<p>Clicking these links to download files directly, please note the file
-sizes, expression_matrix.hdf5 (~6GB) and metadata.csv (~500MB): <a href="https://idk-etl-prod-download-bucket.s3.amazonaws.com/aibs_mouse_ctx-hpf_10x/expression_matrix.hdf5" class="uri">https://idk-etl-prod-download-bucket.s3.amazonaws.com/aibs_mouse_ctx-hpf_10x/expression_matrix.hdf5</a>
-<a href="https://idk-etl-prod-download-bucket.s3.amazonaws.com/aibs_mouse_ctx-hpf_10x/metadata.csv" class="uri">https://idk-etl-prod-download-bucket.s3.amazonaws.com/aibs_mouse_ctx-hpf_10x/metadata.csv</a></p>
-<p>Many thanks to ‘jeremyinseattle’ for his community post on how to
-read in the data, which was used here. The full post with more extensive
-strategies can be found in this thread: <a href="https://community.brain-map.org/t/gene-expression-matrix-cvs-is-too-large-to-load-it/566/17" class="uri">https://community.brain-map.org/t/gene-expression-matrix-cvs-is-too-large-to-load-it/566/17</a></p>
+to max 250 cells per ‘supercluster_term’ from a h5ad file. We will use
+the human whole brain single nuclei dataset, Siletti et al. (2023)
+Science (<a href="https://doi.org/10.1126/science.add7046" class="uri">https://doi.org/10.1126/science.add7046</a>).</p>
+<p>The full snRNA-seq dataset can be found here from BRAIN Initiative,
+Chan Zuckerberg Initiative (CZI) Cell Science, of the adult human brain.
+Click this link for the data download page: <a href="https://cellxgene.cziscience.com/collections/283d65eb-dd53-496d-adb7-7570c7caa443" class="uri">https://cellxgene.cziscience.com/collections/283d65eb-dd53-496d-adb7-7570c7caa443</a></p>
+<p>Here we downsample from the All non-neuronal cells data of 888 263
+cells.</p>
 <div id="loading-the-dataset" class="section level1" number="1">
 <h1><span class="header-section-number">1</span> Loading the
 dataset</h1>
 <p>Load libraries.</p>
-<pre class="r"><code>library(rhdf5)      # For reading hdf5; https://www.bioconductor.org/packages/devel/bioc/vignettes/rhdf5/inst/doc/rhdf5.html
-library(HDF5Array)  # Alternatively option for reading the data matrix with less memory: https://rdrr.io/github/Bioconductor/HDF5Array/
-library(data.table) # For fast reading of csv files
-library(Seurat)</code></pre>
-<p>Read in sample and gene names for use later.</p>
-<pre class="r"><code>genes   &lt;- h5read(&quot;data/mouse_CTX_HPF/expression_matrix.hdf5&quot;,&quot;/data/gene&quot;)
-samples &lt;- h5read(&quot;data/mouse_CTX_HPF/expression_matrix.hdf5&quot;,&quot;/data/samples&quot;)</code></pre>
-<p>Read in the metadata using fread (fast!).</p>
-<pre class="r"><code>metadata &lt;- fread(&quot;data/mouse_CTX_HPF/metadata.csv&quot;)
-metadata &lt;- as.data.frame(metadata)
-rownames(metadata) &lt;- metadata$sample_name</code></pre>
+<pre class="r"><code>library(Seurat)
+library(zellkonverter)
+library(SingleCellExperiment)
+library(HDF5Array)
+library(dplyr)
+library(biomaRt)
+library(MASS)</code></pre>
+<p>Load and view metadata.</p>
+<pre class="r"><code>sce_object &lt;- readH5AD(&quot;data/AllNonNeurons/99f27be8-9fac-451e-9723-9e4c7191589e.h5ad&quot;,use_hdf5 = TRUE)</code></pre>
+<pre><code>## anndata._core.sparse_dataset._CSRDatasetanndata._core.sparse_dataset.BaseCompressedSparseDatasetanndata.abc.CSRDatasetanndata.abc._AbstractCSDatasetabc.ABCpython.builtin.object</code></pre>
+<pre class="r"><code>head(sce_object) </code></pre>
+<pre><code>## class: SingleCellExperiment 
+## dim: 6 888263 
+## metadata(5): batch_condition citation schema_reference schema_version
+##   title
+## assays(1): X
+## rownames(6): ENSG00000000003 ENSG00000000005 ... ENSG00000000460
+##   ENSG00000000938
+## rowData names(11): Biotype Chromosome ... feature_length feature_type
+## colnames(888263): 10X362_3:TCAGTGAGTATTGACC 10X362_5:TCCGTGTGTGAAAGTT
+##   ... 10X221_5:TTGAACGCAGCCTTCT 10X385_3:CTACCCAGTGGCGCTT
+## colData names(35): ROIGroup ROIGroupCoarse ... development_stage
+##   observation_joinid
+## reducedDimNames(2): X_UMAP X_tSNE
+## mainExpName: NULL
+## altExpNames(0):</code></pre>
+<pre class="r"><code>colnames(colData(sce_object))# View cell metadata</code></pre>
+<pre><code>##  [1] &quot;ROIGroup&quot;                                
+##  [2] &quot;ROIGroupCoarse&quot;                          
+##  [3] &quot;ROIGroupFine&quot;                            
+##  [4] &quot;roi&quot;                                     
+##  [5] &quot;organism_ontology_term_id&quot;               
+##  [6] &quot;disease_ontology_term_id&quot;                
+##  [7] &quot;self_reported_ethnicity_ontology_term_id&quot;
+##  [8] &quot;assay_ontology_term_id&quot;                  
+##  [9] &quot;sex_ontology_term_id&quot;                    
+## [10] &quot;development_stage_ontology_term_id&quot;      
+## [11] &quot;donor_id&quot;                                
+## [12] &quot;suspension_type&quot;                         
+## [13] &quot;dissection&quot;                              
+## [14] &quot;fraction_mitochondrial&quot;                  
+## [15] &quot;fraction_unspliced&quot;                      
+## [16] &quot;cell_cycle_score&quot;                        
+## [17] &quot;total_genes&quot;                             
+## [18] &quot;total_UMIs&quot;                              
+## [19] &quot;sample_id&quot;                               
+## [20] &quot;supercluster_term&quot;                       
+## [21] &quot;cluster_id&quot;                              
+## [22] &quot;subcluster_id&quot;                           
+## [23] &quot;cell_type_ontology_term_id&quot;              
+## [24] &quot;tissue_ontology_term_id&quot;                 
+## [25] &quot;is_primary_data&quot;                         
+## [26] &quot;tissue_type&quot;                             
+## [27] &quot;cell_type&quot;                               
+## [28] &quot;assay&quot;                                   
+## [29] &quot;disease&quot;                                 
+## [30] &quot;organism&quot;                                
+## [31] &quot;sex&quot;                                     
+## [32] &quot;tissue&quot;                                  
+## [33] &quot;self_reported_ethnicity&quot;                 
+## [34] &quot;development_stage&quot;                       
+## [35] &quot;observation_joinid&quot;</code></pre>
+<p>Convert metadata to a data.frame for easy filtering.</p>
+<pre class="r"><code>metadata &lt;- as.data.frame(colData(sce_object))
+head(metadata)</code></pre>
+<pre><code>##                               ROIGroup ROIGroupCoarse ROIGroupFine      roi
+## 10X362_3:TCAGTGAGTATTGACC Hypothalamus   Hypothalamus Hypothalamus Human MN
+## 10X362_5:TCCGTGTGTGAAAGTT Hypothalamus   Hypothalamus Hypothalamus Human MN
+## 10X362_5:CACGGGTAGAGCAGAA Hypothalamus   Hypothalamus Hypothalamus Human MN
+## 10X362_5:GATTCTTGTATGTCAC Hypothalamus   Hypothalamus Hypothalamus Human MN
+## 10X362_6:AGGACTTGTATCCTTT Hypothalamus   Hypothalamus Hypothalamus Human MN
+## 10X418_2:TTCCTTCTCTCGTCGT    Hindbrain           Pons         Pons Human PB
+##                           organism_ontology_term_id disease_ontology_term_id
+## 10X362_3:TCAGTGAGTATTGACC            NCBITaxon:9606             PATO:0000461
+## 10X362_5:TCCGTGTGTGAAAGTT            NCBITaxon:9606             PATO:0000461
+## 10X362_5:CACGGGTAGAGCAGAA            NCBITaxon:9606             PATO:0000461
+## 10X362_5:GATTCTTGTATGTCAC            NCBITaxon:9606             PATO:0000461
+## 10X362_6:AGGACTTGTATCCTTT            NCBITaxon:9606             PATO:0000461
+## 10X418_2:TTCCTTCTCTCGTCGT            NCBITaxon:9606             PATO:0000461
+##                           self_reported_ethnicity_ontology_term_id
+## 10X362_3:TCAGTGAGTATTGACC                           HANCESTRO:0005
+## 10X362_5:TCCGTGTGTGAAAGTT                           HANCESTRO:0005
+## 10X362_5:CACGGGTAGAGCAGAA                           HANCESTRO:0005
+## 10X362_5:GATTCTTGTATGTCAC                           HANCESTRO:0005
+## 10X362_6:AGGACTTGTATCCTTT                           HANCESTRO:0005
+## 10X418_2:TTCCTTCTCTCGTCGT                           HANCESTRO:0005
+##                           assay_ontology_term_id sex_ontology_term_id
+## 10X362_3:TCAGTGAGTATTGACC            EFO:0009922         PATO:0000384
+## 10X362_5:TCCGTGTGTGAAAGTT            EFO:0009922         PATO:0000384
+## 10X362_5:CACGGGTAGAGCAGAA            EFO:0009922         PATO:0000384
+## 10X362_5:GATTCTTGTATGTCAC            EFO:0009922         PATO:0000384
+## 10X362_6:AGGACTTGTATCCTTT            EFO:0009922         PATO:0000384
+## 10X418_2:TTCCTTCTCTCGTCGT            EFO:0009922         PATO:0000384
+##                           development_stage_ontology_term_id   donor_id
+## 10X362_3:TCAGTGAGTATTGACC                     HsapDv:0000123 H19.30.002
+## 10X362_5:TCCGTGTGTGAAAGTT                     HsapDv:0000136 H19.30.001
+## 10X362_5:CACGGGTAGAGCAGAA                     HsapDv:0000136 H19.30.001
+## 10X362_5:GATTCTTGTATGTCAC                     HsapDv:0000136 H19.30.001
+## 10X362_6:AGGACTTGTATCCTTT                     HsapDv:0000136 H19.30.001
+## 10X418_2:TTCCTTCTCTCGTCGT                     HsapDv:0000123 H19.30.002
+##                           suspension_type
+## 10X362_3:TCAGTGAGTATTGACC         nucleus
+## 10X362_5:TCCGTGTGTGAAAGTT         nucleus
+## 10X362_5:CACGGGTAGAGCAGAA         nucleus
+## 10X362_5:GATTCTTGTATGTCAC         nucleus
+## 10X362_6:AGGACTTGTATCCTTT         nucleus
+## 10X418_2:TTCCTTCTCTCGTCGT         nucleus
+##                                                                                                dissection
+## 10X362_3:TCAGTGAGTATTGACC Hypothalamus (HTH) - mammillary region of HTH (HTHma) - mammillary nucleus - MN
+## 10X362_5:TCCGTGTGTGAAAGTT Hypothalamus (HTH) - mammillary region of HTH (HTHma) - mammillary nucleus - MN
+## 10X362_5:CACGGGTAGAGCAGAA Hypothalamus (HTH) - mammillary region of HTH (HTHma) - mammillary nucleus - MN
+## 10X362_5:GATTCTTGTATGTCAC Hypothalamus (HTH) - mammillary region of HTH (HTHma) - mammillary nucleus - MN
+## 10X362_6:AGGACTTGTATCCTTT Hypothalamus (HTH) - mammillary region of HTH (HTHma) - mammillary nucleus - MN
+## 10X418_2:TTCCTTCTCTCGTCGT                                                                                
+##                           fraction_mitochondrial fraction_unspliced
+## 10X362_3:TCAGTGAGTATTGACC           0.0004450774          0.8283781
+## 10X362_5:TCCGTGTGTGAAAGTT           0.0001532097          0.8484756
+## 10X362_5:CACGGGTAGAGCAGAA           0.0000000000          0.8010240
+## 10X362_5:GATTCTTGTATGTCAC           0.0000000000          0.8516319
+## 10X362_6:AGGACTTGTATCCTTT           0.0000000000          0.8480836
+## 10X418_2:TTCCTTCTCTCGTCGT           0.0000000000          0.7300745
+##                           cell_cycle_score total_genes total_UMIs sample_id
+## 10X362_3:TCAGTGAGTATTGACC      0.001513263        3100      11234  10X362_3
+## 10X362_5:TCCGTGTGTGAAAGTT      0.002144936        2303       6527  10X362_5
+## 10X362_5:CACGGGTAGAGCAGAA      0.001280046        2733       7031  10X362_5
+## 10X362_5:GATTCTTGTATGTCAC      0.001994560        4771      22060  10X362_5
+## 10X362_6:AGGACTTGTATCCTTT      0.001935734        3241      12915  10X362_6
+## 10X418_2:TTCCTTCTCTCGTCGT      0.001540964        3943      11681  10X418_2
+##                           supercluster_term cluster_id subcluster_id
+## 10X362_3:TCAGTGAGTATTGACC   Oligodendrocyte         50          2996
+## 10X362_5:TCCGTGTGTGAAAGTT   Oligodendrocyte         50          2996
+## 10X362_5:CACGGGTAGAGCAGAA   Oligodendrocyte         50          2996
+## 10X362_5:GATTCTTGTATGTCAC   Oligodendrocyte         50          2998
+## 10X362_6:AGGACTTGTATCCTTT   Oligodendrocyte         50          2996
+## 10X418_2:TTCCTTCTCTCGTCGT   Oligodendrocyte         50          2998
+##                           cell_type_ontology_term_id tissue_ontology_term_id
+## 10X362_3:TCAGTGAGTATTGACC                 CL:0000128          UBERON:0001898
+## 10X362_5:TCCGTGTGTGAAAGTT                 CL:0000128          UBERON:0001898
+## 10X362_5:CACGGGTAGAGCAGAA                 CL:0000128          UBERON:0001898
+## 10X362_5:GATTCTTGTATGTCAC                 CL:0000128          UBERON:0001898
+## 10X362_6:AGGACTTGTATCCTTT                 CL:0000128          UBERON:0001898
+## 10X418_2:TTCCTTCTCTCGTCGT                 CL:0000128          UBERON:0000988
+##                           is_primary_data tissue_type       cell_type     assay
+## 10X362_3:TCAGTGAGTATTGACC           FALSE      tissue oligodendrocyte 10x 3&#39; v3
+## 10X362_5:TCCGTGTGTGAAAGTT           FALSE      tissue oligodendrocyte 10x 3&#39; v3
+## 10X362_5:CACGGGTAGAGCAGAA           FALSE      tissue oligodendrocyte 10x 3&#39; v3
+## 10X362_5:GATTCTTGTATGTCAC           FALSE      tissue oligodendrocyte 10x 3&#39; v3
+## 10X362_6:AGGACTTGTATCCTTT           FALSE      tissue oligodendrocyte 10x 3&#39; v3
+## 10X418_2:TTCCTTCTCTCGTCGT           FALSE      tissue oligodendrocyte 10x 3&#39; v3
+##                           disease     organism  sex       tissue
+## 10X362_3:TCAGTGAGTATTGACC  normal Homo sapiens male hypothalamus
+## 10X362_5:TCCGTGTGTGAAAGTT  normal Homo sapiens male hypothalamus
+## 10X362_5:CACGGGTAGAGCAGAA  normal Homo sapiens male hypothalamus
+## 10X362_5:GATTCTTGTATGTCAC  normal Homo sapiens male hypothalamus
+## 10X362_6:AGGACTTGTATCCTTT  normal Homo sapiens male hypothalamus
+## 10X418_2:TTCCTTCTCTCGTCGT  normal Homo sapiens male         pons
+##                           self_reported_ethnicity development_stage
+## 10X362_3:TCAGTGAGTATTGACC                European 29-year-old stage
+## 10X362_5:TCCGTGTGTGAAAGTT                European 42-year-old stage
+## 10X362_5:CACGGGTAGAGCAGAA                European 42-year-old stage
+## 10X362_5:GATTCTTGTATGTCAC                European 42-year-old stage
+## 10X362_6:AGGACTTGTATCCTTT                European 42-year-old stage
+## 10X418_2:TTCCTTCTCTCGTCGT                European 29-year-old stage
+##                           observation_joinid
+## 10X362_3:TCAGTGAGTATTGACC         {98R6UpEqS
+## 10X362_5:TCCGTGTGTGAAAGTT         @Emos2s5K+
+## 10X362_5:CACGGGTAGAGCAGAA         ba|aw+&gt;z=F
+## 10X362_5:GATTCTTGTATGTCAC         r$+8sBgKyG
+## 10X362_6:AGGACTTGTATCCTTT         sw*$Gke{CL
+## 10X418_2:TTCCTTCTCTCGTCGT         kyr`yn2z96</code></pre>
+<pre class="r"><code>table(metadata$supercluster_term)</code></pre>
+<pre><code>## 
+##                           Astrocyte                       Bergmann glia 
+##                              155025                                8041 
+##                      Choroid plexus Committed oligodendrocyte precursor 
+##                                7689                                4720 
+##                           Ependymal                          Fibroblast 
+##                                5882                                9156 
+##                           Microglia                     Oligodendrocyte 
+##                               91838                              490246 
+##           Oligodendrocyte precursor                            Vascular 
+##                              105734                                9932</code></pre>
 </div>
 <div id="random-downsampling" class="section level1" number="2">
 <h1><span class="header-section-number">2</span> Random
 downsampling</h1>
-<p>Randomly sample 250 cell barcodes from each subclass_label.</p>
-<pre class="r"><code># Set seed for reproducibility
-set.seed(42)
+<p>Randomly sample 250 cell barcodes from each supercluster.</p>
+<pre class="r"><code>metadata$cell_id &lt;- rownames(metadata)  # Preserve row names
 
-# Subset and randomly sample up to 250 cells per subclass
-use_samples &lt;- unlist(lapply(split(metadata, metadata$subclass_label), function(subset) {
-  # Ensure we don&#39;t sample more than the available number of cells
-  sample(rownames(subset), min(250, nrow(subset)), replace = FALSE)
-}))
+# Sample up to 250 cells per supercluster_term
+set.seed(123)
+sampled_cells &lt;- metadata %&gt;%
+  group_by(supercluster_term) %&gt;%
+  slice_sample(n = 250) %&gt;%
+  ungroup()
 
-# Find intersection with your existing samples
-use_samples &lt;- intersect(use_samples, samples)
+# Restore rownames
+sampled_cells &lt;- as.data.frame(sampled_cells)
+rownames(sampled_cells) &lt;- sampled_cells$cell_id
+sampled_cells$cell_id &lt;- NULL  # Remove temporary column
 
-# Match the use_samples with the original samples
-read_samples &lt;- sort(match(use_samples, samples))
+# Get selected cell names
+selected_cells &lt;- rownames(sampled_cells)
 
-# `use_samples` contains the subset of cells, `read_samples` contains the indices</code></pre>
-<p>Read in only a relevant subset of data using h5read (that we
-downsampled).</p>
-<pre class="r"><code>system.time({
-  counts1 &lt;- h5read(&quot;data/mouse_CTX_HPF/expression_matrix.hdf5&quot;, &quot;/data/counts&quot;, index = list(read_samples,NULL))
-  counts1 &lt;- t(counts1)
-  subcounts1 &lt;- as(counts1, &quot;dgCMatrix&quot;)
-}) </code></pre>
-<pre><code>##    user  system elapsed 
-##  64.183  15.156  79.520</code></pre>
-<p>Add gene and sample names to the data matrix.</p>
-<pre class="r"><code>rownames(subcounts1) &lt;- as.character(genes)
-colnames(subcounts1) &lt;- as.character(samples) [read_samples]</code></pre>
-</div>
-<div id="create-and-save-seurat-object" class="section level1" number="3">
-<h1><span class="header-section-number">3</span> Create and Save Seurat
-object</h1>
-<p>Read the subsetted (downsampled) data and metadata into Seurat.</p>
-<pre class="r"><code>seu &lt;- CreateSeuratObject(counts=subcounts1)          # Put in a Seurat object
-met &lt;- as.data.frame(metadata[colnames(subcounts1),]) # Format the metadata
-se &lt;- AddMetaData(seu,met)                           # Add the metadata</code></pre>
-<p>Check the new Seurat object.</p>
-<pre class="r"><code>head(se[[]])</code></pre>
-<pre><code>##                                        orig.ident nCount_RNA nFeature_RNA
-## AAAGATGCAGGGTATG-L8TX_180221_01_F09 SeuratProject      16506         5040
-## AACTCAGGTGAGGCTA-L8TX_180221_01_F09 SeuratProject       8345         3282
-## ACACCGGGTTGAACTC-L8TX_180221_01_F09 SeuratProject       3209         1664
-## ACATCAGAGCGGCTTC-L8TX_180221_01_F09 SeuratProject      14963         5132
-## ACCCACTAGTGTGAAT-L8TX_180221_01_F09 SeuratProject      20499         5825
-## ACGCCGATCCGGCACA-L8TX_180221_01_F09 SeuratProject      19814         5691
-##                                                             sample_name
-## AAAGATGCAGGGTATG-L8TX_180221_01_F09 AAAGATGCAGGGTATG-L8TX_180221_01_F09
-## AACTCAGGTGAGGCTA-L8TX_180221_01_F09 AACTCAGGTGAGGCTA-L8TX_180221_01_F09
-## ACACCGGGTTGAACTC-L8TX_180221_01_F09 ACACCGGGTTGAACTC-L8TX_180221_01_F09
-## ACATCAGAGCGGCTTC-L8TX_180221_01_F09 ACATCAGAGCGGCTTC-L8TX_180221_01_F09
-## ACCCACTAGTGTGAAT-L8TX_180221_01_F09 ACCCACTAGTGTGAAT-L8TX_180221_01_F09
-## ACGCCGATCCGGCACA-L8TX_180221_01_F09 ACGCCGATCCGGCACA-L8TX_180221_01_F09
-##                                     donor_sex_id donor_sex_label
-## AAAGATGCAGGGTATG-L8TX_180221_01_F09            2               M
-## AACTCAGGTGAGGCTA-L8TX_180221_01_F09            2               M
-## ACACCGGGTTGAACTC-L8TX_180221_01_F09            2               M
-## ACATCAGAGCGGCTTC-L8TX_180221_01_F09            2               M
-## ACCCACTAGTGTGAAT-L8TX_180221_01_F09            2               M
-## ACGCCGATCCGGCACA-L8TX_180221_01_F09            2               M
-##                                     donor_sex_color region_id region_label
-## AAAGATGCAGGGTATG-L8TX_180221_01_F09         #ADC4C3        19          ACA
-## AACTCAGGTGAGGCTA-L8TX_180221_01_F09         #ADC4C3        19          ACA
-## ACACCGGGTTGAACTC-L8TX_180221_01_F09         #ADC4C3        19          ACA
-## ACATCAGAGCGGCTTC-L8TX_180221_01_F09         #ADC4C3        19          ACA
-## ACCCACTAGTGTGAAT-L8TX_180221_01_F09         #ADC4C3        19          ACA
-## ACGCCGATCCGGCACA-L8TX_180221_01_F09         #ADC4C3        19          ACA
-##                                     region_color platform_label cluster_order
-## AAAGATGCAGGGTATG-L8TX_180221_01_F09      #FFDE17            10X           359
-## AACTCAGGTGAGGCTA-L8TX_180221_01_F09      #FFDE17            10X           360
-## ACACCGGGTTGAACTC-L8TX_180221_01_F09      #FFDE17            10X           376
-## ACATCAGAGCGGCTTC-L8TX_180221_01_F09      #FFDE17            10X           173
-## ACCCACTAGTGTGAAT-L8TX_180221_01_F09      #FFDE17            10X           290
-## ACGCCGATCCGGCACA-L8TX_180221_01_F09      #FFDE17            10X           261
-##                                        cluster_label cluster_color
-## AAAGATGCAGGGTATG-L8TX_180221_01_F09    359_CA2-IG-FC       #AD99FF
-## AACTCAGGTGAGGCTA-L8TX_180221_01_F09    360_CA2-IG-FC       #765FD2
-## ACACCGGGTTGAACTC-L8TX_180221_01_F09        376_Astro       #332F26
-## ACATCAGAGCGGCTTC-L8TX_180221_01_F09 173_L2/3 IT ProS       #21EC1D
-## ACCCACTAGTGTGAAT-L8TX_180221_01_F09    290_L6 CT CTX       #3E98A5
-## ACGCCGATCCGGCACA-L8TX_180221_01_F09   261_L4 RSP-ACA       #5BC6A1
-##                                     subclass_order subclass_label
-## AAAGATGCAGGGTATG-L8TX_180221_01_F09             35      CA2-IG-FC
-## AACTCAGGTGAGGCTA-L8TX_180221_01_F09             35      CA2-IG-FC
-## ACACCGGGTTGAACTC-L8TX_180221_01_F09             38          Astro
-## ACATCAGAGCGGCTTC-L8TX_180221_01_F09             15    L2/3 IT RHP
-## ACCCACTAGTGTGAAT-L8TX_180221_01_F09             28      L6 CT CTX
-## ACGCCGATCCGGCACA-L8TX_180221_01_F09             23     L4 RSP-ACA
-##                                     subclass_color neighborhood_id
-## AAAGATGCAGGGTATG-L8TX_180221_01_F09        #AD99FF               7
-## AACTCAGGTGAGGCTA-L8TX_180221_01_F09        #AD99FF               7
-## ACACCGGGTTGAACTC-L8TX_180221_01_F09        #665C47               8
-## ACATCAGAGCGGCTTC-L8TX_180221_01_F09        #21EC1D               3
-## ACCCACTAGTGTGAAT-L8TX_180221_01_F09        #2D8CB8               6
-## ACGCCGATCCGGCACA-L8TX_180221_01_F09        #5FCEA9               5
-##                                     neighborhood_label neighborhood_color
-## AAAGATGCAGGGTATG-L8TX_180221_01_F09          DG/SUB/CA            #9AB7E2
-## AACTCAGGTGAGGCTA-L8TX_180221_01_F09          DG/SUB/CA            #9AB7E2
-## ACACCGGGTTGAACTC-L8TX_180221_01_F09              Other            #808080
-## ACATCAGAGCGGCTTC-L8TX_180221_01_F09            L2/3 IT            #2EBF5E
-## ACCCACTAGTGTGAAT-L8TX_180221_01_F09          NP/CT/L6b            #5959AD
-## ACGCCGATCCGGCACA-L8TX_180221_01_F09                 PT            #0D5A8B
-##                                     class_order   class_label class_color
-## AAAGATGCAGGGTATG-L8TX_180221_01_F09           1 Glutamatergic     #00ADEE
-## AACTCAGGTGAGGCTA-L8TX_180221_01_F09           1 Glutamatergic     #00ADEE
-## ACACCGGGTTGAACTC-L8TX_180221_01_F09           3  Non-Neuronal     #808080
-## ACATCAGAGCGGCTTC-L8TX_180221_01_F09           1 Glutamatergic     #00ADEE
-## ACCCACTAGTGTGAAT-L8TX_180221_01_F09           1 Glutamatergic     #00ADEE
-## ACGCCGATCCGGCACA-L8TX_180221_01_F09           1 Glutamatergic     #00ADEE
-##                                                      exp_component_name
-## AAAGATGCAGGGTATG-L8TX_180221_01_F09 AAAGATGCAGGGTATG-L8TX_180221_01_F09
-## AACTCAGGTGAGGCTA-L8TX_180221_01_F09 AACTCAGGTGAGGCTA-L8TX_180221_01_F09
-## ACACCGGGTTGAACTC-L8TX_180221_01_F09 ACACCGGGTTGAACTC-L8TX_180221_01_F09
-## ACATCAGAGCGGCTTC-L8TX_180221_01_F09 ACATCAGAGCGGCTTC-L8TX_180221_01_F09
-## ACCCACTAGTGTGAAT-L8TX_180221_01_F09 ACCCACTAGTGTGAAT-L8TX_180221_01_F09
-## ACGCCGATCCGGCACA-L8TX_180221_01_F09 ACGCCGATCCGGCACA-L8TX_180221_01_F09
-##                                     external_donor_name_label
-## AAAGATGCAGGGTATG-L8TX_180221_01_F09                    371230
-## AACTCAGGTGAGGCTA-L8TX_180221_01_F09                    371230
-## ACACCGGGTTGAACTC-L8TX_180221_01_F09                    371230
-## ACATCAGAGCGGCTTC-L8TX_180221_01_F09                    371230
-## ACCCACTAGTGTGAAT-L8TX_180221_01_F09                    371230
-## ACGCCGATCCGGCACA-L8TX_180221_01_F09                    371230
-##                                                      full_genotype_label
-## AAAGATGCAGGGTATG-L8TX_180221_01_F09 Snap25-IRES2-Cre/wt;Ai14(RCL-tdT)/wt
-## AACTCAGGTGAGGCTA-L8TX_180221_01_F09 Snap25-IRES2-Cre/wt;Ai14(RCL-tdT)/wt
-## ACACCGGGTTGAACTC-L8TX_180221_01_F09 Snap25-IRES2-Cre/wt;Ai14(RCL-tdT)/wt
-## ACATCAGAGCGGCTTC-L8TX_180221_01_F09 Snap25-IRES2-Cre/wt;Ai14(RCL-tdT)/wt
-## ACCCACTAGTGTGAAT-L8TX_180221_01_F09 Snap25-IRES2-Cre/wt;Ai14(RCL-tdT)/wt
-## ACGCCGATCCGGCACA-L8TX_180221_01_F09 Snap25-IRES2-Cre/wt;Ai14(RCL-tdT)/wt
-##                                     facs_population_plan_label
-## AAAGATGCAGGGTATG-L8TX_180221_01_F09               RFP-positive
-## AACTCAGGTGAGGCTA-L8TX_180221_01_F09               RFP-positive
-## ACACCGGGTTGAACTC-L8TX_180221_01_F09               RFP-positive
-## ACATCAGAGCGGCTTC-L8TX_180221_01_F09               RFP-positive
-## ACCCACTAGTGTGAAT-L8TX_180221_01_F09               RFP-positive
-## ACGCCGATCCGGCACA-L8TX_180221_01_F09               RFP-positive
-##                                     injection_roi_label
-## AAAGATGCAGGGTATG-L8TX_180221_01_F09                  NA
-## AACTCAGGTGAGGCTA-L8TX_180221_01_F09                  NA
-## ACACCGGGTTGAACTC-L8TX_180221_01_F09                  NA
-## ACATCAGAGCGGCTTC-L8TX_180221_01_F09                  NA
-## ACCCACTAGTGTGAAT-L8TX_180221_01_F09                  NA
-## ACGCCGATCCGGCACA-L8TX_180221_01_F09                  NA
-##                                     injection_materials_label
-## AAAGATGCAGGGTATG-L8TX_180221_01_F09                        NA
-## AACTCAGGTGAGGCTA-L8TX_180221_01_F09                        NA
-## ACACCGGGTTGAACTC-L8TX_180221_01_F09                        NA
-## ACATCAGAGCGGCTTC-L8TX_180221_01_F09                        NA
-## ACCCACTAGTGTGAAT-L8TX_180221_01_F09                        NA
-## ACGCCGATCCGGCACA-L8TX_180221_01_F09                        NA
-##                                     injection_method_label injection_type_label
-## AAAGATGCAGGGTATG-L8TX_180221_01_F09                     NA                   NA
-## AACTCAGGTGAGGCTA-L8TX_180221_01_F09                     NA                   NA
-## ACACCGGGTTGAACTC-L8TX_180221_01_F09                     NA                   NA
-## ACATCAGAGCGGCTTC-L8TX_180221_01_F09                     NA                   NA
-## ACCCACTAGTGTGAAT-L8TX_180221_01_F09                     NA                   NA
-## ACGCCGATCCGGCACA-L8TX_180221_01_F09                     NA                   NA
-##                                     full_genotype_id full_genotype_color
-## AAAGATGCAGGGTATG-L8TX_180221_01_F09               67               #E726
-## AACTCAGGTGAGGCTA-L8TX_180221_01_F09               67               #E726
-## ACACCGGGTTGAACTC-L8TX_180221_01_F09               67               #E726
-## ACATCAGAGCGGCTTC-L8TX_180221_01_F09               67               #E726
-## ACCCACTAGTGTGAAT-L8TX_180221_01_F09               67               #E726
-## ACGCCGATCCGGCACA-L8TX_180221_01_F09               67               #E726
-##                                     external_donor_name_id
-## AAAGATGCAGGGTATG-L8TX_180221_01_F09                    438
-## AACTCAGGTGAGGCTA-L8TX_180221_01_F09                    438
-## ACACCGGGTTGAACTC-L8TX_180221_01_F09                    438
-## ACATCAGAGCGGCTTC-L8TX_180221_01_F09                    438
-## ACCCACTAGTGTGAAT-L8TX_180221_01_F09                    438
-## ACGCCGATCCGGCACA-L8TX_180221_01_F09                    438
-##                                     external_donor_name_color
-## AAAGATGCAGGGTATG-L8TX_180221_01_F09                   #622E99
-## AACTCAGGTGAGGCTA-L8TX_180221_01_F09                   #622E99
-## ACACCGGGTTGAACTC-L8TX_180221_01_F09                   #622E99
-## ACATCAGAGCGGCTTC-L8TX_180221_01_F09                   #622E99
-## ACCCACTAGTGTGAAT-L8TX_180221_01_F09                   #622E99
-## ACGCCGATCCGGCACA-L8TX_180221_01_F09                   #622E99
-##                                     facs_population_plan_id
-## AAAGATGCAGGGTATG-L8TX_180221_01_F09                       6
-## AACTCAGGTGAGGCTA-L8TX_180221_01_F09                       6
-## ACACCGGGTTGAACTC-L8TX_180221_01_F09                       6
-## ACATCAGAGCGGCTTC-L8TX_180221_01_F09                       6
-## ACCCACTAGTGTGAAT-L8TX_180221_01_F09                       6
-## ACGCCGATCCGGCACA-L8TX_180221_01_F09                       6
-##                                     facs_population_plan_color
-## AAAGATGCAGGGTATG-L8TX_180221_01_F09                    #4C2E99
-## AACTCAGGTGAGGCTA-L8TX_180221_01_F09                    #4C2E99
-## ACACCGGGTTGAACTC-L8TX_180221_01_F09                    #4C2E99
-## ACATCAGAGCGGCTTC-L8TX_180221_01_F09                    #4C2E99
-## ACCCACTAGTGTGAAT-L8TX_180221_01_F09                    #4C2E99
-## ACGCCGATCCGGCACA-L8TX_180221_01_F09                    #4C2E99
-##                                     injection_materials_id
-## AAAGATGCAGGGTATG-L8TX_180221_01_F09                      1
-## AACTCAGGTGAGGCTA-L8TX_180221_01_F09                      1
-## ACACCGGGTTGAACTC-L8TX_180221_01_F09                      1
-## ACATCAGAGCGGCTTC-L8TX_180221_01_F09                      1
-## ACCCACTAGTGTGAAT-L8TX_180221_01_F09                      1
-## ACGCCGATCCGGCACA-L8TX_180221_01_F09                      1
-##                                     injection_materials_color
-## AAAGATGCAGGGTATG-L8TX_180221_01_F09                   #FF7373
-## AACTCAGGTGAGGCTA-L8TX_180221_01_F09                   #FF7373
-## ACACCGGGTTGAACTC-L8TX_180221_01_F09                   #FF7373
-## ACATCAGAGCGGCTTC-L8TX_180221_01_F09                   #FF7373
-## ACCCACTAGTGTGAAT-L8TX_180221_01_F09                   #FF7373
-## ACGCCGATCCGGCACA-L8TX_180221_01_F09                   #FF7373
-##                                     injection_method_id injection_method_color
-## AAAGATGCAGGGTATG-L8TX_180221_01_F09                   1                #FF7373
-## AACTCAGGTGAGGCTA-L8TX_180221_01_F09                   1                #FF7373
-## ACACCGGGTTGAACTC-L8TX_180221_01_F09                   1                #FF7373
-## ACATCAGAGCGGCTTC-L8TX_180221_01_F09                   1                #FF7373
-## ACCCACTAGTGTGAAT-L8TX_180221_01_F09                   1                #FF7373
-## ACGCCGATCCGGCACA-L8TX_180221_01_F09                   1                #FF7373
-##                                     injection_roi_id injection_roi_color
-## AAAGATGCAGGGTATG-L8TX_180221_01_F09                1             #FF7373
-## AACTCAGGTGAGGCTA-L8TX_180221_01_F09                1             #FF7373
-## ACACCGGGTTGAACTC-L8TX_180221_01_F09                1             #FF7373
-## ACATCAGAGCGGCTTC-L8TX_180221_01_F09                1             #FF7373
-## ACCCACTAGTGTGAAT-L8TX_180221_01_F09                1             #FF7373
-## ACGCCGATCCGGCACA-L8TX_180221_01_F09                1             #FF7373
-##                                     injection_type_id injection_type_color
-## AAAGATGCAGGGTATG-L8TX_180221_01_F09                 1              #FF7373
-## AACTCAGGTGAGGCTA-L8TX_180221_01_F09                 1              #FF7373
-## ACACCGGGTTGAACTC-L8TX_180221_01_F09                 1              #FF7373
-## ACATCAGAGCGGCTTC-L8TX_180221_01_F09                 1              #FF7373
-## ACCCACTAGTGTGAAT-L8TX_180221_01_F09                 1              #FF7373
-## ACGCCGATCCGGCACA-L8TX_180221_01_F09                 1              #FF7373
-##                                     cell_type_accession_label
-## AAAGATGCAGGGTATG-L8TX_180221_01_F09           CS202106160_359
-## AACTCAGGTGAGGCTA-L8TX_180221_01_F09           CS202106160_360
-## ACACCGGGTTGAACTC-L8TX_180221_01_F09           CS202106160_376
-## ACATCAGAGCGGCTTC-L8TX_180221_01_F09           CS202106160_173
-## ACCCACTAGTGTGAAT-L8TX_180221_01_F09           CS202106160_290
-## ACGCCGATCCGGCACA-L8TX_180221_01_F09           CS202106160_261
-##                                     cell_type_alias_label
-## AAAGATGCAGGGTATG-L8TX_180221_01_F09         359_CA2-IG-FC
-## AACTCAGGTGAGGCTA-L8TX_180221_01_F09         360_CA2-IG-FC
-## ACACCGGGTTGAACTC-L8TX_180221_01_F09             376_Astro
-## ACATCAGAGCGGCTTC-L8TX_180221_01_F09      173_L2/3 IT ProS
-## ACCCACTAGTGTGAAT-L8TX_180221_01_F09         290_L6 CT CTX
-## ACGCCGATCCGGCACA-L8TX_180221_01_F09        261_L4 RSP-ACA
-##                                     cell_type_alt_alias_label
-## AAAGATGCAGGGTATG-L8TX_180221_01_F09                        NA
-## AACTCAGGTGAGGCTA-L8TX_180221_01_F09                        NA
-## ACACCGGGTTGAACTC-L8TX_180221_01_F09                        NA
-## ACATCAGAGCGGCTTC-L8TX_180221_01_F09                        NA
-## ACCCACTAGTGTGAAT-L8TX_180221_01_F09                        NA
-## ACGCCGATCCGGCACA-L8TX_180221_01_F09                        NA
-##                                     cell_type_designation_label
-## AAAGATGCAGGGTATG-L8TX_180221_01_F09                 CTX-HPF 359
-## AACTCAGGTGAGGCTA-L8TX_180221_01_F09                 CTX-HPF 360
-## ACACCGGGTTGAACTC-L8TX_180221_01_F09                 CTX-HPF 376
-## ACATCAGAGCGGCTTC-L8TX_180221_01_F09                 CTX-HPF 173
-## ACCCACTAGTGTGAAT-L8TX_180221_01_F09                 CTX-HPF 290
-## ACGCCGATCCGGCACA-L8TX_180221_01_F09                 CTX-HPF 261
-##                                     cell_type_designation_id
-## AAAGATGCAGGGTATG-L8TX_180221_01_F09                      359
-## AACTCAGGTGAGGCTA-L8TX_180221_01_F09                      360
-## ACACCGGGTTGAACTC-L8TX_180221_01_F09                      376
-## ACATCAGAGCGGCTTC-L8TX_180221_01_F09                      173
-## ACCCACTAGTGTGAAT-L8TX_180221_01_F09                      290
-## ACGCCGATCCGGCACA-L8TX_180221_01_F09                      261
-##                                     cell_type_alt_alias_id cell_type_alias_id
-## AAAGATGCAGGGTATG-L8TX_180221_01_F09                    359                359
-## AACTCAGGTGAGGCTA-L8TX_180221_01_F09                    360                360
-## ACACCGGGTTGAACTC-L8TX_180221_01_F09                    376                376
-## ACATCAGAGCGGCTTC-L8TX_180221_01_F09                    173                173
-## ACCCACTAGTGTGAAT-L8TX_180221_01_F09                    290                290
-## ACGCCGATCCGGCACA-L8TX_180221_01_F09                    261                261
-##                                     cell_type_accession_id
-## AAAGATGCAGGGTATG-L8TX_180221_01_F09                    359
-## AACTCAGGTGAGGCTA-L8TX_180221_01_F09                    360
-## ACACCGGGTTGAACTC-L8TX_180221_01_F09                    376
-## ACATCAGAGCGGCTTC-L8TX_180221_01_F09                    173
-## ACCCACTAGTGTGAAT-L8TX_180221_01_F09                    290
-## ACGCCGATCCGGCACA-L8TX_180221_01_F09                    261
-##                                     cell_type_designation_color
-## AAAGATGCAGGGTATG-L8TX_180221_01_F09                     #AD99FF
-## AACTCAGGTGAGGCTA-L8TX_180221_01_F09                     #765FD2
-## ACACCGGGTTGAACTC-L8TX_180221_01_F09                     #332F26
-## ACATCAGAGCGGCTTC-L8TX_180221_01_F09                     #21EC1D
-## ACCCACTAGTGTGAAT-L8TX_180221_01_F09                     #3E98A5
-## ACGCCGATCCGGCACA-L8TX_180221_01_F09                     #5BC6A1
-##                                     cell_type_alt_alias_color
-## AAAGATGCAGGGTATG-L8TX_180221_01_F09                   #AD99FF
-## AACTCAGGTGAGGCTA-L8TX_180221_01_F09                   #765FD2
-## ACACCGGGTTGAACTC-L8TX_180221_01_F09                   #332F26
-## ACATCAGAGCGGCTTC-L8TX_180221_01_F09                   #21EC1D
-## ACCCACTAGTGTGAAT-L8TX_180221_01_F09                   #3E98A5
-## ACGCCGATCCGGCACA-L8TX_180221_01_F09                   #5BC6A1
-##                                     cell_type_alias_color
-## AAAGATGCAGGGTATG-L8TX_180221_01_F09               #AD99FF
-## AACTCAGGTGAGGCTA-L8TX_180221_01_F09               #765FD2
-## ACACCGGGTTGAACTC-L8TX_180221_01_F09               #332F26
-## ACATCAGAGCGGCTTC-L8TX_180221_01_F09               #21EC1D
-## ACCCACTAGTGTGAAT-L8TX_180221_01_F09               #3E98A5
-## ACGCCGATCCGGCACA-L8TX_180221_01_F09               #5BC6A1
-##                                     cell_type_accession_color
-## AAAGATGCAGGGTATG-L8TX_180221_01_F09                   #AD99FF
-## AACTCAGGTGAGGCTA-L8TX_180221_01_F09                   #765FD2
-## ACACCGGGTTGAACTC-L8TX_180221_01_F09                   #332F26
-## ACATCAGAGCGGCTTC-L8TX_180221_01_F09                   #21EC1D
-## ACCCACTAGTGTGAAT-L8TX_180221_01_F09                   #3E98A5
-## ACGCCGATCCGGCACA-L8TX_180221_01_F09                   #5BC6A1
-##                                     cortical_layer_label cortical_layer_order
-## AAAGATGCAGGGTATG-L8TX_180221_01_F09                   NA                    1
-## AACTCAGGTGAGGCTA-L8TX_180221_01_F09                   NA                    1
-## ACACCGGGTTGAACTC-L8TX_180221_01_F09                   NA                    1
-## ACATCAGAGCGGCTTC-L8TX_180221_01_F09                   NA                    1
-## ACCCACTAGTGTGAAT-L8TX_180221_01_F09                   NA                    1
-## ACGCCGATCCGGCACA-L8TX_180221_01_F09                   NA                    1
-##                                     cortical_layer_color
-## AAAGATGCAGGGTATG-L8TX_180221_01_F09              #FF7373
-## AACTCAGGTGAGGCTA-L8TX_180221_01_F09              #FF7373
-## ACACCGGGTTGAACTC-L8TX_180221_01_F09              #FF7373
-## ACATCAGAGCGGCTTC-L8TX_180221_01_F09              #FF7373
-## ACCCACTAGTGTGAAT-L8TX_180221_01_F09              #FF7373
-## ACGCCGATCCGGCACA-L8TX_180221_01_F09              #FF7373</code></pre>
-<p>Check number of cells per subclass_label. Should be max 250 cells per
-subclass_label. Note that when creating Metacells, all annotated classes
-with less than 50 will be excluded. In this case, Meis2.</p>
-<pre class="r"><code>table(se$subclass_label)</code></pre>
+table(sampled_cells$supercluster_term)</code></pre>
 <pre><code>## 
-##           Astro        CA1-ProS       CA2-IG-FC             CA3            Car3 
-##             250             250             250             250             250 
-##              CR          CT SUB              DG            Endo      L2 IT ENTl 
-##             250             250             250             250             250 
-##      L2 IT ENTm     L2/3 IT CTX    L2/3 IT ENTl     L2/3 IT PPP     L2/3 IT RHP 
-##             250             250             250             250             250 
-##       L3 IT ENT      L4 RSP-ACA     L4/5 IT CTX       L5 IT CTX          L5 PPP 
-##             250             250             250             250             250 
-##       L5 PT CTX L5/6 IT TPE-ENT     L5/6 NP CTX       L6 CT CTX       L6 IT CTX 
-##             250             250             250             250             250 
-##      L6 IT ENTl         L6b CTX      L6b/CT ENT           Lamp5           Meis2 
-##             250             250             250             250              20 
-##       Micro-PVM          NP PPP          NP SUB           Oligo           Pvalb 
-##             250             250             250             250             250 
-##        SMC-Peri            Sncg             Sst       Sst Chodl        SUB-ProS 
-##             250             250             250             250             250 
-##             Vip            VLMC 
-##             250             152</code></pre>
-<p>Save the downsampled Seurat object.</p>
-<pre class="r"><code>saveRDS(se, file = &quot;data/mouse_CTX_HPF/se_allen_brain_atlas_250_cells.rds&quot;)</code></pre>
+##                           Astrocyte                       Bergmann glia 
+##                                 250                                 250 
+##                      Choroid plexus Committed oligodendrocyte precursor 
+##                                 250                                 250 
+##                           Ependymal                          Fibroblast 
+##                                 250                                 250 
+##                           Microglia                     Oligodendrocyte 
+##                                 250                                 250 
+##           Oligodendrocyte precursor                            Vascular 
+##                                 250                                 250</code></pre>
+<p>Subset the SingleCellExperiment object by selected cell names (i.e.,
+barcodes).</p>
+<pre class="r"><code>sce_subset &lt;- sce_object[, colnames(sce_object) %in% selected_cells]
+dim(sce_object)</code></pre>
+<pre><code>## [1]  59236 888263</code></pre>
+<pre class="r"><code>dim(sce_subset)</code></pre>
+<pre><code>## [1] 59236  2500</code></pre>
+<p>Extract the subsetted counts and metadata.</p>
+<pre class="r"><code>counts_sub &lt;- assay(sce_subset, &quot;X&quot;)
+counts_sub[1:5,1:5]</code></pre>
+<pre><code>## &lt;5 x 5&gt; sparse DelayedMatrix object of type &quot;double&quot;:
+##                 10X362_5:CACTAAGTCTTCGGTC ... 10X383_6:GCGTGCACATACATCG
+## ENSG00000000003                         0   .                         0
+## ENSG00000000005                         0   .                         0
+## ENSG00000000419                         2   .                         0
+## ENSG00000000457                         0   .                         0
+## ENSG00000000460                         2   .                         0</code></pre>
+<p>Convert the subsetted metadata to a data.frame for easy
+filtering.</p>
+<pre class="r"><code>metadata_sub &lt;- as.data.frame(colData(sce_subset))
+head(metadata_sub)</code></pre>
+<pre><code>##                               ROIGroup ROIGroupCoarse   ROIGroupFine        roi
+## 10X362_5:CACTAAGTCTTCGGTC Hypothalamus   Hypothalamus   Hypothalamus   Human MN
+## 10X361_1:ATGCGATCAAATGATG     Thalamus       Thalamus       Thalamus  Human STH
+## 10X194_7:AAGGAATAGCTGAAAT     Midbrain       Midbrain       Midbrain   Human SN
+## 10X218_6:CACGAATTCGGTTGTA    Hindbrain           Pons           Pons   Human PN
+## 10X383_6:GCGTGCACATACATCG    Hindbrain Myelencephalon Myelencephalon Human MoSR
+## 10X418_2:ATCGTGACATGACGGA    Hindbrain           Pons           Pons   Human PB
+##                           organism_ontology_term_id disease_ontology_term_id
+## 10X362_5:CACTAAGTCTTCGGTC            NCBITaxon:9606             PATO:0000461
+## 10X361_1:ATGCGATCAAATGATG            NCBITaxon:9606             PATO:0000461
+## 10X194_7:AAGGAATAGCTGAAAT            NCBITaxon:9606             PATO:0000461
+## 10X218_6:CACGAATTCGGTTGTA            NCBITaxon:9606             PATO:0000461
+## 10X383_6:GCGTGCACATACATCG            NCBITaxon:9606             PATO:0000461
+## 10X418_2:ATCGTGACATGACGGA            NCBITaxon:9606             PATO:0000461
+##                           self_reported_ethnicity_ontology_term_id
+## 10X362_5:CACTAAGTCTTCGGTC                           HANCESTRO:0005
+## 10X361_1:ATGCGATCAAATGATG                           HANCESTRO:0005
+## 10X194_7:AAGGAATAGCTGAAAT                           HANCESTRO:0005
+## 10X218_6:CACGAATTCGGTTGTA                           HANCESTRO:0005
+## 10X383_6:GCGTGCACATACATCG                           HANCESTRO:0005
+## 10X418_2:ATCGTGACATGACGGA                           HANCESTRO:0005
+##                           assay_ontology_term_id sex_ontology_term_id
+## 10X362_5:CACTAAGTCTTCGGTC            EFO:0009922         PATO:0000384
+## 10X361_1:ATGCGATCAAATGATG            EFO:0009922         PATO:0000384
+## 10X194_7:AAGGAATAGCTGAAAT            EFO:0009922         PATO:0000384
+## 10X218_6:CACGAATTCGGTTGTA            EFO:0009922         PATO:0000384
+## 10X383_6:GCGTGCACATACATCG            EFO:0009922         PATO:0000384
+## 10X418_2:ATCGTGACATGACGGA            EFO:0009922         PATO:0000384
+##                           development_stage_ontology_term_id   donor_id
+## 10X362_5:CACTAAGTCTTCGGTC                     HsapDv:0000136 H19.30.001
+## 10X361_1:ATGCGATCAAATGATG                     HsapDv:0000136 H19.30.001
+## 10X194_7:AAGGAATAGCTGAAAT                     HsapDv:0000144 H18.30.002
+## 10X218_6:CACGAATTCGGTTGTA                     HsapDv:0000144 H18.30.002
+## 10X383_6:GCGTGCACATACATCG                     HsapDv:0000123 H19.30.002
+## 10X418_2:ATCGTGACATGACGGA                     HsapDv:0000123 H19.30.002
+##                           suspension_type
+## 10X362_5:CACTAAGTCTTCGGTC         nucleus
+## 10X361_1:ATGCGATCAAATGATG         nucleus
+## 10X194_7:AAGGAATAGCTGAAAT         nucleus
+## 10X218_6:CACGAATTCGGTTGTA         nucleus
+## 10X383_6:GCGTGCACATACATCG         nucleus
+## 10X418_2:ATCGTGACATGACGGA         nucleus
+##                                                                                                           dissection
+## 10X362_5:CACTAAGTCTTCGGTC            Hypothalamus (HTH) - mammillary region of HTH (HTHma) - mammillary nucleus - MN
+## 10X361_1:ATGCGATCAAATGATG                                      Thalamus (THM) - Subthalamic nucleus and nearby - STH
+## 10X194_7:AAGGAATAGCTGAAAT                                                       Midbrain (M) - Substantia Nigra - SN
+## 10X218_6:CACGAATTCGGTTGTA                                                           Pons (Pn) - Pontine Nucleus - PN
+## 10X383_6:GCGTGCACATACATCG Myelencephalon (medulla oblongata) (Mo) - sensory relay nuclei in medulla oblongata - MoSR
+## 10X418_2:ATCGTGACATGACGGA                                                                                           
+##                           fraction_mitochondrial fraction_unspliced
+## 10X362_5:CACTAAGTCTTCGGTC           6.406971e-05          0.8470656
+## 10X361_1:ATGCGATCAAATGATG           0.000000e+00          0.7182800
+## 10X194_7:AAGGAATAGCTGAAAT           2.947244e-04          0.7129384
+## 10X218_6:CACGAATTCGGTTGTA           5.586202e-04          0.7240416
+## 10X383_6:GCGTGCACATACATCG           1.166861e-03          0.4848308
+## 10X418_2:ATCGTGACATGACGGA           2.552648e-04          0.6973835
+##                           cell_cycle_score total_genes total_UMIs sample_id
+## 10X362_5:CACTAAGTCTTCGGTC      0.001537673        3821      15608  10X362_5
+## 10X361_1:ATGCGATCAAATGATG      0.001735442        2550       5186  10X361_1
+## 10X194_7:AAGGAATAGCTGAAAT      0.002750761        3586      10179  10X194_7
+## 10X218_6:CACGAATTCGGTTGTA      0.001675861        4454      14321  10X218_6
+## 10X383_6:GCGTGCACATACATCG      0.001750292        1109       1714  10X383_6
+## 10X418_2:ATCGTGACATGACGGA      0.001786854        3431       7835  10X418_2
+##                           supercluster_term cluster_id subcluster_id
+## 10X362_5:CACTAAGTCTTCGGTC   Oligodendrocyte         50          2996
+## 10X361_1:ATGCGATCAAATGATG   Oligodendrocyte         49          2999
+## 10X194_7:AAGGAATAGCTGAAAT   Oligodendrocyte         49          2999
+## 10X218_6:CACGAATTCGGTTGTA   Oligodendrocyte         49          3001
+## 10X383_6:GCGTGCACATACATCG   Oligodendrocyte         49          2999
+## 10X418_2:ATCGTGACATGACGGA   Oligodendrocyte         49          2999
+##                           cell_type_ontology_term_id tissue_ontology_term_id
+## 10X362_5:CACTAAGTCTTCGGTC                 CL:0000128          UBERON:0001898
+## 10X361_1:ATGCGATCAAATGATG                 CL:0000128          UBERON:0010225
+## 10X194_7:AAGGAATAGCTGAAAT                 CL:0000128          UBERON:0001891
+## 10X218_6:CACGAATTCGGTTGTA                 CL:0000128          UBERON:0000988
+## 10X383_6:GCGTGCACATACATCG                 CL:0000128          UBERON:0005290
+## 10X418_2:ATCGTGACATGACGGA                 CL:0000128          UBERON:0000988
+##                           is_primary_data tissue_type       cell_type     assay
+## 10X362_5:CACTAAGTCTTCGGTC           FALSE      tissue oligodendrocyte 10x 3&#39; v3
+## 10X361_1:ATGCGATCAAATGATG           FALSE      tissue oligodendrocyte 10x 3&#39; v3
+## 10X194_7:AAGGAATAGCTGAAAT           FALSE      tissue oligodendrocyte 10x 3&#39; v3
+## 10X218_6:CACGAATTCGGTTGTA           FALSE      tissue oligodendrocyte 10x 3&#39; v3
+## 10X383_6:GCGTGCACATACATCG           FALSE      tissue oligodendrocyte 10x 3&#39; v3
+## 10X418_2:ATCGTGACATGACGGA           FALSE      tissue oligodendrocyte 10x 3&#39; v3
+##                           disease     organism  sex           tissue
+## 10X362_5:CACTAAGTCTTCGGTC  normal Homo sapiens male     hypothalamus
+## 10X361_1:ATGCGATCAAATGATG  normal Homo sapiens male thalamic complex
+## 10X194_7:AAGGAATAGCTGAAAT  normal Homo sapiens male         midbrain
+## 10X218_6:CACGAATTCGGTTGTA  normal Homo sapiens male             pons
+## 10X383_6:GCGTGCACATACATCG  normal Homo sapiens male   myelencephalon
+## 10X418_2:ATCGTGACATGACGGA  normal Homo sapiens male             pons
+##                           self_reported_ethnicity development_stage
+## 10X362_5:CACTAAGTCTTCGGTC                European 42-year-old stage
+## 10X361_1:ATGCGATCAAATGATG                European 42-year-old stage
+## 10X194_7:AAGGAATAGCTGAAAT                European 50-year-old stage
+## 10X218_6:CACGAATTCGGTTGTA                European 50-year-old stage
+## 10X383_6:GCGTGCACATACATCG                European 29-year-old stage
+## 10X418_2:ATCGTGACATGACGGA                European 29-year-old stage
+##                           observation_joinid
+## 10X362_5:CACTAAGTCTTCGGTC         bDU~1(J;Ik
+## 10X361_1:ATGCGATCAAATGATG         ;KlbV&lt;Dt1c
+## 10X194_7:AAGGAATAGCTGAAAT         ^crDf#{0uv
+## 10X218_6:CACGAATTCGGTTGTA         &amp;O+|h=kf&lt;!
+## 10X383_6:GCGTGCACATACATCG         r4yc9BUrh8
+## 10X418_2:ATCGTGACATGACGGA         ^H?8&gt;x`7`8</code></pre>
+<pre class="r"><code>table(metadata_sub$supercluster_term)</code></pre>
+<pre><code>## 
+##                           Astrocyte                       Bergmann glia 
+##                                 250                                 250 
+##                      Choroid plexus Committed oligodendrocyte precursor 
+##                                 250                                 250 
+##                           Ependymal                          Fibroblast 
+##                                 250                                 250 
+##                           Microglia                     Oligodendrocyte 
+##                                 250                                 250 
+##           Oligodendrocyte precursor                            Vascular 
+##                                 250                                 250</code></pre>
+</div>
+<div id="convert-from-ensg-to-hgnc-symbols" class="section level1" number="3">
+<h1><span class="header-section-number">3</span> Convert from ENSG to
+HGNC symbols</h1>
+<p>Here we used Ensembl 113 Oct 2024 <a href="https://oct2024.archive.ensembl.org" class="uri">https://oct2024.archive.ensembl.org</a>. To check current
+and older versions type: listEnsemblArchives(). Because biomaRt does not
+always connect and might need a couple of tries, this part of the code
+was run outside Knit and these files were then saved and loaded during
+Knitting of the notebook.</p>
+<pre class="r"><code># Connect to Ensembl database
+#ensembl &lt;- useMart(&quot;ensembl&quot;, dataset = &quot;hsapiens_gene_ensembl&quot;)
+
+# Query for mapping ENSG to HGNC symbols
+#gene_mapping &lt;- getBM(attributes = c(&quot;ensembl_gene_id&quot;, &quot;hgnc_symbol&quot;),
+#                      filters = &quot;ensembl_gene_id&quot;,
+#                      values = rownames(counts_sub),
+#                      mart = ensembl)
+
+# Inspect the first few rows of the mapping
+#head(gene_mapping)</code></pre>
+<p>Save gene_mapping.</p>
+<pre class="r"><code>#saveRDS(gene_mapping, file = &quot;data/AllNonNeurons/gene_mapping.rds&quot;)
+#write.matrix(gene_mapping, file=paste0(&quot;data/AllNonNeurons/gene_mapping.csv&quot;), sep = &quot;;&quot;)</code></pre>
+<p>Load gene_mapping.</p>
+<pre class="r"><code>gene_mapping &lt;- readRDS(file = &quot;data/AllNonNeurons/gene_mapping.rds&quot;)
+head(gene_mapping)</code></pre>
+<pre><code>##   ensembl_gene_id hgnc_symbol
+## 1 ENSG00000000971         CFH
+## 2 ENSG00000001617      SEMA3F
+## 3 ENSG00000002745       WNT16
+## 4 ENSG00000003096      KLHL13
+## 5 ENSG00000003436        TFPI
+## 6 ENSG00000004468        CD38</code></pre>
+<p>Create a vector of the corresponding HGNC symbols for each ENSG
+ID.</p>
+<pre class="r"><code>gene_names &lt;- gene_mapping$hgnc_symbol
+names(gene_names) &lt;- gene_mapping$ensembl_gene_id
+#gene_names[is.na(gene_names)] &lt;- names(gene_names)[is.na(gene_names)]  # Keep ENSG IDs if HGNC is missing
+
+head(gene_names)</code></pre>
+<pre><code>## ENSG00000000971 ENSG00000001617 ENSG00000002745 ENSG00000003096 ENSG00000003436 
+##           &quot;CFH&quot;        &quot;SEMA3F&quot;         &quot;WNT16&quot;        &quot;KLHL13&quot;          &quot;TFPI&quot; 
+## ENSG00000004468 
+##          &quot;CD38&quot;</code></pre>
+<pre class="r"><code># check before update
+head(rownames(counts_sub))</code></pre>
+<pre><code>## [1] &quot;ENSG00000000003&quot; &quot;ENSG00000000005&quot; &quot;ENSG00000000419&quot; &quot;ENSG00000000457&quot;
+## [5] &quot;ENSG00000000460&quot; &quot;ENSG00000000938&quot;</code></pre>
+<pre class="r"><code>counts_sub[1:5,1:5]</code></pre>
+<pre><code>## &lt;5 x 5&gt; sparse DelayedMatrix object of type &quot;double&quot;:
+##                 10X362_5:CACTAAGTCTTCGGTC ... 10X383_6:GCGTGCACATACATCG
+## ENSG00000000003                         0   .                         0
+## ENSG00000000005                         0   .                         0
+## ENSG00000000419                         2   .                         0
+## ENSG00000000457                         0   .                         0
+## ENSG00000000460                         2   .                         0</code></pre>
+<pre class="r"><code># Replace ENSG IDs with HGNC symbols in the Seurat object
+rownames(counts_sub) &lt;- gene_names[rownames(counts_sub)]
+
+# Check the result
+head(rownames(counts_sub))</code></pre>
+<pre><code>## ENSG00000000003 ENSG00000000005 ENSG00000000419 ENSG00000000457 ENSG00000000460 
+##        &quot;TSPAN6&quot;          &quot;TNMD&quot;          &quot;DPM1&quot;         &quot;SCYL3&quot;         &quot;FIRRM&quot; 
+## ENSG00000000938 
+##           &quot;FGR&quot;</code></pre>
+<pre class="r"><code>counts_sub[1:5,1:5]</code></pre>
+<pre><code>## &lt;5 x 5&gt; sparse DelayedMatrix object of type &quot;double&quot;:
+##        10X362_5:CACTAAGTCTTCGGTC ... 10X383_6:GCGTGCACATACATCG
+## TSPAN6                         0   .                         0
+## TNMD                           0   .                         0
+## DPM1                           2   .                         0
+## SCYL3                          0   .                         0
+## FIRRM                          2   .                         0</code></pre>
+<p>Some ENSG are no longer in the database (n=994).</p>
+<pre class="r"><code>sum(is.na(rownames(counts_sub)))</code></pre>
+<pre><code>## [1] 994</code></pre>
+<pre class="r"><code>na_indices &lt;- which(is.na(rownames(counts_sub)))</code></pre>
+<p>Re-extract counts_sub to check which indices does not have ENSG.</p>
+<pre class="r"><code># re-extract counts_sub and save as counts_sub_check
+counts_sub_check &lt;- assay(sce_object, &quot;X&quot;)
+
+# Extract the ENSG IDs (row names) for those rows
+na_ensg_ids &lt;- rownames(counts_sub_check)[na_indices]
+
+# Display the first few ENSG IDs that have missing HGNC symbols
+length(na_ensg_ids)</code></pre>
+<pre><code>## [1] 994</code></pre>
+<pre class="r"><code>head(na_ensg_ids)</code></pre>
+<pre><code>## [1] &quot;ENSG00000131484&quot; &quot;ENSG00000139656&quot; &quot;ENSG00000146521&quot; &quot;ENSG00000176659&quot;
+## [5] &quot;ENSG00000179082&quot; &quot;ENSG00000182912&quot;</code></pre>
+<p>Put back ENSG for genes that did not have a replacement gene
+symbol.</p>
+<pre class="r"><code># Ensure that you are only replacing rows that had NA values in their rownames
+rownames(counts_sub)[na_indices] &lt;- na_ensg_ids
+
+# Check the result to ensure that ENSG IDs have been added back to the missing rows
+head(rownames(counts_sub))</code></pre>
+<pre><code>## ENSG00000000003 ENSG00000000005 ENSG00000000419 ENSG00000000457 ENSG00000000460 
+##        &quot;TSPAN6&quot;          &quot;TNMD&quot;          &quot;DPM1&quot;         &quot;SCYL3&quot;         &quot;FIRRM&quot; 
+## ENSG00000000938 
+##           &quot;FGR&quot;</code></pre>
+<pre class="r"><code>sum(is.na(rownames(counts_sub)))</code></pre>
+<pre><code>## [1] 0</code></pre>
+<p>For some this did not work, checking manually in Ensembl database,
+these are ‘novel transcripts’ (n=17914).</p>
+<pre class="r"><code># Identify which rows have empty row names
+empty_row_indices &lt;- which(rownames(counts_sub) == &quot;&quot;)
+length(empty_row_indices)</code></pre>
+<pre><code>## [1] 17914</code></pre>
+<pre class="r"><code># Check the first few empty row names
+empty_row_names &lt;- rownames(counts_sub)[empty_row_indices]
+head(empty_row_names)</code></pre>
+<pre><code>## ENSG00000083622 ENSG00000103200 ENSG00000108516 ENSG00000111780 ENSG00000121388 
+##              &quot;&quot;              &quot;&quot;              &quot;&quot;              &quot;&quot;              &quot;&quot; 
+## ENSG00000124835 
+##              &quot;&quot;</code></pre>
+<pre class="r"><code>tail(empty_row_names)</code></pre>
+<pre><code>## ENSG00000288612 ENSG00000288615 ENSG00000288627 ENSG00000288635 ENSG00000288643 
+##              &quot;&quot;              &quot;&quot;              &quot;&quot;              &quot;&quot;              &quot;&quot; 
+## ENSG00000288645 
+##              &quot;&quot;</code></pre>
+<p>Replace empty row names with a unique placeholder or ENSG IDs.</p>
+<pre class="r"><code>rownames(counts_sub)[empty_row_indices] &lt;- paste0(&quot;UnknownNovelTranscript_&quot;, seq_along(empty_row_indices))
+
+# Check again if there are any remaining empty row names
+sum(rownames(counts_sub) == &quot;&quot;)  # Should now return 0</code></pre>
+<pre><code>## [1] 0</code></pre>
+</div>
+<div id="create-and-save-seurat-object" class="section level1" number="4">
+<h1><span class="header-section-number">4</span> Create and Save Seurat
+object</h1>
+<p>Create and check the new Seurat object.</p>
+<pre class="r"><code># Convert sparse matrix to dense matrix
+counts_matrix &lt;- as.matrix(counts_sub)
+
+# Check for duplicate gene names
+sum(duplicated(rownames(counts_matrix)))</code></pre>
+<pre><code>## [1] 17</code></pre>
+<pre class="r"><code># See which names are duplicated
+dup_genes &lt;- rownames(counts_matrix)[duplicated(rownames(counts_matrix))]
+head(dup_genes)</code></pre>
+<pre><code>## ENSG00000244280 ENSG00000258724 ENSG00000261480 ENSG00000267343 ENSG00000268500 
+##       &quot;ECEL1P2&quot;         &quot;PINX1&quot;       &quot;GOLGA8M&quot;       &quot;ZNF833P&quot;       &quot;SIGLEC5&quot; 
+## ENSG00000271672 
+##        &quot;DUXAP8&quot;</code></pre>
+<pre class="r"><code># Collapse duplicate genes by summing counts
+counts_matrix &lt;- rowsum(counts_matrix, group = rownames(counts_matrix))
+
+# Double-check that duplicates are gone
+sum(duplicated(rownames(counts_matrix)))</code></pre>
+<pre><code>## [1] 0</code></pre>
+<pre class="r"><code># Now, let&#39;s create a Seurat object using this matrix
+se &lt;- CreateSeuratObject(counts = counts_matrix)</code></pre>
+<pre><code>## Warning: Feature names cannot have underscores (&#39;_&#39;), replacing with dashes
+## (&#39;-&#39;)</code></pre>
+<pre><code>## Warning: Data is of class matrix. Coercing to dgCMatrix.</code></pre>
+<pre class="r"><code>se</code></pre>
+<pre><code>## An object of class Seurat 
+## 59219 features across 2500 samples within 1 assay 
+## Active assay: RNA (59219 features, 0 variable features)
+##  1 layer present: counts</code></pre>
+<pre class="r"><code># Add metadata_sub to the Seurat object
+se &lt;- AddMetaData(se, metadata = metadata_sub)
+head(se[[]])</code></pre>
+<pre><code>##                           orig.ident nCount_RNA nFeature_RNA     ROIGroup
+## 10X362_5:CACTAAGTCTTCGGTC     10X362      15603         3817 Hypothalamus
+## 10X361_1:ATGCGATCAAATGATG     10X361       5184         2548     Thalamus
+## 10X194_7:AAGGAATAGCTGAAAT     10X194      10173         3583     Midbrain
+## 10X218_6:CACGAATTCGGTTGTA     10X218      14311         4447    Hindbrain
+## 10X383_6:GCGTGCACATACATCG     10X383       1713         1108    Hindbrain
+## 10X418_2:ATCGTGACATGACGGA     10X418       7830         3427    Hindbrain
+##                           ROIGroupCoarse   ROIGroupFine        roi
+## 10X362_5:CACTAAGTCTTCGGTC   Hypothalamus   Hypothalamus   Human MN
+## 10X361_1:ATGCGATCAAATGATG       Thalamus       Thalamus  Human STH
+## 10X194_7:AAGGAATAGCTGAAAT       Midbrain       Midbrain   Human SN
+## 10X218_6:CACGAATTCGGTTGTA           Pons           Pons   Human PN
+## 10X383_6:GCGTGCACATACATCG Myelencephalon Myelencephalon Human MoSR
+## 10X418_2:ATCGTGACATGACGGA           Pons           Pons   Human PB
+##                           organism_ontology_term_id disease_ontology_term_id
+## 10X362_5:CACTAAGTCTTCGGTC            NCBITaxon:9606             PATO:0000461
+## 10X361_1:ATGCGATCAAATGATG            NCBITaxon:9606             PATO:0000461
+## 10X194_7:AAGGAATAGCTGAAAT            NCBITaxon:9606             PATO:0000461
+## 10X218_6:CACGAATTCGGTTGTA            NCBITaxon:9606             PATO:0000461
+## 10X383_6:GCGTGCACATACATCG            NCBITaxon:9606             PATO:0000461
+## 10X418_2:ATCGTGACATGACGGA            NCBITaxon:9606             PATO:0000461
+##                           self_reported_ethnicity_ontology_term_id
+## 10X362_5:CACTAAGTCTTCGGTC                           HANCESTRO:0005
+## 10X361_1:ATGCGATCAAATGATG                           HANCESTRO:0005
+## 10X194_7:AAGGAATAGCTGAAAT                           HANCESTRO:0005
+## 10X218_6:CACGAATTCGGTTGTA                           HANCESTRO:0005
+## 10X383_6:GCGTGCACATACATCG                           HANCESTRO:0005
+## 10X418_2:ATCGTGACATGACGGA                           HANCESTRO:0005
+##                           assay_ontology_term_id sex_ontology_term_id
+## 10X362_5:CACTAAGTCTTCGGTC            EFO:0009922         PATO:0000384
+## 10X361_1:ATGCGATCAAATGATG            EFO:0009922         PATO:0000384
+## 10X194_7:AAGGAATAGCTGAAAT            EFO:0009922         PATO:0000384
+## 10X218_6:CACGAATTCGGTTGTA            EFO:0009922         PATO:0000384
+## 10X383_6:GCGTGCACATACATCG            EFO:0009922         PATO:0000384
+## 10X418_2:ATCGTGACATGACGGA            EFO:0009922         PATO:0000384
+##                           development_stage_ontology_term_id   donor_id
+## 10X362_5:CACTAAGTCTTCGGTC                     HsapDv:0000136 H19.30.001
+## 10X361_1:ATGCGATCAAATGATG                     HsapDv:0000136 H19.30.001
+## 10X194_7:AAGGAATAGCTGAAAT                     HsapDv:0000144 H18.30.002
+## 10X218_6:CACGAATTCGGTTGTA                     HsapDv:0000144 H18.30.002
+## 10X383_6:GCGTGCACATACATCG                     HsapDv:0000123 H19.30.002
+## 10X418_2:ATCGTGACATGACGGA                     HsapDv:0000123 H19.30.002
+##                           suspension_type
+## 10X362_5:CACTAAGTCTTCGGTC         nucleus
+## 10X361_1:ATGCGATCAAATGATG         nucleus
+## 10X194_7:AAGGAATAGCTGAAAT         nucleus
+## 10X218_6:CACGAATTCGGTTGTA         nucleus
+## 10X383_6:GCGTGCACATACATCG         nucleus
+## 10X418_2:ATCGTGACATGACGGA         nucleus
+##                                                                                                           dissection
+## 10X362_5:CACTAAGTCTTCGGTC            Hypothalamus (HTH) - mammillary region of HTH (HTHma) - mammillary nucleus - MN
+## 10X361_1:ATGCGATCAAATGATG                                      Thalamus (THM) - Subthalamic nucleus and nearby - STH
+## 10X194_7:AAGGAATAGCTGAAAT                                                       Midbrain (M) - Substantia Nigra - SN
+## 10X218_6:CACGAATTCGGTTGTA                                                           Pons (Pn) - Pontine Nucleus - PN
+## 10X383_6:GCGTGCACATACATCG Myelencephalon (medulla oblongata) (Mo) - sensory relay nuclei in medulla oblongata - MoSR
+## 10X418_2:ATCGTGACATGACGGA                                                                                           
+##                           fraction_mitochondrial fraction_unspliced
+## 10X362_5:CACTAAGTCTTCGGTC           6.406971e-05          0.8470656
+## 10X361_1:ATGCGATCAAATGATG           0.000000e+00          0.7182800
+## 10X194_7:AAGGAATAGCTGAAAT           2.947244e-04          0.7129384
+## 10X218_6:CACGAATTCGGTTGTA           5.586202e-04          0.7240416
+## 10X383_6:GCGTGCACATACATCG           1.166861e-03          0.4848308
+## 10X418_2:ATCGTGACATGACGGA           2.552648e-04          0.6973835
+##                           cell_cycle_score total_genes total_UMIs sample_id
+## 10X362_5:CACTAAGTCTTCGGTC      0.001537673        3821      15608  10X362_5
+## 10X361_1:ATGCGATCAAATGATG      0.001735442        2550       5186  10X361_1
+## 10X194_7:AAGGAATAGCTGAAAT      0.002750761        3586      10179  10X194_7
+## 10X218_6:CACGAATTCGGTTGTA      0.001675861        4454      14321  10X218_6
+## 10X383_6:GCGTGCACATACATCG      0.001750292        1109       1714  10X383_6
+## 10X418_2:ATCGTGACATGACGGA      0.001786854        3431       7835  10X418_2
+##                           supercluster_term cluster_id subcluster_id
+## 10X362_5:CACTAAGTCTTCGGTC   Oligodendrocyte         50          2996
+## 10X361_1:ATGCGATCAAATGATG   Oligodendrocyte         49          2999
+## 10X194_7:AAGGAATAGCTGAAAT   Oligodendrocyte         49          2999
+## 10X218_6:CACGAATTCGGTTGTA   Oligodendrocyte         49          3001
+## 10X383_6:GCGTGCACATACATCG   Oligodendrocyte         49          2999
+## 10X418_2:ATCGTGACATGACGGA   Oligodendrocyte         49          2999
+##                           cell_type_ontology_term_id tissue_ontology_term_id
+## 10X362_5:CACTAAGTCTTCGGTC                 CL:0000128          UBERON:0001898
+## 10X361_1:ATGCGATCAAATGATG                 CL:0000128          UBERON:0010225
+## 10X194_7:AAGGAATAGCTGAAAT                 CL:0000128          UBERON:0001891
+## 10X218_6:CACGAATTCGGTTGTA                 CL:0000128          UBERON:0000988
+## 10X383_6:GCGTGCACATACATCG                 CL:0000128          UBERON:0005290
+## 10X418_2:ATCGTGACATGACGGA                 CL:0000128          UBERON:0000988
+##                           is_primary_data tissue_type       cell_type     assay
+## 10X362_5:CACTAAGTCTTCGGTC           FALSE      tissue oligodendrocyte 10x 3&#39; v3
+## 10X361_1:ATGCGATCAAATGATG           FALSE      tissue oligodendrocyte 10x 3&#39; v3
+## 10X194_7:AAGGAATAGCTGAAAT           FALSE      tissue oligodendrocyte 10x 3&#39; v3
+## 10X218_6:CACGAATTCGGTTGTA           FALSE      tissue oligodendrocyte 10x 3&#39; v3
+## 10X383_6:GCGTGCACATACATCG           FALSE      tissue oligodendrocyte 10x 3&#39; v3
+## 10X418_2:ATCGTGACATGACGGA           FALSE      tissue oligodendrocyte 10x 3&#39; v3
+##                           disease     organism  sex           tissue
+## 10X362_5:CACTAAGTCTTCGGTC  normal Homo sapiens male     hypothalamus
+## 10X361_1:ATGCGATCAAATGATG  normal Homo sapiens male thalamic complex
+## 10X194_7:AAGGAATAGCTGAAAT  normal Homo sapiens male         midbrain
+## 10X218_6:CACGAATTCGGTTGTA  normal Homo sapiens male             pons
+## 10X383_6:GCGTGCACATACATCG  normal Homo sapiens male   myelencephalon
+## 10X418_2:ATCGTGACATGACGGA  normal Homo sapiens male             pons
+##                           self_reported_ethnicity development_stage
+## 10X362_5:CACTAAGTCTTCGGTC                European 42-year-old stage
+## 10X361_1:ATGCGATCAAATGATG                European 42-year-old stage
+## 10X194_7:AAGGAATAGCTGAAAT                European 50-year-old stage
+## 10X218_6:CACGAATTCGGTTGTA                European 50-year-old stage
+## 10X383_6:GCGTGCACATACATCG                European 29-year-old stage
+## 10X418_2:ATCGTGACATGACGGA                European 29-year-old stage
+##                           observation_joinid
+## 10X362_5:CACTAAGTCTTCGGTC         bDU~1(J;Ik
+## 10X361_1:ATGCGATCAAATGATG         ;KlbV&lt;Dt1c
+## 10X194_7:AAGGAATAGCTGAAAT         ^crDf#{0uv
+## 10X218_6:CACGAATTCGGTTGTA         &amp;O+|h=kf&lt;!
+## 10X383_6:GCGTGCACATACATCG         r4yc9BUrh8
+## 10X418_2:ATCGTGACATGACGGA         ^H?8&gt;x`7`8</code></pre>
+<p>Check number of cells per supercluster_term. Should be max 250 cells
+per supercluster_term. Note that when creating Metacells, all annotated
+classes with less than 50 will be excluded. Here all classes have 250
+cells.</p>
+<pre class="r"><code>table(se$supercluster_term)</code></pre>
+<pre><code>## 
+##                           Astrocyte                       Bergmann glia 
+##                                 250                                 250 
+##                      Choroid plexus Committed oligodendrocyte precursor 
+##                                 250                                 250 
+##                           Ependymal                          Fibroblast 
+##                                 250                                 250 
+##                           Microglia                     Oligodendrocyte 
+##                                 250                                 250 
+##           Oligodendrocyte precursor                            Vascular 
+##                                 250                                 250</code></pre>
+<p>Save Seurat Object.</p>
+<pre class="r"><code>saveRDS(se, file = &quot;data/AllNonNeurons/se_AllNonNeurons_250_cells.RDS&quot;)</code></pre>
 <details>
 <summary>
 Click to show Session Info
@@ -1896,51 +2180,66 @@ Click to show Session Info
 ## [8] base     
 ## 
 ## other attached packages:
-##  [1] Seurat_5.3.0          SeuratObject_5.1.0    sp_2.2-0             
-##  [4] data.table_1.17.8     HDF5Array_1.36.0      h5mread_1.0.1        
-##  [7] DelayedArray_0.34.1   SparseArray_1.8.1     S4Arrays_1.8.1       
-## [10] IRanges_2.42.0        abind_1.4-8           S4Vectors_0.46.0     
-## [13] MatrixGenerics_1.20.0 matrixStats_1.5.0     BiocGenerics_0.54.0  
-## [16] generics_0.1.4        Matrix_1.7-3          rhdf5_2.52.1         
+##  [1] MASS_7.3-65                 biomaRt_2.64.0             
+##  [3] dplyr_1.1.4                 HDF5Array_1.36.0           
+##  [5] h5mread_1.0.1               rhdf5_2.52.1               
+##  [7] DelayedArray_0.34.1         SparseArray_1.8.1          
+##  [9] S4Arrays_1.8.1              abind_1.4-8                
+## [11] Matrix_1.7-3                SingleCellExperiment_1.30.1
+## [13] SummarizedExperiment_1.38.1 Biobase_2.68.0             
+## [15] GenomicRanges_1.60.0        GenomeInfoDb_1.44.2        
+## [17] IRanges_2.42.0              S4Vectors_0.46.0           
+## [19] BiocGenerics_0.54.0         generics_0.1.4             
+## [21] MatrixGenerics_1.20.0       matrixStats_1.5.0          
+## [23] zellkonverter_1.18.0        Seurat_5.3.0               
+## [25] SeuratObject_5.1.0          sp_2.2-0                   
 ## 
 ## loaded via a namespace (and not attached):
-##   [1] RColorBrewer_1.1-3     rstudioapi_0.17.1      jsonlite_2.0.0        
-##   [4] magrittr_2.0.3         spatstat.utils_3.1-5   farver_2.1.2          
-##   [7] rmarkdown_2.29         vctrs_0.6.5            ROCR_1.0-11           
-##  [10] spatstat.explore_3.5-2 htmltools_0.5.8.1      Rhdf5lib_1.30.0       
-##  [13] sass_0.4.10            sctransform_0.4.2      parallelly_1.45.1     
-##  [16] KernSmooth_2.23-26     bslib_0.9.0            htmlwidgets_1.6.4     
-##  [19] ica_1.0-3              plyr_1.8.9             plotly_4.11.0         
-##  [22] zoo_1.8-14             cachem_1.1.0           igraph_2.1.4          
-##  [25] mime_0.13              lifecycle_1.0.4        pkgconfig_2.0.3       
-##  [28] R6_2.6.1               fastmap_1.2.0          fitdistrplus_1.2-4    
-##  [31] future_1.67.0          shiny_1.11.1           digest_0.6.37         
-##  [34] patchwork_1.3.1        tensor_1.5.1           RSpectra_0.16-2       
-##  [37] irlba_2.3.5.1          progressr_0.15.1       spatstat.sparse_3.1-0 
-##  [40] httr_1.4.7             polyclip_1.10-7        compiler_4.5.0        
-##  [43] fastDummies_1.7.5      MASS_7.3-65            tools_4.5.0           
-##  [46] lmtest_0.9-40          httpuv_1.6.16          future.apply_1.20.0   
-##  [49] goftest_1.2-3          glue_1.8.0             nlme_3.1-168          
-##  [52] rhdf5filters_1.20.0    promises_1.3.3         grid_4.5.0            
-##  [55] Rtsne_0.17             cluster_2.1.8.1        reshape2_1.4.4        
-##  [58] gtable_0.3.6           spatstat.data_3.1-8    tidyr_1.3.1           
-##  [61] XVector_0.48.0         spatstat.geom_3.5-0    RcppAnnoy_0.0.22      
-##  [64] ggrepel_0.9.6          RANN_2.6.2             pillar_1.10.2         
-##  [67] stringr_1.5.1          spam_2.11-1            RcppHNSW_0.6.0        
-##  [70] later_1.4.3            splines_4.5.0          dplyr_1.1.4           
-##  [73] lattice_0.22-7         renv_1.1.5             survival_3.8-3        
-##  [76] deldir_2.0-4           tidyselect_1.2.1       miniUI_0.1.2          
-##  [79] pbapply_1.7-4          knitr_1.50             gridExtra_2.3         
-##  [82] scattermore_1.2        xfun_0.52              stringi_1.8.7         
-##  [85] lazyeval_0.2.2         yaml_2.3.10            evaluate_1.0.3        
-##  [88] codetools_0.2-20       tibble_3.3.0           BiocManager_1.30.26   
-##  [91] cli_3.6.5              uwot_0.2.3             xtable_1.8-4          
-##  [94] reticulate_1.43.0      jquerylib_0.1.4        Rcpp_1.1.0            
-##  [97] globals_0.18.0         spatstat.random_3.4-1  png_0.1-8             
-## [100] spatstat.univar_3.1-4  parallel_4.5.0         ggplot2_3.5.2         
-## [103] dotCall64_1.2          listenv_0.9.1          viridisLite_0.4.2     
-## [106] scales_1.4.0           ggridges_0.5.6         purrr_1.1.0           
-## [109] crayon_1.5.3           rlang_1.1.6            cowplot_1.2.0</code></pre>
+##   [1] RcppAnnoy_0.0.22        splines_4.5.0           later_1.4.3            
+##   [4] filelock_1.0.3          tibble_3.3.0            polyclip_1.10-7        
+##   [7] basilisk.utils_1.20.0   fastDummies_1.7.5       lifecycle_1.0.4        
+##  [10] httr2_1.2.1             globals_0.18.0          lattice_0.22-7         
+##  [13] magrittr_2.0.3          plotly_4.11.0           sass_0.4.10            
+##  [16] rmarkdown_2.29          jquerylib_0.1.4         yaml_2.3.10            
+##  [19] httpuv_1.6.16           sctransform_0.4.2       spam_2.11-1            
+##  [22] spatstat.sparse_3.1-0   reticulate_1.43.0       cowplot_1.2.0          
+##  [25] pbapply_1.7-4           DBI_1.2.3               RColorBrewer_1.1-3     
+##  [28] Rtsne_0.17              purrr_1.1.0             rappdirs_0.3.3         
+##  [31] GenomeInfoDbData_1.2.14 ggrepel_0.9.6           irlba_2.3.5.1          
+##  [34] listenv_0.9.1           spatstat.utils_3.1-5    goftest_1.2-3          
+##  [37] RSpectra_0.16-2         spatstat.random_3.4-1   fitdistrplus_1.2-4     
+##  [40] parallelly_1.45.1       codetools_0.2-20        xml2_1.4.0             
+##  [43] tidyselect_1.2.1        UCSC.utils_1.4.0        farver_2.1.2           
+##  [46] BiocFileCache_2.16.1    spatstat.explore_3.5-2  jsonlite_2.0.0         
+##  [49] progressr_0.15.1        ggridges_0.5.6          survival_3.8-3         
+##  [52] tools_4.5.0             progress_1.2.3          ica_1.0-3              
+##  [55] Rcpp_1.1.0              glue_1.8.0              gridExtra_2.3          
+##  [58] xfun_0.52               withr_3.0.2             BiocManager_1.30.26    
+##  [61] fastmap_1.2.0           basilisk_1.20.0         rhdf5filters_1.20.0    
+##  [64] digest_0.6.37           R6_2.6.1                mime_0.13              
+##  [67] scattermore_1.2         tensor_1.5.1            spatstat.data_3.1-8    
+##  [70] RSQLite_2.4.3           tidyr_1.3.1             renv_1.1.5             
+##  [73] data.table_1.17.8       prettyunits_1.2.0       httr_1.4.7             
+##  [76] htmlwidgets_1.6.4       uwot_0.2.3              pkgconfig_2.0.3        
+##  [79] gtable_0.3.6            blob_1.2.4              lmtest_0.9-40          
+##  [82] XVector_0.48.0          htmltools_0.5.8.1       dotCall64_1.2          
+##  [85] scales_1.4.0            png_0.1-8               spatstat.univar_3.1-4  
+##  [88] knitr_1.50              rstudioapi_0.17.1       reshape2_1.4.4         
+##  [91] curl_7.0.0              nlme_3.1-168            cachem_1.1.0           
+##  [94] zoo_1.8-14              stringr_1.5.1           KernSmooth_2.23-26     
+##  [97] parallel_4.5.0          miniUI_0.1.2            AnnotationDbi_1.70.0   
+## [100] pillar_1.10.2           grid_4.5.0              vctrs_0.6.5            
+## [103] RANN_2.6.2              promises_1.3.3          dbplyr_2.5.0           
+## [106] xtable_1.8-4            cluster_2.1.8.1         evaluate_1.0.3         
+## [109] cli_3.6.5               compiler_4.5.0          rlang_1.1.6            
+## [112] crayon_1.5.3            future.apply_1.20.0     plyr_1.8.9             
+## [115] stringi_1.8.7           viridisLite_0.4.2       deldir_2.0-4           
+## [118] Biostrings_2.76.0       lazyeval_0.2.2          spatstat.geom_3.5-0    
+## [121] dir.expiry_1.16.0       RcppHNSW_0.6.0          hms_1.1.3              
+## [124] patchwork_1.3.1         bit64_4.6.0-1           future_1.67.0          
+## [127] ggplot2_3.5.2           Rhdf5lib_1.30.0         KEGGREST_1.48.1        
+## [130] shiny_1.11.1            ROCR_1.0-11             igraph_2.1.4           
+## [133] memoise_2.0.1           bslib_0.9.0             bit_4.6.0</code></pre>
 </details>
 </div>
 
