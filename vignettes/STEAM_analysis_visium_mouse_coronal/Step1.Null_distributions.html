@@ -1610,7 +1610,7 @@ head(seurat_clusters)</code></pre>
 ## 5 TCTGTGACTGACCGTT-1               5
 ## 6 CTAGCAACTAATTTAC-1               7</code></pre>
 <p>Add cluster annotations for running STEAM.</p>
-<pre class="r"><code>se &lt;- addClusterAnnotations(se, AnnoDataframe = seurat_clusters, BarcodeName = &quot;Barcode&quot;, AnnoName = &quot;seurat_clusters&quot;)
+<pre class="r"><code>se &lt;- add_cluster_annotations(se, AnnoDataframe = seurat_clusters, BarcodeName = &quot;Barcode&quot;, AnnoName = &quot;seurat_clusters&quot;)
 
 head(se[[]])</code></pre>
 <pre><code>##                       orig.ident nCount_Spatial nFeature_Spatial nCount_SCT
@@ -1655,7 +1655,7 @@ assumptions will not be valid.</p>
 <pre class="r"><code># Run sequentially
 perm.mat &lt;- generate_permutation_matrix(se, gnum = 50, permutation_nr = 1000, cluster_anno = &quot;cluster_anno&quot;)</code></pre>
 <pre><code>##    user  system elapsed 
-## 147.112  11.725 158.843</code></pre>
+## 146.635  12.235 158.897</code></pre>
 <pre class="r"><code>perm.mat[1:5,1:5]</code></pre>
 <pre><code>##                    0            1           2           3           4
 ## Perm_nr1 -0.02000329 -0.016870869  0.00110196 -0.04019910 -0.03153062
@@ -1689,18 +1689,18 @@ different number of workers using a gene list of 50 genes and 100
 permutations.</p>
 <pre class="r"><code>perm.mat.par &lt;- generate_permutation_matrix(se, gnum = 50, permutation_nr = 100, cluster_anno = &quot;cluster_anno&quot;, workers = 7)</code></pre>
 <pre><code>##    user  system elapsed 
-##   7.229   9.510  24.935</code></pre>
+##   7.550  10.082  27.558</code></pre>
 <pre class="r"><code>perm.mat.par &lt;- generate_permutation_matrix(se, gnum = 50, permutation_nr = 100, cluster_anno = &quot;cluster_anno&quot;, workers = 5)</code></pre>
 <pre><code>##    user  system elapsed 
-##   4.215   5.804  17.665</code></pre>
+##   4.250   5.778  18.693</code></pre>
 <pre class="r"><code>perm.mat.par &lt;- generate_permutation_matrix(se, gnum = 50, permutation_nr = 100, cluster_anno = &quot;cluster_anno&quot;, workers = 3)</code></pre>
 <pre><code>##    user  system elapsed 
-##   2.660   2.839  15.222</code></pre>
+##   2.652   3.059  15.710</code></pre>
 <p>In this case, we select workers = 3 to generate our permutation
 matrix.</p>
 <pre class="r"><code>perm.mat.par &lt;- generate_permutation_matrix(se, gnum = 50, permutation_nr = 1000, cluster_anno = &quot;cluster_anno&quot;, workers = 3)</code></pre>
 <pre><code>##    user  system elapsed 
-##   1.307   0.676  58.238</code></pre>
+##   1.329   0.565  58.333</code></pre>
 <pre class="r"><code>perm.mat.par[1:5,1:5]</code></pre>
 <pre><code>##                    0            1             2           3            4
 ## Perm_nr1 -0.01515526 -0.020812577  0.0003181516 -0.04083034 -0.027737094
@@ -1736,7 +1736,7 @@ Click to show Session Info
 ## [8] base     
 ## 
 ## other attached packages:
-## [1] steam_0.0.0.9000   future_1.67.0      MASS_7.3-65        dplyr_1.1.4       
+## [1] steam_0.0.0.9001   future_1.67.0      MASS_7.3-65        dplyr_1.1.4       
 ## [5] ggplot2_3.5.2      hdf5r_1.3.12       Seurat_5.3.0       SeuratObject_5.1.0
 ## [9] sp_2.2-0          
 ## 

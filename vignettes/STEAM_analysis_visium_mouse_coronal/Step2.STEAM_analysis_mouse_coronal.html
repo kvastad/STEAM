@@ -251,9 +251,8 @@ class="uri">https://www.10xgenomics.com/datasets/mouse-brain-section-coronal-1-s
 disease, ALZ, (MONDO_0004975).</p>
 <p>Please note that some steps have been pre-run in a separate vignette
 to generate the permutation matrices needed and to only keep genes in
-the gene lists that are present in the Seurat object after QC filtering.
-In this vignette we use data from our publication and show how that can
-be used together with the STEAM package.</p>
+the gene lists that are present in the Seurat object after QC
+filtering.</p>
 <div id="load-libraries" class="section level1" number="1">
 <h1><span class="header-section-number">1</span> Load libraries</h1>
 <p>Load the necessary libraries.</p>
@@ -358,7 +357,7 @@ head(seurat_clusters)</code></pre>
 ## 5 TCTGTGACTGACCGTT-1               5
 ## 6 CTAGCAACTAATTTAC-1               7</code></pre>
 <p>Add cluster annotations for running STEAM.</p>
-<pre class="r"><code>se &lt;- addClusterAnnotations(se, AnnoDataframe = seurat_clusters, BarcodeName = &quot;Barcode&quot;, AnnoName = &quot;seurat_clusters&quot;)
+<pre class="r"><code>se &lt;- add_cluster_annotations(se, AnnoDataframe = seurat_clusters, BarcodeName = &quot;Barcode&quot;, AnnoName = &quot;seurat_clusters&quot;)
 
 head(se[[]])</code></pre>
 <pre><code>##                       orig.ident nCount_Spatial nFeature_Spatial nCount_SCT
@@ -407,7 +406,7 @@ length(OpenTargets_ALZ_Genetic_)</code></pre>
 of trait abbreviation (disease_abbr) and a gene list descriptive term
 (ot_gene_set_label). We select a window size of 50 genes, moving by 10
 genes for each window.</p>
-<pre class="r"><code>window_rank_list_ALZ_Genetic &lt;- generateSlidingWindows(OpenTargets_ALZ_Genetic_, window_size = 50, step_size = 10, disease_abbr = &quot;ALZ&quot;, ot_gene_set_label = &quot;Genetic&quot;)</code></pre>
+<pre class="r"><code>window_rank_list_ALZ_Genetic &lt;- generate_sliding_windows(OpenTargets_ALZ_Genetic_, window_size = 50, step_size = 10, disease_abbr = &quot;ALZ&quot;, ot_gene_set_label = &quot;Genetic&quot;)</code></pre>
 <p>Add gene sets to a list.</p>
 <pre class="r"><code>all_gene_sets_OpenTargets &lt;- list(OpenTargets_ALZ_Genetic_=OpenTargets_ALZ_Genetic_)</code></pre>
 <p>Merge all gene sets into one list.</p>
@@ -494,7 +493,7 @@ STEAM.</p>
   &quot;data/mouse_coronal/permutation_matrices/perm.mat.par_p10000_g609.RDS&quot;
 )
 
-perm_matrices &lt;- loadPermutationMatices(perm_files)
+perm_matrices &lt;- load_permutation_matrices(perm_files)
 perm.mat.window.data &lt;- as.data.frame(perm_matrices[[1]])
 perm.mat.genetic.data &lt;- as.data.frame(perm_matrices[[2]])
 
@@ -514,37 +513,25 @@ perm.mat.window.data[1:5,1:5]</code></pre>
 ## Perm_nr5 -0.012064004 -0.0070631346 -0.007760126 -0.0099291472 -0.009718403</code></pre>
 <p>If needed, update cluster names in the permutation matrices to match
 metadata in Seurat object (needed for downstream analysis). For STEAM
-generated permutation matrices with the generatePermutationMatrix
+generated permutation matrices with the generate_permutation_matrix
 function this should not be needed.</p>
-<pre class="r"><code>#Cluster names
+<pre class="r"><code>#Example code on how to update cluster names if needed
 cluster_names &lt;- rep(&quot;&quot;, length(table(se$cluster_anno)))
 cluster_names &lt;- paste0(cluster_names,as.character(0:(length(table(se$cluster_anno))-1)))
 
 colnames(perm.mat.window.data) &lt;- cluster_names
 colnames(perm.mat.genetic.data) &lt;- cluster_names
 
-perm.mat.window.data[1:5,1:5]</code></pre>
-<pre><code>##                    0            1             2           3            4
-## Perm_nr1 -0.01515526 -0.020812577  0.0003181516 -0.04083034 -0.027737094
-## Perm_nr2  0.01634719  0.040452079  0.0226238392  0.03145037  0.007901796
-## Perm_nr3  0.04024574  0.030903241  0.0168719370  0.03060976  0.028525209
-## Perm_nr4 -0.01097678  0.001129471 -0.0126706373 -0.01033242 -0.028753922
-## Perm_nr5 -0.01582967 -0.001925023 -0.0267549210 -0.01775468 -0.011249735</code></pre>
-<pre class="r"><code>perm.mat.genetic.data[1:5,1:5]</code></pre>
-<pre><code>##                     0             1            2             3            4
-## Perm_nr1 -0.009483702 -0.0002963690  0.005120739 -0.0165775071 -0.013356341
-## Perm_nr2  0.003146505  0.0005536816  0.012361316  0.0034727758  0.002899310
-## Perm_nr3  0.001673843 -0.0002913880 -0.003374181 -0.0001489689  0.001516430
-## Perm_nr4  0.022667517  0.0220850232  0.017053487  0.0313442975  0.025703395
-## Perm_nr5 -0.012064004 -0.0070631346 -0.007760126 -0.0099291472 -0.009718403</code></pre>
+perm.mat.window.data[1:5,1:5]
+perm.mat.genetic.data[1:5,1:5]</code></pre>
 </div>
 <div id="enrichment-of-all-genetic-genes" class="section level1"
 number="4">
 <h1><span class="header-section-number">4</span> Enrichment of all
 genetic genes</h1>
-<p>Run SpatialTraitEnrichmentAnalysis, and write output to a log file
+<p>Run spatial_trait_enrichment_analysis, and write output to a log file
 for cases where imputation was needed to calculate a p-value.</p>
-<pre class="r"><code>pval_mat.g &lt;- SpatialTraitEnrichmentAnalysis(
+<pre class="r"><code>pval_mat.g &lt;- spatial_trait_enrichment_analysis(
    se = se,
    perm.mat.label.data = perm.mat.genetic.data,
    perm.mat.window.data = perm.mat.window.data,
@@ -552,7 +539,7 @@ for cases where imputation was needed to calculate a p-value.</p>
    gene_list = &quot;OpenTargets_ALZ_Genetic_1&quot;,
    cluster_anno = &quot;cluster_anno&quot;,
    imputation = &quot;dynamic&quot;#,
-   #log_file = &quot;data/Data_brain_example/log_files/log_file_pval_mat_genetic_seurat.txt&quot;
+   #log_file = &quot;data/mouse_coronal/log_files/log_file_pval_mat_genetic_all.txt&quot;
  )
 
 head(pval_mat.g)</code></pre>
@@ -659,7 +646,7 @@ top genetic genes</h1>
 <p>Derive an empirical threshold for top genes of a ranked gene list by
 comparing the ranked window gene set signal to a null gene set of equal
 size.</p>
-<pre class="r"><code> window_results.g &lt;- WindowRankEnrichmentAnalysis(
+<pre class="r"><code> window_results.g &lt;- window_rank_enrichment_analysis(
    se = se,
    perm.mat.window.data = perm.mat.window.data,
    window_rank_list = window_rank_list_ALZ_Genetic,
@@ -667,7 +654,7 @@ size.</p>
    disease_abbr = &quot;ALZ&quot;,
    cluster_anno = &quot;cluster_anno&quot;,
    imputation = &quot;dynamic&quot;#,
-   #log_file = &quot;data/Data_brain_example/log_files/log_file_pval_mat_genetic_window_seurat.txt&quot;
+   #log_file = &quot;data/mouse_coronal/log_files/log_file_pval_mat_genetic_windows.txt&quot;
  )
 
 head(window_results.g)</code></pre>
@@ -698,7 +685,7 @@ where, blue line = median, bright red = 95-quantile, dark red = max
 value. Here we see that for several clusters the top windows are above
 the 95-quantile, and we know the window size is 50 and moves by 10. We
 select the top 90 genes in this list to be our top set of genes.</p>
-<pre class="r"><code> rankPlotForClusters(
+<pre class="r"><code> rank_plot_for_clusters(
    window_results = window_results.g,
    perm.mat.window = perm.mat.window.data,
    ylim = c(-0.3, 0.3)
@@ -706,7 +693,7 @@ select the top 90 genes in this list to be our top set of genes.</p>
 <p><img src="Step2.STEAM_analysis_mouse_coronal_files/figure-html/unnamed-chunk-26-1.png" width="672" /><img src="Step2.STEAM_analysis_mouse_coronal_files/figure-html/unnamed-chunk-26-2.png" width="672" /><img src="Step2.STEAM_analysis_mouse_coronal_files/figure-html/unnamed-chunk-26-3.png" width="672" /><img src="Step2.STEAM_analysis_mouse_coronal_files/figure-html/unnamed-chunk-26-4.png" width="672" /><img src="Step2.STEAM_analysis_mouse_coronal_files/figure-html/unnamed-chunk-26-5.png" width="672" /><img src="Step2.STEAM_analysis_mouse_coronal_files/figure-html/unnamed-chunk-26-6.png" width="672" /><img src="Step2.STEAM_analysis_mouse_coronal_files/figure-html/unnamed-chunk-26-7.png" width="672" /><img src="Step2.STEAM_analysis_mouse_coronal_files/figure-html/unnamed-chunk-26-8.png" width="672" /><img src="Step2.STEAM_analysis_mouse_coronal_files/figure-html/unnamed-chunk-26-9.png" width="672" /><img src="Step2.STEAM_analysis_mouse_coronal_files/figure-html/unnamed-chunk-26-10.png" width="672" /><img src="Step2.STEAM_analysis_mouse_coronal_files/figure-html/unnamed-chunk-26-11.png" width="672" /><img src="Step2.STEAM_analysis_mouse_coronal_files/figure-html/unnamed-chunk-26-12.png" width="672" /><img src="Step2.STEAM_analysis_mouse_coronal_files/figure-html/unnamed-chunk-26-13.png" width="672" /><img src="Step2.STEAM_analysis_mouse_coronal_files/figure-html/unnamed-chunk-26-14.png" width="672" /><img src="Step2.STEAM_analysis_mouse_coronal_files/figure-html/unnamed-chunk-26-15.png" width="672" /><img src="Step2.STEAM_analysis_mouse_coronal_files/figure-html/unnamed-chunk-26-16.png" width="672" /><img src="Step2.STEAM_analysis_mouse_coronal_files/figure-html/unnamed-chunk-26-17.png" width="672" /><img src="Step2.STEAM_analysis_mouse_coronal_files/figure-html/unnamed-chunk-26-18.png" width="672" /><img src="Step2.STEAM_analysis_mouse_coronal_files/figure-html/unnamed-chunk-26-19.png" width="672" /></p>
 <p>Plot the average gene expression for the selected list of ranked
 window gene sets.</p>
-<pre class="r"><code>featurePlotForRanks(se = se,
+<pre class="r"><code>feature_plot_for_ranks(se = se,
                      window_rank_list = window_rank_list_ALZ_Genetic,
                      ot_gene_set_label = &quot;Genetic&quot;,
                      disease_abbr = &quot;ALZ&quot;,
@@ -717,7 +704,7 @@ window gene sets.</p>
                      cluster_anno = &quot;cluster_anno&quot;)</code></pre>
 <p><img src="Step2.STEAM_analysis_mouse_coronal_files/figure-html/unnamed-chunk-27-1.png" width="1440" /><img src="Step2.STEAM_analysis_mouse_coronal_files/figure-html/unnamed-chunk-27-2.png" width="1440" /><img src="Step2.STEAM_analysis_mouse_coronal_files/figure-html/unnamed-chunk-27-3.png" width="1440" /><img src="Step2.STEAM_analysis_mouse_coronal_files/figure-html/unnamed-chunk-27-4.png" width="1440" /><img src="Step2.STEAM_analysis_mouse_coronal_files/figure-html/unnamed-chunk-27-5.png" width="1440" /><img src="Step2.STEAM_analysis_mouse_coronal_files/figure-html/unnamed-chunk-27-6.png" width="1440" /><img src="Step2.STEAM_analysis_mouse_coronal_files/figure-html/unnamed-chunk-27-7.png" width="1440" /></p>
 <p>You can also select to only plot one cluster at a time.</p>
-<pre class="r"><code>featurePlotForRanks(se = se,
+<pre class="r"><code>feature_plot_for_ranks(se = se,
                      window_rank_list = window_rank_list_ALZ_Genetic,
                      ot_gene_set_label = &quot;Genetic&quot;,
                      disease_abbr = &quot;ALZ&quot;,
@@ -764,7 +751,7 @@ investigated.</p>
   &quot;data/mouse_coronal/permutation_matrices/perm.mat.par_p10000_g90.RDS&quot;
 )
 
-perm_matrices &lt;- loadPermutationMatices(perm_files)
+perm_matrices &lt;- load_permutation_matrices(perm_files)
 perm.mat.genetic.top.data &lt;- as.data.frame(perm_matrices[[1]])
 
 perm.mat.genetic.top.data[1:5,1:5]</code></pre>
@@ -776,24 +763,18 @@ perm.mat.genetic.top.data[1:5,1:5]</code></pre>
 ## Perm_nr5 -0.01582942 -0.02640374 -0.020599500 -0.021586602 -0.006980624</code></pre>
 <p>If needed, update cluster names in the permutation matrix to match
 metadata in Seurat object (needed for downstream analysis). For STEAM
-generated permutation matrices with the generatePermutationMatrix
+generated permutation matrices with the generate_permutation_matrix
 function this should not be needed.</p>
-<pre class="r"><code>#Cluster names
+<pre class="r"><code>#Example code on how to update cluster names if needed
 cluster_names &lt;- rep(&quot;&quot;, length(table(se$cluster_anno)))
 cluster_names &lt;- paste0(cluster_names,as.character(0:(length(table(se$cluster_anno))-1)))
 
 colnames(perm.mat.genetic.top.data) &lt;- cluster_names
 
 perm.mat.genetic.top.data[1:5,1:5]</code></pre>
-<pre><code>##                    0           1            2            3            4
-## Perm_nr1 -0.06188064 -0.04293348 -0.020034084 -0.045471432 -0.058316113
-## Perm_nr2  0.01151826  0.02233934  0.006329548  0.011486453  0.013530573
-## Perm_nr3  0.04555783  0.03466215  0.024550687  0.048919732  0.035806599
-## Perm_nr4 -0.02600438 -0.00354960 -0.032693031  0.003720201 -0.027277350
-## Perm_nr5 -0.01582942 -0.02640374 -0.020599500 -0.021586602 -0.006980624</code></pre>
-<p>Run SpatialTraitEnrichmentAnalysis, and write output to a log file
+<p>Run spatial_trait_enrichment_analysis, and write output to a log file
 for cases where imputation was needed to calculate a p-value.</p>
-<pre class="r"><code>pval_mat.top &lt;- SpatialTraitEnrichmentAnalysis(
+<pre class="r"><code>pval_mat.top &lt;- spatial_trait_enrichment_analysis(
    se = se,
    perm.mat.label.data = perm.mat.genetic.top.data,
    perm.mat.window.data = perm.mat.window.data,
@@ -801,7 +782,7 @@ for cases where imputation was needed to calculate a p-value.</p>
    gene_list = &quot;OpenTargets_ALZ_Genetic_topGenes_1&quot;,
    cluster_anno = &quot;cluster_anno&quot;,
    imputation = &quot;dynamic&quot;#,
-   #log_file = &quot;data/Data_brain_example/log_files/log_file_pval_mat_genetic_top.txt&quot;
+   #log_file = &quot;data/mouse_coronal/log_files/log_file_pval_mat_genetic_top.txt&quot;
  )
 
 head(pval_mat.top)</code></pre>
@@ -901,7 +882,7 @@ for (i in clusters) {
 <p><img src="Step2.STEAM_analysis_mouse_coronal_files/figure-html/unnamed-chunk-39-2.png" width="480" /></p>
 <p>Generates density plots of null distribution scores for each cluster
 and marks the gene list median score as a vertical line.</p>
-<pre class="r"><code>plotScoreDist(
+<pre class="r"><code>plot_score_dist(
    se = se,
    perm.mat = perm.mat.genetic.top.data, 
    cluster_anno = &quot;cluster_anno&quot;,
@@ -988,7 +969,7 @@ Click to show Session Info
 ## [1] stats     graphics  grDevices datasets  utils     methods   base     
 ## 
 ## other attached packages:
-## [1] viridis_0.6.5      viridisLite_0.4.2  steam_0.0.0.9000   ggplot2_3.5.2     
+## [1] viridis_0.6.5      viridisLite_0.4.2  steam_0.0.0.9001   ggplot2_3.5.2     
 ## [5] MASS_7.3-65        dplyr_1.1.4        Seurat_5.3.0       SeuratObject_5.1.0
 ## [9] sp_2.2-0          
 ## 
