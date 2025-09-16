@@ -18,3 +18,5 @@ devtools::install_github("NBISweden/steam")
 For STEAM R-package vignettes, visit: https://kvastad.github.io/STEAM/
 
 For ranked genetically associated gene lists, visit the Open Targets platform: https://platform.opentargets.org/
+
+Link to pre-print: doi: https://doi.org/10.1101/2025.05.02.651876
