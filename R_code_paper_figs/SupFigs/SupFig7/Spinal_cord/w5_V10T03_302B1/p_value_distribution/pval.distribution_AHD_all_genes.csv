@@ -1,0 +1,4 @@
+median(genes);median(umi);median(score_genetic);-log10(p.val_genetic);-log10(p.val.adj_genetic);median(score_drugs);-log10(p.val_drugs);-log10(p.val.adj_drugs);cluster
+5839      ;32797.0   ;0.05956780;1.0013483 ;0.52422701;0.13374120;1.832726  ;1.355605  ;cluster_0 
+6659      ;48383.5   ;0.02348146;0.5681974 ;0.09107613;0.08465375;1.223342  ;0.746221  ;cluster_1 
+6355      ;38318.0   ;0.03707222;0.7181015 ;0.24098024;0.15494410;2.142711  ;1.665590  ;cluster_2 

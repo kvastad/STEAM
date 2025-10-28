@@ -1,0 +1,199 @@
+---
+title: "pval_distribution_all_cor_[all_datasets]_spearman"
+author: "Linda Kvastad"
+date: '`r format(Sys.Date(), "%B %d, %Y")`'
+output:
+ html_document:
+    toc: true
+    toc_depth: 3
+    toc_float: true
+    code_folding: hide
+---
+
+NOTE: Plots Supplementary Figure 7 a and b.
+
+# Load libraries
+```{r}
+library(scales)
+library(ggplot2)
+library(tidyverse)
+library(hrbrthemes)
+library(viridis)
+library(MASS)
+```
+
+# Load data
+Load distribution data:
+```{r}
+data_cor_brain <- read.csv2(file = "pval_data_cor_organs_all_traits_spearman/data_cor_brain_all_traits_spearman.csv")
+data_cor_heart <- read.csv2(file = "pval_data_cor_organs_all_traits_spearman/data_cor_heart_all_traits_spearman.csv")
+data_cor_intestine <- read.csv2(file = "pval_data_cor_organs_all_traits_spearman/data_cor_intestine_all_traits_spearman.csv")
+data_cor_kidney <- read.csv2(file = "pval_data_cor_organs_all_traits_spearman/data_cor_kidney_all_traits_spearman.csv")
+data_cor_liver <- read.csv2(file = "pval_data_cor_organs_all_traits_spearman/data_cor_liver_all_traits_spearman.csv")
+data_cor_lung <- read.csv2(file = "pval_data_cor_organs_all_traits_spearman/data_cor_lung_all_traits_spearman.csv")
+data_cor_pancreas <- read.csv2(file = "pval_data_cor_organs_all_traits_spearman/data_cor_pancreas_all_traits_spearman.csv")
+data_cor_spinal_cord <- read.csv2(file = "pval_data_cor_organs_all_traits_spearman/data_cor_spinal_cord_all_traits_spearman.csv")
+
+```
+
+
+Merge
+```{r}
+data_cor_all <- rbind(data_cor_brain,data_cor_heart)
+data_cor_all <- rbind(data_cor_all,data_cor_intestine)
+data_cor_all <- rbind(data_cor_all,data_cor_kidney)
+data_cor_all <- rbind(data_cor_all,data_cor_liver)
+data_cor_all <- rbind(data_cor_all,data_cor_lung)
+data_cor_all <- rbind(data_cor_all,data_cor_pancreas)
+data_cor_all <- rbind(data_cor_all,data_cor_spinal_cord)
+
+data_cor_all$median.genes <- as.numeric(data_cor_all$median.genes)
+data_cor_all$median.umi <- as.numeric(data_cor_all$median.umi)
+data_cor_all$median.score_genetic <- as.numeric(data_cor_all$median.score_genetic)
+
+options(width = 300)
+data_cor_brain
+data_cor_heart
+data_cor_intestine
+data_cor_kidney
+data_cor_liver
+data_cor_lung
+data_cor_pancreas
+data_cor_spinal_cord
+```
+
+
+# Merge all histogram
+
+## median.genes
+```{r}
+
+# basic histogram
+p <- ggplot(data_cor_all, aes(x=median.genes)) + 
+  geom_histogram(binwidth=0.05,color="black", fill="grey") + 
+  xlim(-2,2) +
+  theme_minimal()+
+  ggtitle("Spearman cor. Median genes Vs. -log10(p-value)")+
+  ylab("Count")+
+  xlab("Spearman correlation")
+
+p
+```
+
+Median Genes
+```{r}
+# basic histogram
+data_cor_all_no_na <- na.exclude(data_cor_all)
+
+p <- ggplot(data_cor_all_no_na, aes(x=median.genes)) + 
+  geom_histogram(bins = (length(data_cor_all_no_na$median.genes))*2,color="black", fill="grey") + 
+  xlim(-2.1,2.1) +
+  theme_minimal()+
+  geom_vline(aes(xintercept=median(median.genes)),color="blue", linetype="dashed", size=1)+
+  ggtitle("Spearman cor. Median genes Vs. -log10(p-value)")+
+  ylab("Count")+
+  xlab("Spearman correlation")
+
+p
+
+print("median")
+median(data_cor_all_no_na$median.genes)
+print("mean")
+mean(data_cor_all_no_na$median.genes)
+print("standard deviation")
+sd(data_cor_all_no_na$median.genes)
+```
+
+PDF
+```{r}
+pdf(file = "pval_distribution_cor_[median.genes].pdf", height = 5, width = 8)
+
+data_cor_all_no_na <- na.exclude(data_cor_all)
+
+p <- ggplot(data_cor_all_no_na, aes(x=median.genes)) + 
+  geom_histogram(bins = (length(data_cor_all_no_na$median.genes))*2,color="black", fill="grey") + 
+  xlim(-2.1,2.1) +
+  theme_minimal()+
+  geom_vline(aes(xintercept=median(median.genes)),color="blue", linetype="dashed", size=1) +
+  ggtitle("Spearman cor. Median genes Vs. -log10(p-value)")+
+  ylab("Count")+
+  xlab("Spearman correlation")
+
+p
+
+
+dev.off()
+
+```
+
+
+
+## median.umi
+```{r}
+
+# basic histogram
+p <- ggplot(data_cor_all, aes(x=median.umi)) + 
+  geom_histogram(binwidth=0.05,color="black", fill="grey") + 
+  xlim(-2,2) +
+  theme_minimal()+
+  ggtitle("Spearman cor. Median UMI Vs. -log10(p-value)")+
+  ylab("Count")+
+  xlab("Spearman correlation")
+
+p
+```
+
+Median UMI
+```{r}
+# basic histogram
+data_cor_all_no_na <- na.exclude(data_cor_all)
+
+p <- ggplot(data_cor_all_no_na, aes(x=median.umi)) + 
+  geom_histogram(bins = (length(data_cor_all_no_na$median.umi))*2,color="black", fill="grey") + 
+  xlim(-2.1,2.1) +
+  theme_minimal()+
+  geom_vline(aes(xintercept=median(median.umi)),color="blue", linetype="dashed", size=1) +
+  ggtitle("Spearman cor. Median UMI Vs. -log10(p-value)")+
+  ylab("Count")+
+  xlab("Spearman correlation")
+
+p
+
+print("median")
+median(data_cor_all_no_na$median.umi)
+print("mean")
+mean(data_cor_all_no_na$median.umi)
+print("standard deviation")
+sd(data_cor_all_no_na$median.umi)
+```
+
+
+PDF
+```{r}
+pdf(file = "pval_distribution_cor_[median.umi].pdf", height = 5, width = 8)
+
+data_cor_all_no_na <- na.exclude(data_cor_all)
+
+p <- ggplot(data_cor_all_no_na, aes(x=median.umi)) + 
+  geom_histogram(bins = (length(data_cor_all_no_na$median.umi))*2,color="black", fill="grey") + 
+  xlim(-2.1,2.1) +
+  theme_minimal()+
+  geom_vline(aes(xintercept=median(median.umi)),color="blue", linetype="dashed", size=1) +
+  ggtitle("Spearman cor. Median UMI Vs. -log10(p-value)")+
+  ylab("Count")+
+  xlab("Spearman correlation")
+
+p
+
+
+dev.off()
+
+```
+
+
+# Notes
+```{r}
+options(width = 60)
+sessionInfo()
+```
+

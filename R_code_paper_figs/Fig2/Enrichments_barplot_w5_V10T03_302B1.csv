@@ -1,0 +1,16 @@
+﻿Enrichment;Trait;Structures;Gene set;Comment
+n.s. genetic all;AHD;3;Genetic_all;w5_V10T03_302B1
+significant genetic all;AHD;0;Genetic_all;w5_V10T03_302B1
+N/A;AHD;3;Genetic_top;w5_V10T03_302B1
+n.s. drugs all;AHD;1;Drugs_all;w5_V10T03_302B1
+significant drugs all;AHD;2;Drugs_all;w5_V10T03_302B1
+n.s. genetic all;ALS;3;Genetic_all;w5_V10T03_302B1
+significant genetic all;ALS;0;Genetic_all;w5_V10T03_302B1
+N/A;ALS;3;Genetic_top;w5_V10T03_302B1
+n.s. drugs all;ALS;1;Drugs_all;w5_V10T03_302B1
+significant drugs all;ALS;2;Drugs_all;w5_V10T03_302B1
+n.s. genetic all;MS;3;Genetic_all;w5_V10T03_302B1
+significant genetic all;MS;0;Genetic_all;w5_V10T03_302B1
+N/A;MS;3;Genetic_top;w5_V10T03_302B1
+n.s. drugs all;MS;0;Drugs_all;w5_V10T03_302B1
+significant drugs all;MS;3;Drugs_all;w5_V10T03_302B1

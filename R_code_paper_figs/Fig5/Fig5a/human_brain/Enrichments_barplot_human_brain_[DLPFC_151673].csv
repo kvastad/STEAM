@@ -1,0 +1,30 @@
+﻿Enrichment;Trait;Structures;Gene set;Comment
+n.s. STEAM all;ALZ;9;STEAM_all;151673
+significant STEAM all;ALZ;0;STEAM_all;151673
+n.s. STEAM top;ALZ;4;STEAM_top;151673
+significant STEAM top;ALZ;5;STEAM_top;151673
+n.s. gsMap;ALZ;6;gsMap;151673
+significant gsMap;ALZ;3;gsMap;151673
+n.s. STEAM all;ADHD;9;STEAM_all;151673
+significant STEAM all;ADHD;0;STEAM_all;151673
+n.s. STEAM top;ADHD;9;STEAM_top;151673
+significant STEAM top;ADHD;0;STEAM_top;151673
+n.s. gsMap;ADHD;4;gsMap;151673
+significant gsMap;ADHD;5;gsMap;151673
+n.s. STEAM all;ASD;4;STEAM_all;151673
+significant STEAM all;ASD;5;STEAM_all;151673
+n.s. STEAM top;ASD;9;STEAM_top;151673
+significant STEAM top;ASD;0;STEAM_top;151673
+n.s. gsMap;ASD;4;gsMap;151673
+significant gsMap;ASD;5;gsMap;151673
+n.s. STEAM all;BIP;9;STEAM_all;151673
+significant STEAM all;BIP;0;STEAM_all;151673
+N/A;BIP;9;STEAM_top;151673
+n.s. gsMap;BIP;1;gsMap;151673
+significant gsMap;BIP;8;gsMap;151673
+n.s. STEAM all;SCZ;9;STEAM_all;151673
+significant STEAM all;SCZ;0;STEAM_all;151673
+n.s. STEAM top;SCZ;9;STEAM_top;151673
+significant STEAM top;SCZ;0;STEAM_top;151673
+n.s. gsMap;SCZ;2;gsMap;151673
+significant gsMap;SCZ;7;gsMap;151673

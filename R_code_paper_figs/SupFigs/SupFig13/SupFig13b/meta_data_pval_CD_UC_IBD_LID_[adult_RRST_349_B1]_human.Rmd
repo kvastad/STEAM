@@ -1,0 +1,167 @@
+---
+title: "meta_data_pval_CD_UC_IBD_LID_[adult_RRST_349_B1]_human"
+author: "Linda Kvastad"
+date: '`r format(Sys.Date(), "%B %d, %Y")`'
+output:
+ html_document:
+    toc: true
+    toc_depth: 3
+    toc_float: true
+    code_folding: hide
+---
+
+NOTE: Plots SupFig 13b.
+
+# Load data
+
+Load libraries:
+```{r, message=FALSE}
+library(dplyr)
+library(tidyverse)
+library(STutility)
+library(viridis)
+```
+
+Load ST data:
+```{r}
+
+infoTable <- read.csv("spatial_data/infoTable.csv", sep = ";")
+
+
+se <- InputFromTable(infotable = infoTable, 
+                      minUMICountsPerGene = 100, 
+                      minSpotsPerGene = 5,
+                      minUMICountsPerSpot = 500,
+                      platform =  "Visium")
+
+```
+
+Load image:
+```{r}
+se <- LoadImages(se, time.resolve = FALSE)
+```
+
+Load meta data:
+```{r}
+meta.data.CD <- readRDS(file = "Meta_data_pval/meta.data.pval_CD_all_genes.RDS")
+meta.data.CD_topgenes <- readRDS(file = "Meta_data_pval/meta.data.pval_CD_top160_genes.RDS")
+
+rownames(meta.data.CD) <- meta.data.CD$CellID
+rownames(meta.data.CD_topgenes) <- meta.data.CD_topgenes$CellID
+
+meta.data.UC <- readRDS(file = "Meta_data_pval/meta.data.pval_UC_all_genes.RDS")
+meta.data.UC_topgenes <- readRDS(file = "Meta_data_pval/meta.data.pval_UC_top170_genes.RDS")
+
+rownames(meta.data.UC) <- meta.data.UC$CellID
+rownames(meta.data.UC_topgenes) <- meta.data.UC_topgenes$CellID
+
+meta.data.IBD <- readRDS(file = "Meta_data_pval/meta.data.pval_IBD_all_genes.RDS")
+meta.data.IBD_topgenes <- readRDS(file = "Meta_data_pval/meta.data.pval_IBD_top110_genes.RDS")
+
+rownames(meta.data.IBD) <- meta.data.IBD$CellID
+rownames(meta.data.IBD_topgenes) <- meta.data.IBD_topgenes$CellID
+
+meta.data.LID <- readRDS(file = "Meta_data_pval/meta.data.pval_LID_all_genes.RDS")
+meta.data.LID_topgenes <- readRDS(file = "Meta_data_pval/meta.data.pval_LID_top80_genes.RDS")
+
+rownames(meta.data.LID) <- meta.data.LID$CellID
+rownames(meta.data.LID_topgenes) <- meta.data.LID_topgenes$CellID
+
+nr_of_pvals <- 8*4
+```
+
+
+Merge meta data
+```{r}
+meta.data.CD$neg.log10.p.val.g_topgenes <- meta.data.CD_topgenes$neg.log10.p.val.g
+meta.data.CD$neg.log10.p.val.adj.g_topgenes <- meta.data.CD_topgenes$neg.log10.p.val.adj.g
+
+meta.data.UC$neg.log10.p.val.g_topgenes <- meta.data.UC_topgenes$neg.log10.p.val.g
+meta.data.UC$neg.log10.p.val.adj.g_topgenes <- meta.data.UC_topgenes$neg.log10.p.val.adj.g
+
+meta.data.IBD$neg.log10.p.val.g_topgenes <- meta.data.IBD_topgenes$neg.log10.p.val.g
+meta.data.IBD$neg.log10.p.val.adj.g_topgenes <- meta.data.IBD_topgenes$neg.log10.p.val.adj.g
+
+meta.data.LID$neg.log10.p.val.g_topgenes <- meta.data.LID_topgenes$neg.log10.p.val.g
+meta.data.LID$neg.log10.p.val.adj.g_topgenes <- meta.data.LID_topgenes$neg.log10.p.val.adj.g
+```
+
+Re-name colnames
+```{r}
+meta.data.CD$neg.log10.p.val.g.CD <- meta.data.CD$neg.log10.p.val.g
+meta.data.CD$neg.log10.p.val.adj.g.CD <- meta.data.CD$neg.log10.p.val.adj.g
+meta.data.CD$neg.log10.p.val.d.CD <- meta.data.CD$neg.log10.p.val.d
+meta.data.CD$neg.log10.p.val.adj.d.CD <- meta.data.CD$neg.log10.p.val.adj.d
+meta.data.CD$neg.log10.p.val.g_topgenes.CD <- meta.data.CD$neg.log10.p.val.g_topgenes
+meta.data.CD$neg.log10.p.val.adj.g_topgenes.CD <- meta.data.CD$neg.log10.p.val.adj.g_topgenes
+  
+meta.data.UC$neg.log10.p.val.g.UC <- meta.data.UC$neg.log10.p.val.g
+meta.data.UC$neg.log10.p.val.adj.g.UC <- meta.data.UC$neg.log10.p.val.adj.g
+meta.data.UC$neg.log10.p.val.d.UC <- meta.data.UC$neg.log10.p.val.d
+meta.data.UC$neg.log10.p.val.adj.d.UC <- meta.data.UC$neg.log10.p.val.adj.d
+meta.data.UC$neg.log10.p.val.g_topgenes.UC <- meta.data.UC$neg.log10.p.val.g_topgenes
+meta.data.UC$neg.log10.p.val.adj.g_topgenes.UC <- meta.data.UC$neg.log10.p.val.adj.g_topgenes
+
+meta.data.IBD$neg.log10.p.val.g.IBD <- meta.data.IBD$neg.log10.p.val.g
+meta.data.IBD$neg.log10.p.val.adj.g.IBD <- meta.data.IBD$neg.log10.p.val.adj.g
+meta.data.IBD$neg.log10.p.val.d.IBD <- meta.data.IBD$neg.log10.p.val.d
+meta.data.IBD$neg.log10.p.val.adj.d.IBD <- meta.data.IBD$neg.log10.p.val.adj.d
+meta.data.IBD$neg.log10.p.val.g_topgenes.IBD <- meta.data.IBD$neg.log10.p.val.g_topgenes
+meta.data.IBD$neg.log10.p.val.adj.g_topgenes.IBD <- meta.data.IBD$neg.log10.p.val.adj.g_topgenes
+
+meta.data.LID$neg.log10.p.val.g.LID <- meta.data.LID$neg.log10.p.val.g
+meta.data.LID$neg.log10.p.val.adj.g.LID <- meta.data.LID$neg.log10.p.val.adj.g
+meta.data.LID$neg.log10.p.val.d.LID <- meta.data.LID$neg.log10.p.val.d
+meta.data.LID$neg.log10.p.val.adj.d.LID <- meta.data.LID$neg.log10.p.val.adj.d
+meta.data.LID$neg.log10.p.val.g_topgenes.LID <- meta.data.LID$neg.log10.p.val.g_topgenes
+meta.data.LID$neg.log10.p.val.adj.g_topgenes.LID <- meta.data.LID$neg.log10.p.val.adj.g_topgenes
+```
+
+Add meta data:
+```{r}
+se <- AddMetaData(se, metadata = meta.data.CD)
+
+se <- AddMetaData(se, metadata = meta.data.UC)
+
+se <- AddMetaData(se, metadata = meta.data.IBD)
+
+se <- AddMetaData(se, metadata = meta.data.LID)
+
+se$neg.log10.p.val.g <- NULL
+se$neg.log10.p.val.adj.g <- NULL
+se$neg.log10.p.val.g_topgenes <- NULL
+se$neg.log10.p.val.adj.g_topgenes <- NULL
+se$neg.log10.p.val.d <- NULL
+se$neg.log10.p.val.adj.d <- NULL
+
+head(se[[]])
+
+```
+
+
+```{r, fig.height=15,fig.width=14}
+ST.FeaturePlot(object = se, features = c("neg.log10.p.val.adj.g.CD","neg.log10.p.val.adj.g_topgenes.CD","neg.log10.p.val.adj.d.CD","neg.log10.p.val.adj.g.UC","neg.log10.p.val.adj.g_topgenes.UC","neg.log10.p.val.adj.d.UC","neg.log10.p.val.adj.g.IBD","neg.log10.p.val.adj.g_topgenes.IBD","neg.log10.p.val.adj.d.IBD","neg.log10.p.val.adj.g.LID","neg.log10.p.val.adj.g_topgenes.LID","neg.log10.p.val.adj.d.LID"), pt.size = 1.5, cols = viridis(nr_of_pvals),value.scale = "all",grid.ncol =3)
+```
+
+
+```{r, fig.height=15,fig.width=14}
+ST.FeaturePlot(object = se, features = c("neg.log10.p.val.adj.g.CD","neg.log10.p.val.adj.g_topgenes.CD","neg.log10.p.val.adj.d.CD","neg.log10.p.val.adj.g.UC","neg.log10.p.val.adj.g_topgenes.UC","neg.log10.p.val.adj.d.UC","neg.log10.p.val.adj.g.IBD","neg.log10.p.val.adj.g_topgenes.IBD","neg.log10.p.val.adj.d.IBD","neg.log10.p.val.adj.g.LID","neg.log10.p.val.adj.g_topgenes.LID","neg.log10.p.val.adj.d.LID"), pt.size = 1.5, cols = viridis(nr_of_pvals),value.scale = "samplewise",grid.ncol =3)
+```
+
+
+
+PDF
+```{r}
+pdf(file = "meta_data_pval_CD_UC_IBD_LID_[adult_RRST_349_B1]_human.pdf", height = 15, width = 14)
+
+ST.FeaturePlot(object = se, features = c("neg.log10.p.val.adj.g.CD","neg.log10.p.val.adj.g_topgenes.CD","neg.log10.p.val.adj.d.CD","neg.log10.p.val.adj.g.UC","neg.log10.p.val.adj.g_topgenes.UC","neg.log10.p.val.adj.d.UC","neg.log10.p.val.adj.g.IBD","neg.log10.p.val.adj.g_topgenes.IBD","neg.log10.p.val.adj.d.IBD","neg.log10.p.val.adj.g.LID","neg.log10.p.val.adj.g_topgenes.LID","neg.log10.p.val.adj.d.LID"), pt.size = 1.5, cols = viridis(nr_of_pvals),value.scale = "all",grid.ncol =3)
+
+dev.off()
+```
+
+
+# Notes
+```{r}
+sessionInfo()
+```
+

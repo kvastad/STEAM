@@ -1,0 +1,78 @@
+---
+title: "Enrichments_barplot_Cell2location_Visium_mouse_brain_coronal_1"
+output: html_document
+date: "2023-10-31"
+---
+
+NOTE: Plots part of SupFig 8a.
+
+Load libraries
+```{r}
+library(ggplot2)
+```
+
+
+Load data
+```{r}
+mydata <- read.csv("Enrichments_barplot_Cell2location_Visium_mouse_brain_coronal_1.csv", sep = ";")
+```
+
+
+Prepare data
+```{r}
+enrichments <- mydata$Enrichment
+trait <- mydata$Trait
+number_of_structures <- as.numeric(mydata$Structures)
+geneset <- mydata$Gene.set
+factor_lvl <- 1:length(mydata[,1])
+```
+
+Setting factor levels
+```{r}
+enrichments <- factor(enrichments, levels = rev(unique(enrichments)))
+geneset <- factor(geneset, levels = unique(geneset))
+trait <- factor(trait, levels = unique(trait))
+
+```
+
+Create dataframe
+```{r}
+# creating data frame 
+enriched_proportions <- data.frame(number_of_structures,trait,enrichments,geneset,factor_lvl)
+```
+
+
+```{r, fig.width=26, fig.height=4}
+p1 <-   ggplot(enriched_proportions, aes(x=geneset, y=number_of_structures, fill = enrichments)) +
+    geom_bar(stat="identity", position = "stack") +
+    scale_y_continuous(breaks = c(0,5,10,15,17)) + #,limits = c(0,20)) +
+    #geom_text(size = 6, position = position_stack(vjust = 0.75),aes(label = number_of_structures)) +
+    facet_wrap(~ trait, ncol = 12) +
+    labs(title="Enrichments across traits") +
+    xlab("Traits") +
+    ylab("Number of structures") +
+    theme_classic(base_size = 20) +
+    theme(axis.text.x=element_blank()) +
+    scale_fill_manual(values=c("grey60","#238B45", "#A1D99B","#88419D","#C2A5CF","#2171B5","#9ECAE1")) +
+    #coord_flip() +
+    guides(fill = guide_legend(reverse = T))
+
+p1
+```
+
+PDF
+```{r}
+pdf(file = "Enrichments_across_traits_Cell2location_Visium_mouse_brain_coronal_1.pdf", width=24,height=4)
+
+p1
+
+dev.off()
+```
+
+
+
+SessionInfo
+```{r}
+sessionInfo()
+```
+

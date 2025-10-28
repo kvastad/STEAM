@@ -1,0 +1,715 @@
+---
+title: "spatial_structures_[10X_Visium_mouse_brain_coronal]"
+author: "Linda Kvastad"
+date: '`r format(Sys.Date(), "%B %d, %Y")`'
+output:
+ html_document:
+    toc: true
+    toc_depth: 3
+    toc_float: true
+    code_folding: hide
+---
+
+NOTE: Example code for determining the spatial substructures. All datasets were processed with the same approach. The number or NNMF factors and which were used for determining the spatial substructures can be found for each dataset in Supplementary Table 5. The final substructure annotations can be found in Supplementary Table 2, and the differentially expressed genes for each substructure in Supplementary Table 3.
+
+# Load and Normalize data
+
+Load libraries:
+```{r, message=FALSE}
+library(STutility)
+library(dplyr)
+library(RColorBrewer)
+library(scales)
+library(reshape2)
+```
+
+Load ST data:
+```{r}
+
+infoTable <- read.csv("spatial_data/infoTable.csv", sep = ";")
+
+
+se <- InputFromTable(infotable = infoTable, 
+                      minUMICountsPerGene = 100, 
+                      minSpotsPerGene = 5,
+                      minUMICountsPerSpot = 500,
+                      platform =  "Visium")
+
+```
+
+
+Load image:
+```{r}
+se <- LoadImages(se, time.resolve = FALSE)
+```
+
+View image:
+```{r, fig.width=5, fig.height=4}
+ImagePlot(se, method = "raster", annotate = F)
+```
+
+# QC plots  {.tabset}
+
+QC metrics se:
+```{r}
+# Collect all genes coded on the mitochondrial genome
+mt.genes <- grep(pattern = "^mt-", x = rownames(se), value = TRUE)
+se$percent.mito <- (Matrix::colSums(se@assays$RNA@counts[mt.genes, ])/Matrix::colSums(se@assays$RNA@counts))*100
+
+# Collect all genes coding for ribosomal proteins
+rp.genes <- grep(pattern = "^Rpl|^Rps", x = rownames(se), value = TRUE)
+se$percent.ribo <- (Matrix::colSums(se@assays$RNA@counts[rp.genes, ])/Matrix::colSums(se@assays$RNA@counts))*100
+```
+
+## percent.mito
+```{r, fig.width=5, fig.height=4}
+ST.FeaturePlot(se, features = "percent.mito", cols = c("lightgray", "mistyrose", "red", "dark red", "black"), pt.size = 1.3)
+
+```
+
+## percent.ribo
+```{r, fig.width=5, fig.height=4}
+ST.FeaturePlot(se, features = "percent.ribo", cols = c("lightgray", "mistyrose", "red", "dark red", "black"), pt.size = 1.3)
+```
+
+## nFeature_RNA
+```{r, fig.width=5, fig.height=4}
+ST.FeaturePlot(se, features = "nFeature_RNA", cols = c("lightgray", "mistyrose", "red", "dark red", "black"), pt.size = 1.3)
+```
+
+## nCount_RNA
+```{r, fig.width=5, fig.height=4}
+ST.FeaturePlot(se, features = "nCount_RNA", cols = c("lightgray", "mistyrose", "red", "dark red", "black"), pt.size = 1.3)
+```
+
+
+Normalize data: se <- SCTransform(se,return.only.var.genes = T)
+```{r, message=FALSE, include=FALSE}
+se <- SCTransform(se,return.only.var.genes = T)
+```
+
+# NNMF, Clustering & Spatial plot   {.tabset}
+
+non-negative matrix factorization (NNMF)
+```{r}
+se <- RunNMF(se, nfactors = 40)
+```
+
+## NMF factors 
+
+Factors to not include (nmf 40): 23 and 40 not spatially specific, 33 driven by HB genes. These will not be included in downstream analysis. Include: c(1:22,24:32,34:39) 
+
+Plot factors: 
+```{r}
+cscale <- c("darkblue", "cyan", "yellow", "red", "darkred")
+
+ST.DimPlot(se, 
+           dims = 1:10,
+           ncol = 4, # Sets the number of columns at dimensions level
+           grid.ncol = 4, # Sets the number of columns at sample level
+           reduction = "NMF", 
+           dark.theme = T, 
+           pt.size = 0.5, 
+           center.zero = F, 
+           cols = cscale)
+
+ST.DimPlot(se, 
+           dims = 11:20,
+           ncol = 4, # Sets the number of columns at dimensions level
+           grid.ncol = 4, # Sets the number of columns at sample level
+           reduction = "NMF", 
+           dark.theme = T, 
+           pt.size = 0.5, 
+           center.zero = F, 
+           cols = cscale)
+
+ST.DimPlot(se, 
+           dims = 21:30,
+           ncol = 4, # Sets the number of columns at dimensions level
+           grid.ncol = 4, # Sets the number of columns at sample level
+           reduction = "NMF", 
+           dark.theme = T, 
+           pt.size = 0.5, 
+           center.zero = F, 
+           cols = cscale)
+
+ST.DimPlot(se, 
+           dims = 31:40,
+           ncol = 4, # Sets the number of columns at dimensions level
+           grid.ncol = 4, # Sets the number of columns at sample level
+           reduction = "NMF", 
+           dark.theme = T, 
+           pt.size = 0.5, 
+           center.zero = F, 
+           cols = cscale)
+
+```
+
+## FactorGeneLoadingPlot
+
+Check gene contribution of all factors:
+```{r}
+FactorGeneLoadingPlot(se, factor = 1)
+FactorGeneLoadingPlot(se, factor = 2)
+FactorGeneLoadingPlot(se, factor = 3)
+FactorGeneLoadingPlot(se, factor = 4)
+FactorGeneLoadingPlot(se, factor = 5)
+FactorGeneLoadingPlot(se, factor = 6)
+FactorGeneLoadingPlot(se, factor = 7)
+FactorGeneLoadingPlot(se, factor = 8)
+FactorGeneLoadingPlot(se, factor = 9)
+FactorGeneLoadingPlot(se, factor = 10)
+FactorGeneLoadingPlot(se, factor = 11)
+FactorGeneLoadingPlot(se, factor = 12)
+FactorGeneLoadingPlot(se, factor = 13)
+FactorGeneLoadingPlot(se, factor = 14)
+FactorGeneLoadingPlot(se, factor = 15)
+FactorGeneLoadingPlot(se, factor = 16)
+FactorGeneLoadingPlot(se, factor = 17)
+FactorGeneLoadingPlot(se, factor = 18)
+FactorGeneLoadingPlot(se, factor = 19)
+FactorGeneLoadingPlot(se, factor = 20)
+FactorGeneLoadingPlot(se, factor = 21)
+FactorGeneLoadingPlot(se, factor = 22)
+FactorGeneLoadingPlot(se, factor = 23)
+FactorGeneLoadingPlot(se, factor = 24)
+FactorGeneLoadingPlot(se, factor = 25)
+FactorGeneLoadingPlot(se, factor = 26)
+FactorGeneLoadingPlot(se, factor = 27)
+FactorGeneLoadingPlot(se, factor = 28)
+FactorGeneLoadingPlot(se, factor = 29)
+FactorGeneLoadingPlot(se, factor = 30)
+FactorGeneLoadingPlot(se, factor = 31)
+FactorGeneLoadingPlot(se, factor = 32)
+FactorGeneLoadingPlot(se, factor = 33)
+FactorGeneLoadingPlot(se, factor = 34)
+FactorGeneLoadingPlot(se, factor = 35)
+FactorGeneLoadingPlot(se, factor = 36)
+FactorGeneLoadingPlot(se, factor = 37)
+FactorGeneLoadingPlot(se, factor = 38)
+FactorGeneLoadingPlot(se, factor = 39)
+FactorGeneLoadingPlot(se, factor = 40)
+```
+
+## Clustering
+
+Shared Nearest Neighbor (SSN) Graph
+```{r class.source = 'fold-show'}
+se <- FindNeighbors(object = se, verbose = FALSE, reduction = "NMF", dims = c(1:22,24:32,34:39))
+```
+
+Clustering using a modularity optimizer 
+```{r class.source = 'fold-show'}
+se <- FindClusters(object = se, verbose = FALSE)
+```
+
+col_vector
+```{r}
+n <- 19
+qual_col_pals = brewer.pal.info[brewer.pal.info$category == 'qual',]
+col_vector = unlist(mapply(brewer.pal, qual_col_pals$maxcolors, rownames(qual_col_pals)))
+col_vector[6] <- "black"
+col_vector[8] <- "lightpink"
+col_vector[10] <- "firebrick1"
+col_vector[11] <- "darkmagenta"
+col_vector[14] <- "darkorange2"
+col_vector[18] <- "deepskyblue"
+```
+
+## Cluster split
+
+```{r}
+ST.FeaturePlot(object = se, features = "seurat_clusters", pt.size = 0.5, split.labels = T, indices = 1, show.sb = FALSE, ncol = 5, cols = col_vector)
+```
+
+Save cluster annotations
+```{r, eval=FALSE}
+seurat_clusters <- as.data.frame(se$seurat_clusters)
+seurat_clusters$Barcode <- colnames(se)
+seurat_clusters$seurat_clusters <- seurat_clusters$`se$seurat_clusters`
+seurat_clusters$`se$seurat_clusters` <- NULL
+
+write.table(seurat_clusters,file="spatial_structures/seurat_clusters.csv", col.names = T, row.names = F,quote = FALSE,sep = ";")
+```
+
+
+## Spatial plots
+
+Spatial plot
+```{r, fig.width=10, fig.height=8}
+ST.FeaturePlot(object = se, features = "seurat_clusters", pt.size = 2, cols = col_vector)
+```
+
+Spatial plot
+```{r, fig.width=5, fig.height=4}
+ST.FeaturePlot(object = se, features = "seurat_clusters", pt.size = 1, cols = col_vector)
+```
+
+
+FeatureOverlay:
+```{r, fig.width=5, fig.height=4}
+spot_alpha = 0.9
+point.size = 1
+
+FeatureOverlay(se, 
+               features = c("seurat_clusters"),
+               pt.alpha = spot_alpha,
+               pt.size = point.size,
+               add.alpha=T,
+               cols = col_vector)
+
+```
+
+
+# DEGs & UMAP
+
+DE analysis, for all clusters
+
+```{r}
+DefaultAssay(se) <- "RNA"
+se <- se %>%
+  NormalizeData() %>%
+  ScaleData() 
+
+se <- SetIdent(se, value = "seurat_clusters")
+N.markers <- FindAllMarkers(se, only.pos = TRUE, min.pct = 0.25, logfc.threshold = 0.25,slot = "data")
+```
+
+Save N.markers
+```{r, eval=FALSE}
+write.table(N.markers,file="spatial_structures/DE_genes.csv", col.names = T, row.names = F,quote = FALSE,sep = ";")
+
+```
+
+
+Select top genes to plot
+```{r}
+topGenes <- N.markers %>% 
+            group_by(cluster) %>% 
+            arrange(cluster,p_val_adj) %>%
+            slice_head(n=10)
+topGenes
+```
+
+UMAP
+```{r}
+se <- RunUMAP(se, reduction = "NMF", dims = c(1:22,24:32,34:39), n.neighbors = 10)
+```
+
+UMAP clusters
+```{r}
+DimPlot(se, reduction = "umap", label = T,label.size = 4,cols = col_vector)
+```
+
+
+Subset
+```{r}
+cluster0_marker_topGenes <- as.character(t(subset(topGenes,cluster==0, select = gene)))
+cluster1_marker_topGenes <- as.character(t(subset(topGenes,cluster==1, select = gene)))
+cluster2_marker_topGenes <- as.character(t(subset(topGenes,cluster==2, select = gene)))
+cluster3_marker_topGenes <- as.character(t(subset(topGenes,cluster==3, select = gene)))
+cluster4_marker_topGenes <- as.character(t(subset(topGenes,cluster==4, select = gene)))
+cluster5_marker_topGenes <- as.character(t(subset(topGenes,cluster==5, select = gene)))
+cluster6_marker_topGenes <- as.character(t(subset(topGenes,cluster==6, select = gene)))
+cluster7_marker_topGenes <- as.character(t(subset(topGenes,cluster==7, select = gene)))
+cluster8_marker_topGenes <- as.character(t(subset(topGenes,cluster==8, select = gene)))
+cluster9_marker_topGenes <- as.character(t(subset(topGenes,cluster==9, select = gene)))
+cluster10_marker_topGenes <- as.character(t(subset(topGenes,cluster==10, select = gene)))
+cluster11_marker_topGenes <- as.character(t(subset(topGenes,cluster==11, select = gene)))
+cluster12_marker_topGenes <- as.character(t(subset(topGenes,cluster==12, select = gene)))
+cluster13_marker_topGenes <- as.character(t(subset(topGenes,cluster==13, select = gene)))
+cluster14_marker_topGenes <- as.character(t(subset(topGenes,cluster==14, select = gene)))
+cluster15_marker_topGenes <- as.character(t(subset(topGenes,cluster==15, select = gene)))
+cluster16_marker_topGenes <- as.character(t(subset(topGenes,cluster==16, select = gene)))
+cluster17_marker_topGenes <- as.character(t(subset(topGenes,cluster==17, select = gene)))
+cluster18_marker_topGenes <- as.character(t(subset(topGenes,cluster==18, select = gene)))
+```
+
+# Marker genes  {.tabset}
+
+UMAP and Spatial visualization of top markers for each cluster
+
+## cluster 0
+```{r, fig.height=6, fig.width=9}
+# Define colors for heatmap
+heatmap.colors <- c("lightgray", "mistyrose", "red", "darkred", "black")
+
+
+# cluster 0
+FeaturePlot(se, features = cluster0_marker_topGenes, reduction = "umap", order = TRUE, cols = heatmap.colors, ncol = 4)
+ST.FeaturePlot(se, features = cluster0_marker_topGenes, grid.ncol = 4, cols = heatmap.colors, pt.size = 1, show.sb = FALSE)
+
+```
+
+## cluster 1
+```{r, fig.height=6, fig.width=9}
+# cluster 1
+FeaturePlot(se, features = cluster1_marker_topGenes, reduction = "umap", order = TRUE, cols = heatmap.colors, ncol = 4)
+ST.FeaturePlot(se, features = cluster1_marker_topGenes, grid.ncol = 4, cols = heatmap.colors, pt.size = 1, show.sb = FALSE)
+```
+
+## cluster 2
+```{r, fig.height=6, fig.width=9}
+# cluster 2
+FeaturePlot(se, features = cluster2_marker_topGenes, reduction = "umap", order = TRUE, cols = heatmap.colors, ncol = 4)
+ST.FeaturePlot(se, features = cluster2_marker_topGenes, grid.ncol = 4, cols = heatmap.colors, pt.size = 1, show.sb = FALSE)
+```
+
+## cluster 3
+```{r, fig.height=6, fig.width=9}
+# cluster 3
+FeaturePlot(se, features = cluster3_marker_topGenes, reduction = "umap", order = TRUE, cols = heatmap.colors, ncol = 4)
+ST.FeaturePlot(se, features = cluster3_marker_topGenes, grid.ncol = 4, cols = heatmap.colors, pt.size = 1, show.sb = FALSE)
+```
+
+## cluster 4
+```{r, fig.height=6, fig.width=9}
+# cluster 4
+FeaturePlot(se, features = cluster4_marker_topGenes, reduction = "umap", order = TRUE, cols = heatmap.colors, ncol = 4)
+ST.FeaturePlot(se, features = cluster4_marker_topGenes, grid.ncol = 4, cols = heatmap.colors, pt.size = 1, show.sb = FALSE)
+
+```
+
+## cluster 5
+```{r, fig.height=6, fig.width=9}
+# cluster 5
+FeaturePlot(se, features = cluster5_marker_topGenes, reduction = "umap", order = TRUE, cols = heatmap.colors, ncol = 4)
+ST.FeaturePlot(se, features = cluster5_marker_topGenes, grid.ncol = 4, cols = heatmap.colors, pt.size = 1, show.sb = FALSE)
+
+```
+
+## cluster 6
+```{r, fig.height=6, fig.width=9}
+# cluster 6
+FeaturePlot(se, features = cluster6_marker_topGenes, reduction = "umap", order = TRUE, cols = heatmap.colors, ncol = 4)
+ST.FeaturePlot(se, features = cluster6_marker_topGenes, grid.ncol = 4, cols = heatmap.colors, pt.size = 1, show.sb = FALSE)
+
+```
+
+## cluster 7
+```{r, fig.height=6, fig.width=9}
+# cluster 7
+FeaturePlot(se, features = cluster7_marker_topGenes, reduction = "umap", order = TRUE, cols = heatmap.colors, ncol = 4)
+ST.FeaturePlot(se, features = cluster7_marker_topGenes, grid.ncol = 4, cols = heatmap.colors, pt.size = 1, show.sb = FALSE)
+
+```
+
+## cluster 8
+```{r, fig.height=6, fig.width=9}
+# cluster 8
+FeaturePlot(se, features = cluster8_marker_topGenes, reduction = "umap", order = TRUE, cols = heatmap.colors, ncol = 4)
+ST.FeaturePlot(se, features = cluster8_marker_topGenes, grid.ncol = 4, cols = heatmap.colors, pt.size = 1, show.sb = FALSE)
+
+```
+
+## cluster 9
+```{r, fig.height=6, fig.width=9}
+# cluster 9
+FeaturePlot(se, features = cluster9_marker_topGenes, reduction = "umap", order = TRUE, cols = heatmap.colors, ncol = 4)
+ST.FeaturePlot(se, features = cluster9_marker_topGenes, grid.ncol = 4, cols = heatmap.colors, pt.size = 1, show.sb = FALSE)
+
+```
+
+## cluster 10
+```{r, fig.height=6, fig.width=9}
+# cluster 10
+FeaturePlot(se, features = cluster10_marker_topGenes, reduction = "umap", order = TRUE, cols = heatmap.colors, ncol = 4)
+ST.FeaturePlot(se, features = cluster10_marker_topGenes, grid.ncol = 4, cols = heatmap.colors, pt.size = 1, show.sb = FALSE)
+
+```
+
+## cluster 11
+```{r, fig.height=6, fig.width=9}
+# cluster 11
+FeaturePlot(se, features = cluster11_marker_topGenes, reduction = "umap", order = TRUE, cols = heatmap.colors, ncol = 4)
+ST.FeaturePlot(se, features = cluster11_marker_topGenes, grid.ncol = 4, cols = heatmap.colors, pt.size = 1, show.sb = FALSE)
+
+```
+
+## cluster 12
+```{r, fig.height=6, fig.width=9}
+# cluster 12
+FeaturePlot(se, features = cluster12_marker_topGenes, reduction = "umap", order = TRUE, cols = heatmap.colors, ncol = 4)
+ST.FeaturePlot(se, features = cluster12_marker_topGenes, grid.ncol = 4, cols = heatmap.colors, pt.size = 1, show.sb = FALSE)
+
+```
+
+## cluster 13
+```{r, fig.height=6, fig.width=9}
+# cluster 13
+FeaturePlot(se, features = cluster13_marker_topGenes, reduction = "umap", order = TRUE, cols = heatmap.colors, ncol = 4)
+ST.FeaturePlot(se, features = cluster13_marker_topGenes, grid.ncol = 4, cols = heatmap.colors, pt.size = 1, show.sb = FALSE)
+
+```
+
+## cluster 14
+```{r, fig.height=6, fig.width=9}
+# cluster 14
+FeaturePlot(se, features = cluster14_marker_topGenes, reduction = "umap", order = TRUE, cols = heatmap.colors, ncol = 4)
+ST.FeaturePlot(se, features = cluster14_marker_topGenes, grid.ncol = 4, cols = heatmap.colors, pt.size = 1, show.sb = FALSE)
+
+```
+
+## cluster 15
+```{r, fig.height=6, fig.width=9}
+# cluster 15
+FeaturePlot(se, features = cluster15_marker_topGenes, reduction = "umap", order = TRUE, cols = heatmap.colors, ncol = 4)
+ST.FeaturePlot(se, features = cluster15_marker_topGenes, grid.ncol = 4, cols = heatmap.colors, pt.size = 1, show.sb = FALSE)
+
+```
+
+## cluster 16
+```{r, fig.height=6, fig.width=9}
+# cluster 16
+FeaturePlot(se, features = cluster16_marker_topGenes, reduction = "umap", order = TRUE, cols = heatmap.colors, ncol = 4)
+ST.FeaturePlot(se, features = cluster16_marker_topGenes, grid.ncol = 4, cols = heatmap.colors, pt.size = 1, show.sb = FALSE)
+
+```
+
+## cluster 17
+```{r, fig.height=6, fig.width=9}
+# cluster 17
+FeaturePlot(se, features = cluster17_marker_topGenes, reduction = "umap", order = TRUE, cols = heatmap.colors, ncol = 4)
+ST.FeaturePlot(se, features = cluster17_marker_topGenes, grid.ncol = 4, cols = heatmap.colors, pt.size = 1, show.sb = FALSE)
+
+```
+
+## cluster 18
+```{r, fig.height=6, fig.width=9}
+# cluster 18
+FeaturePlot(se, features = cluster18_marker_topGenes, reduction = "umap", order = TRUE, cols = heatmap.colors, ncol = 4)
+ST.FeaturePlot(se, features = cluster18_marker_topGenes, grid.ncol = 4, cols = heatmap.colors, pt.size = 1, show.sb = FALSE)
+
+```
+
+# DEGs Heatmap
+
+Select top N genes to plot
+```{r}
+N <- 10
+
+topN <- N.markers %>% 
+            group_by(cluster) %>% 
+            arrange(cluster,p_val_adj) %>%
+            slice_head(n=N)
+topN
+```
+
+
+Plot heat map of top N genes in each cluster:
+```{r, fig.height=20, fig.width=13}
+DoHeatmap(se, features = topN$gene, group.colors = col_vector)
+```
+
+# Jaccard index
+
+Save marker genes from clusters
+
+Select top M genes from each cluster
+```{r}
+M <- 10
+
+topM <- N.markers %>% 
+            group_by(cluster) %>% 
+            arrange(cluster,p_val_adj) %>%
+            slice_head(n=M)
+topM
+```
+
+Subset
+```{r}
+cluster0_marker_genes_ <- as.character(t(subset(topM,cluster==0, select = gene)))
+cluster1_marker_genes_ <- as.character(t(subset(topM,cluster==1, select = gene)))
+cluster2_marker_genes_ <- as.character(t(subset(topM,cluster==2, select = gene)))
+cluster3_marker_genes_ <- as.character(t(subset(topM,cluster==3, select = gene)))
+cluster4_marker_genes_ <- as.character(t(subset(topM,cluster==4, select = gene)))
+cluster5_marker_genes_ <- as.character(t(subset(topM,cluster==5, select = gene)))
+cluster6_marker_genes_ <- as.character(t(subset(topM,cluster==6, select = gene)))
+cluster7_marker_genes_ <- as.character(t(subset(topM,cluster==7, select = gene)))
+cluster8_marker_genes_ <- as.character(t(subset(topM,cluster==8, select = gene)))
+cluster9_marker_genes_ <- as.character(t(subset(topM,cluster==9, select = gene)))
+cluster10_marker_genes_ <- as.character(t(subset(topM,cluster==10, select = gene)))
+cluster11_marker_genes_ <- as.character(t(subset(topM,cluster==11, select = gene)))
+cluster12_marker_genes_ <- as.character(t(subset(topM,cluster==12, select = gene)))
+cluster13_marker_genes_ <- as.character(t(subset(topM,cluster==13, select = gene)))
+cluster14_marker_genes_ <- as.character(t(subset(topM,cluster==14, select = gene)))
+cluster15_marker_genes_ <- as.character(t(subset(topM,cluster==15, select = gene)))
+cluster16_marker_genes_ <- as.character(t(subset(topM,cluster==16, select = gene)))
+cluster17_marker_genes_ <- as.character(t(subset(topM,cluster==17, select = gene)))
+cluster18_marker_genes_ <- as.character(t(subset(topM,cluster==18, select = gene)))
+```
+
+Make a list of all gene sets:
+```{r}
+all_gene_sets <- list(cluster0_marker_genes_=cluster0_marker_genes_,cluster1_marker_genes_=cluster1_marker_genes_,cluster2_marker_genes_=cluster2_marker_genes_,cluster3_marker_genes_=cluster3_marker_genes_,cluster4_marker_genes_=cluster4_marker_genes_,cluster5_marker_genes_=cluster5_marker_genes_,cluster6_marker_genes_=cluster6_marker_genes_,cluster7_marker_genes_=cluster7_marker_genes_,cluster8_marker_genes_=cluster8_marker_genes_,cluster9_marker_genes_=cluster9_marker_genes_,cluster10_marker_genes_=cluster10_marker_genes_,cluster11_marker_genes_=cluster11_marker_genes_,cluster12_marker_genes_=cluster12_marker_genes_,cluster13_marker_genes_=cluster13_marker_genes_,cluster14_marker_genes_=cluster14_marker_genes_,cluster15_marker_genes_=cluster15_marker_genes_,cluster16_marker_genes_=cluster16_marker_genes_,cluster17_marker_genes_=cluster17_marker_genes_,cluster18_marker_genes_=cluster18_marker_genes_)
+```
+
+
+Jaccard function:
+```{r}
+jaccard <- function(a, b) {
+  intersection = length(intersect(a, b))
+  union = length(a) + length(b) - intersection
+  return (intersection/union)
+}
+```
+
+Print all genes shared combinations:
+```{r}
+# två for-loopar
+# Börja med att skapa en tom matrix med lika många kolumner som rader
+# kolumn- och rad-namn ska vara samma som namnen på hallmark gene sets
+length.mat <- matrix(data = NA, 
+                  nrow = length(all_gene_sets), 
+                  ncol = length(all_gene_sets), 
+                  dimnames = list(names(all_gene_sets), 
+                                  names(all_gene_sets)))
+
+
+# Iterera över två for-loopar, en för rader och en för kolumner
+for (i in 1:length(all_gene_sets)) {
+  for (j in 1:length(all_gene_sets)) {
+    # Spara jaccard mellan par av gene sets
+    length.mat[i, j] <- jaccard(all_gene_sets[[i]],all_gene_sets[[j]])
+  }
+}
+
+
+```
+
+```{r, fig.height=12, fig.width=14}
+length.mat.df <- as.data.frame(length.mat)
+
+library(tidyverse)
+
+df2 <- length.mat.df %>%
+  rownames_to_column() %>%
+  gather(colname, value, -rowname)
+head(df2)
+
+df2$value <- ifelse(df2$rowname == df2$colname, NA, df2$value)
+
+ggplot(df2, aes(x = rowname, y = colname, fill = value)) +
+  geom_tile()
+```
+
+Re-format plot
+
+```{r, fig.height=12, fig.width=14}
+# Get lower triangle of the correlation matrix
+  get_lower_tri<-function(length.mat){
+    length.mat[upper.tri(length.mat)] <- NA
+    return(length.mat)
+  }
+  # Get upper triangle of the correlation matrix
+  get_upper_tri <- function(length.mat){
+    length.mat[lower.tri(length.mat)]<- NA
+    return(length.mat)
+  }
+
+
+# Reorder function
+reorder_length.mat <- function(length.mat){
+# Use correlation between variables as distance
+dd <- as.dist((1-length.mat)/2)
+hc <- hclust(dd)
+length.mat <-length.mat[hc$order, hc$order]
+}
+
+# Reorder the correlation matrix
+length.mat <- reorder_length.mat(length.mat)
+lower_tri <- get_lower_tri(length.mat)
+# Melt the correlation matrix
+melted_length.mat <- melt(lower_tri, na.rm = TRUE)
+melted_length.mat$value <- ifelse(melted_length.mat$Var1 == melted_length.mat$Var2, NA, melted_length.mat$value)
+# Create a ggheatmap
+ggheatmap <- ggplot(melted_length.mat, aes(Var2, Var1, fill = value))+
+ geom_tile(color = "white")+
+ scale_fill_gradient2(low = "blue", high = "red", mid = "white", 
+   midpoint = 0, space = "Lab", 
+    name="Jaccard index", limits=c(0,1)) +
+  theme_minimal()+ # minimal theme
+ theme(axis.text.x = element_text(angle = 45, vjust = 1, 
+    size = 12, hjust = 1))+
+ coord_fixed()+
+  geom_text(aes(label = round(value, 2)))
+
+# Print the heatmap
+ggheatmap + ggtitle("All traits")
+```
+
+
+```{r, fig.height=12, fig.width=14}
+# Get lower triangle of the correlation matrix
+  get_lower_tri<-function(length.mat){
+    length.mat[upper.tri(length.mat)] <- NA
+    return(length.mat)
+  }
+  # Get upper triangle of the correlation matrix
+  get_upper_tri <- function(length.mat){
+    length.mat[lower.tri(length.mat)]<- NA
+    return(length.mat)
+  }
+
+
+# Reorder function
+reorder_length.mat <- function(length.mat){
+# Use correlation between variables as distance
+dd <- as.dist((1-length.mat)/2)
+hc <- hclust(dd)
+length.mat <-length.mat[hc$order, hc$order]
+}
+
+# Reorder the correlation matrix
+length.mat <- reorder_length.mat(length.mat)
+lower_tri <- get_lower_tri(length.mat)
+# Melt the correlation matrix
+melted_length.mat <- melt(lower_tri, na.rm = TRUE)
+melted_length.mat$value <- ifelse(melted_length.mat$Var1 == melted_length.mat$Var2, NA, melted_length.mat$value)
+# Create a ggheatmap
+ggheatmap <- ggplot(melted_length.mat, aes(Var2, Var1, fill = value))+
+ geom_tile(color = "white")+
+ scale_fill_gradient2(low = "blue", high = "red", mid = "white", 
+   midpoint = 0, space = "Lab", 
+    name="Jaccard index") +
+  theme_minimal()+ # minimal theme
+ theme(axis.text.x = element_text(angle = 45, vjust = 1, 
+    size = 12, hjust = 1))+
+ coord_fixed()+
+  geom_text(aes(label = round(value, 2)))
+
+# Print the heatmap
+ggheatmap + ggtitle("All traits")
+```
+
+Save
+```{r, eval=FALSE}
+write.table(cluster0_marker_genes_,file = "spatial_structures/cluster0_marker_genes_.csv", row.names = F, col.names = F)
+write.table(cluster1_marker_genes_,file = "spatial_structures/cluster1_marker_genes_.csv", row.names = F, col.names = F)
+write.table(cluster2_marker_genes_,file = "spatial_structures/cluster2_marker_genes_.csv", row.names = F, col.names = F)
+write.table(cluster3_marker_genes_,file = "spatial_structures/cluster3_marker_genes_.csv", row.names = F, col.names = F)
+write.table(cluster4_marker_genes_,file = "spatial_structures/cluster4_marker_genes_.csv", row.names = F, col.names = F)
+write.table(cluster5_marker_genes_,file = "spatial_structures/cluster5_marker_genes_.csv", row.names = F, col.names = F)
+write.table(cluster6_marker_genes_,file = "spatial_structures/cluster6_marker_genes_.csv", row.names = F, col.names = F)
+write.table(cluster7_marker_genes_,file = "spatial_structures/cluster7_marker_genes_.csv", row.names = F, col.names = F)
+write.table(cluster8_marker_genes_,file = "spatial_structures/cluster8_marker_genes_.csv", row.names = F, col.names = F)
+write.table(cluster9_marker_genes_,file = "spatial_structures/cluster9_marker_genes_.csv", row.names = F, col.names = F)
+write.table(cluster10_marker_genes_,file = "spatial_structures/cluster10_marker_genes_.csv", row.names = F, col.names = F)
+write.table(cluster11_marker_genes_,file = "spatial_structures/cluster11_marker_genes_.csv", row.names = F, col.names = F)
+write.table(cluster12_marker_genes_,file = "spatial_structures/cluster12_marker_genes_.csv", row.names = F, col.names = F)
+write.table(cluster13_marker_genes_,file = "spatial_structures/cluster13_marker_genes_.csv", row.names = F, col.names = F)
+write.table(cluster14_marker_genes_,file = "spatial_structures/cluster14_marker_genes_.csv", row.names = F, col.names = F)
+write.table(cluster15_marker_genes_,file = "spatial_structures/cluster15_marker_genes_.csv", row.names = F, col.names = F)
+write.table(cluster16_marker_genes_,file = "spatial_structures/cluster16_marker_genes_.csv", row.names = F, col.names = F)
+write.table(cluster17_marker_genes_,file = "spatial_structures/cluster17_marker_genes_.csv", row.names = F, col.names = F)
+write.table(cluster18_marker_genes_,file = "spatial_structures/cluster18_marker_genes_.csv", row.names = F, col.names = F)
+```
+
+
+# Notes
+
+Session info
+```{r}
+sessionInfo()
+```
+

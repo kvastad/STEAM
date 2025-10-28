@@ -1,0 +1,22 @@
+﻿Enrichment;Trait;Structures;Gene set;Comment
+n.s. genetic all;CAD;4;Genetic_all;pcw9_nr16
+significant genetic all;CAD;0;Genetic_all;pcw9_nr16
+n.s. genetic top;CAD;3;Genetic_top;pcw9_nr16
+significant genetic top;CAD;1;Genetic_top;pcw9_nr16
+n.s. drugs all;CAD;1;Drugs_all;pcw9_nr16
+significant drugs all;CAD;3;Drugs_all;pcw9_nr16
+n.s. genetic all;CHD;0;Genetic_all;pcw9_nr16
+significant genetic all;CHD;4;Genetic_all;pcw9_nr16
+n.s. genetic top;CHD;1;Genetic_top;pcw9_nr16
+significant genetic top;CHD;3;Genetic_top;pcw9_nr16
+n.s. drugs all;CHD;2;Drugs_all;pcw9_nr16
+significant drugs all;CHD;2;Drugs_all;pcw9_nr16
+n.s. genetic all;LDL;4;Genetic_all;pcw9_nr16
+significant genetic all;LDL;0;Genetic_all;pcw9_nr16
+N/A;LDL;4;Genetic_top;pcw9_nr16
+n.s. drugs all;LDL;0;Drugs_all;pcw9_nr16
+n.s. genetic all;MI;4;Genetic_all;pcw9_nr16
+significant genetic all;MI;0;Genetic_all;pcw9_nr16
+N/A;MI;4;Genetic_top;pcw9_nr16
+n.s. drugs all;MI;2;Drugs_all;pcw9_nr16
+significant drugs all;MI;2;Drugs_all;pcw9_nr16

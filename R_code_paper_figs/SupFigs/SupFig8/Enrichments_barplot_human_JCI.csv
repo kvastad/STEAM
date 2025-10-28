@@ -1,0 +1,13 @@
+﻿Enrichment;Trait;Structures;Gene set;Comment
+n.s. genetic all;CKD;8;Genetic_all;human_JCI
+significant genetic all;CKD;3;Genetic_all;human_JCI
+n.s. genetic top;CKD;11;Genetic_top;human_JCI
+significant genetic top;CKD;0;Genetic_top;human_JCI
+n.s. drugs all;CKD;0;Drugs_all;human_JCI
+significant drugs all;CKD;11;Drugs_all;human_JCI
+n.s. genetic all;IKD;0;Genetic_all;human_JCI
+significant genetic all;IKD;11;Genetic_all;human_JCI
+n.s. genetic top;IKD;11;Genetic_top;human_JCI
+significant genetic top;IKD;0;Genetic_top;human_JCI
+n.s. drugs all;IKD;0;Drugs_all;human_JCI
+significant drugs all;IKD;11;Drugs_all;human_JCI

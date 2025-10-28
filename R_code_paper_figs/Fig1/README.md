@@ -1,0 +1,1 @@
+This folder includes script to plot the barplot to the side of Figure 1a, the rest in that panel was assembled manually. For example scripts of the other panels in Fig1, please view code for the following; Fig1b,c (SupFig1_to_4) and Fig1d,e (Fig4).

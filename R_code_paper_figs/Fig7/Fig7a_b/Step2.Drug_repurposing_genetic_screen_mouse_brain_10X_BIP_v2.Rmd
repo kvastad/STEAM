@@ -1,0 +1,472 @@
+---
+title: "Drug_repurposing_genetic_screen_mouse_brain_10X_BIP_v2"
+output: html_document
+author: "Linda Kvastad"
+date: "2024-09-16"
+---
+
+NOTE: Plots part of Figure 7b.
+
+
+Load libraries
+```{r}
+library(STutility)
+library(dplyr)
+library(tidyverse)
+library(UpSetR)
+library(ComplexHeatmap)
+```
+
+
+Load ST data:
+```{r}
+
+infoTable <- read.csv("seurat_objects/brain_mouse_10X/infoTable_mouse_coronal.csv", sep = ";")
+
+
+se <- InputFromTable(infotable = infoTable, 
+                      minUMICountsPerGene = 100, 
+                      minSpotsPerGene = 5,
+                      minUMICountsPerSpot = 500,
+                      platform =  "Visium")
+
+```
+
+Load OpenTarget files: OBS! Update file location for relevant OpenTargets files
+```{r}
+get_opentarget <- function (opentarget_dir = paste0(getwd(),"/OpenTargets/all_traits_study"), mouse_genes = NULL ){
+  OT.files <- list()
+  disease.names <- character()
+  i <- 1
+  column.names <- c("Gene_symbol","Overall_assoc.score","Genetic_assoc.","Somatic_mutation","Drugs","Pathways_system_biology","Text_mining","RNA_expression","Animal_models","Target_name")
+  
+  if (!is.null(mouse_genes)){
+    
+
+      conversion.table <- read.table(mouse_genes,
+                                     sep = "\t",
+                                     header = TRUE) 
+      #if mouse_genes dataframe is specified, load it
+
+  }
+  
+  for (OT.file in list.files(opentarget_dir)){
+    if (grepl("diseases_", OT.file)){
+      print(OT.file)
+  
+      df <- read.table(paste(opentarget_dir, OT.file, sep= "/"),
+                     sep= "\t",
+                     header=TRUE,
+                     quote = "")
+    
+      names(df) <- column.names  # rename columns
+      
+      df[df == "No data"] <- NA #Re-name N/A
+    
+      
+    
+      names(df) <- column.names  # rename columns
+      
+      df[df == "No data"] <- NA #Re-name N/A
+      
+      if (!is.null(mouse_genes)){
+        df$Gene_symbol <- conversion.table[match(df$Gene_symbol,conversion.table$hgnc_symbol),]$mgi_symbol #convert human to mouse annotation
+        OT.files[[i]] <- df
+        } else {
+          OT.files[[i]] <- df
+        }
+      i <- i+1
+      disease.name <- sub(".*diseases_","", OT.file)
+      disease.name <- gsub(".tsv", "", disease.name)
+      disease.names <- append(disease.names, disease.name)
+    }
+  }
+
+  names(OT.files) <-  disease.names
+  OT.files <- map(OT.files, ~.x %>%
+                    distinct())
+  return(OT.files)
+}
+```
+
+OBS! Update file location for relevant OpenTargets files
+```{r}
+OpenTargets.path <- "OpenTargets/all_traits_study"
+OT.files <- get_opentarget( opentarget_dir = OpenTargets.path ,mouse_genes = "mouse_human_genes_feb_23.tsv")
+#OT.files.human <-get_opentarget(opentarget_dir = OpenTargets.path)
+
+```
+
+#Clean out genes not present in the Seurat object AND removes duplicates
+```{r}
+# clean OT.files from duplicates
+OT.files <- map(OT.files, ~.x %>%
+  dplyr::select(Gene_symbol, Overall_assoc.score, Genetic_assoc.,Drugs, Animal_models)%>%
+  distinct() %>%
+  filter(!is.na(Gene_symbol)&Gene_symbol %in% rownames(se)) %>%
+    group_by(Gene_symbol)%>%
+  dplyr::slice(which.max(Overall_assoc.score))%>% #==> when there is a gene mentioned twice, only keep the row where the overall association score is the highest ==> reason for duplicates is that multiple human genes have the same mouse homolog etc...
+    ungroup())
+
+# saveRDS(OT.files, file = paste("OpenTargets", sample,"OT_files_list.rds", sep = "/"))
+
+
+```
+
+Gene sets for MOUSE
+```{r}
+#create gene sets from the 
+all_gene_sets <- list()
+list.names <- character()
+i <- 1
+j <- 1
+for (df in OT.files){
+  ## Genes overall association score
+  OpenTarget_Overall_assoc.score_xxx <- arrange(df, desc(Overall_assoc.score))
+  OpenTarget_Overall_assoc.score_xxx <- OpenTarget_Overall_assoc.score_xxx[!is.na(OpenTarget_Overall_assoc.score_xxx$Overall_assoc.score),]$Gene_symbol
+  ## Genes genetic association score
+  OpenTarget_Genetic_assoc._xxx <- arrange(df, desc(Genetic_assoc.))
+  OpenTarget_Genetic_assoc._xxx <- OpenTarget_Genetic_assoc._xxx[!is.na(OpenTarget_Genetic_assoc._xxx$Genetic_assoc.),]$Gene_symbol
+  print(length(OpenTarget_Genetic_assoc._xxx))
+  ## Genes drug target
+  OpenTarget_Drugs_xxx <- arrange(df, desc(Drugs))
+  # print(dim(OpenTarget_Drugs_xxx_top100_[!is.na("Drugs"),]))
+  OpenTarget_Drugs_xxx <- OpenTarget_Drugs_xxx[!is.na(OpenTarget_Drugs_xxx$Drugs),]$Gene_symbol
+  all_gene_sets[[i]] <- unique(OpenTarget_Overall_assoc.score_xxx)
+  all_gene_sets[[i+1]] <- unique(OpenTarget_Genetic_assoc._xxx)
+  all_gene_sets[[i+2]] <- unique(OpenTarget_Drugs_xxx)
+  list.names <- append(list.names,(c(gsub("xxx", names(OT.files[j]),"OpenTarget_Overall_assoc.score_xxx"),
+                            gsub("xxx", names(OT.files[j]),"OpenTarget_Genetic_assoc._xxx"),
+                            gsub("xxx", names(OT.files[j]),"OpenTarget_Drugs_xxx"))))
+  j <- j+1
+  i <- i+3
+}
+names(all_gene_sets) <- list.names
+```
+
+Subsetting list to only Drugs gene lists
+```{r}
+patterns <- c("Drugs")
+
+all_gene_sets <- all_gene_sets[grep(
+  paste(patterns, collapse = "|"),
+  names(all_gene_sets),
+  ignore.case = TRUE
+  )]
+```
+
+Removing empty terms
+```{r}
+all_gene_sets$OpenTarget_Drugs_total_cholesterol_measurement_v23.06
+all_gene_sets$OpenTarget_Drugs_total_cholesterol_measurement_v23.06 <- NULL
+all_gene_sets$OpenTarget_Drugs_low_density_lipoprotein_cholesterol_measurement_v23.06
+all_gene_sets$OpenTarget_Drugs_low_density_lipoprotein_cholesterol_measurement_v23.06 <- NULL
+```
+
+Load BIP genetic and drug gene list
+```{r}
+OpenTargets_BIP_Genetic_ <- as.character(t(read.table(file = "OpenTargets_gene_sets/brain_mouse_10X/Mouse_OpenTargets_BIP_Genetic.csv")))
+OpenTargets_BIP_Genetic_top_ <- OpenTargets_BIP_Genetic_[1:80]
+
+OpenTargets_BIP_drug_targets_ <- as.character(t(read.table(file = "OpenTargets_gene_sets/brain_mouse_10X/Mouse_OpenTargets_BIP_Drugs.csv")))
+length(OpenTargets_BIP_drug_targets_)
+
+```
+
+
+
+```{r}
+# Initialize an empty vector to store all genes
+all_genes <- c()
+
+# Loop through each element in the list
+for (i in 1:length(all_gene_sets)) {
+  # Concatenate the genes from each list element
+  all_genes <- c(all_genes, all_gene_sets[[i]])
+}
+
+# Get unique genes
+all_genes <- c(all_genes,OpenTargets_BIP_Genetic_,OpenTargets_BIP_drug_targets_)
+all_genes <- unique(all_genes)
+
+```
+
+
+Normalize data: se <- SCTransform(se,return.only.var.genes = T)
+```{r, message=FALSE, include=FALSE}
+se <- SCTransform(se,return.only.var.genes = T)
+```
+
+
+Non-brain and brain related traits
+```{r}
+all_gene_sets_brain_traits <- all_gene_sets
+all_gene_sets_brain_traits$OpenTarget_Drugs_chronic_obstructive_pulmonary_disease_v23.06 <- NULL
+all_gene_sets_brain_traits$OpenTarget_Drugs_crohns_disease_v23.06 <- NULL
+all_gene_sets_brain_traits$OpenTarget_Drugs_myocardial_infarction_v23.06 <- NULL
+all_gene_sets_brain_traits$OpenTarget_Drugs_ulcerative_colitis_v23.06 <- NULL
+all_gene_sets_brain_traits$OpenTarget_Drugs_liver_disease_v23.09 <- NULL
+all_gene_sets_brain_traits$OpenTarget_Drugs_cirrhosis_of_liver_v23.06 <- NULL
+all_gene_sets_brain_traits$OpenTarget_Drugs_coronary_artery_disease_v23.06 <- NULL
+all_gene_sets_brain_traits$`OpenTarget_Drugs_non-alcoholic_fatty_liver_disease_v23.06` <- NULL
+all_gene_sets_brain_traits$OpenTarget_Drugs_inflammatory_bowel_disease_v23.06 <- NULL
+all_gene_sets_brain_traits$OpenTarget_Drugs_lung_disease_v23.06 <- NULL
+all_gene_sets_brain_traits$OpenTarget_Drugs_chronic_kidney_disease_v23.06 <- NULL
+all_gene_sets_brain_traits$OpenTarget_Drugs_congenital_heart_disease_v23.06 <- NULL
+all_gene_sets_brain_traits$OpenTarget_Drugs_bronchial_disease_v23.06 <- NULL
+all_gene_sets_brain_traits$OpenTarget_Drugs_asthma_v23.06 <- NULL
+all_gene_sets_brain_traits$OpenTarget_Drugs_type_1_diabetes_mellitus_v24.03 <- NULL
+all_gene_sets_brain_traits$OpenTarget_Drugs_type_2_diabetes_mellitus_v24.03 <- NULL
+all_gene_sets_brain_traits$OpenTarget_Drugs_large_intestine_disorder_v23.06 <- NULL
+all_gene_sets_brain_traits$OpenTarget_Drugs_inherited_kidney_disorder_v23.06 <- NULL
+
+
+all_gene_sets_non_brain_traits <- all_gene_sets
+all_gene_sets_non_brain_traits$OpenTarget_Drugs_epilepsy_v23.06 <- NULL
+all_gene_sets_non_brain_traits$OpenTarget_Drugs_autism_spectrum_disorder_v23.06 <- NULL
+all_gene_sets_non_brain_traits$OpenTarget_Drugs_attention_deficit_hyperactivity_disorder_v23.06 <- NULL
+all_gene_sets_non_brain_traits$OpenTarget_Drugs_insomnia_v23.06 <- NULL
+all_gene_sets_non_brain_traits$OpenTarget_Drugs_major_depressive_disorder_v23.06 <- NULL
+all_gene_sets_non_brain_traits$OpenTarget_Drugs_anterior_horn_disorder_v23.12 <- NULL
+all_gene_sets_non_brain_traits$OpenTarget_Drugs_BIPheimer_disease_v23.06 <- NULL
+all_gene_sets_non_brain_traits$OpenTarget_Drugs_amyotrophic_lateral_sclerosis_v23.06 <- NULL
+all_gene_sets_non_brain_traits$OpenTarget_Drugs_bipolar_disorder_v23.06 <- NULL
+all_gene_sets_non_brain_traits$OpenTarget_Drugs_schizophrenia_v23.06 <- NULL
+all_gene_sets_non_brain_traits$OpenTarget_Drugs_parkinson_disease_v23.06 <- NULL
+all_gene_sets_non_brain_traits$OpenTarget_Drugs_multiple_sclerosis_v23.06 <- NULL
+
+```
+
+
+```{r}
+# Initialize an empty vector to store all genes
+all_genes_brain <- c()
+
+# Loop through each element in the list
+for (i in 1:length(all_gene_sets_brain_traits)) {
+  # Concatenate the genes from each list element
+  all_genes_brain <- c(all_genes_brain, all_gene_sets_brain_traits[[i]])
+}
+
+# Get unique genes for all brain and non-brain traits
+all_genes_brain <- unique(all_genes_brain)
+
+```
+
+
+```{r}
+# Initialize an empty vector to store all genes
+all_genes_non_brain <- c()
+
+# Loop through each element in the list
+for (i in 1:length(all_gene_sets_non_brain_traits)) {
+  # Concatenate the genes from each list element
+  all_genes_non_brain <- c(all_genes_non_brain, all_gene_sets_non_brain_traits[[i]])
+}
+
+# Get unique genes for all brain and non-brain traits
+all_genes_non_brain <- unique(all_genes_non_brain)
+
+```
+
+```{r}
+# Number of drug targets in brain related traits
+length(all_genes_brain)
+
+# Number of drug targets in non-brain related traits
+length(all_genes_non_brain)
+
+# Number of overlapping genes between brain and non-brain related traits
+length(intersect(all_genes_brain,all_genes_non_brain))
+
+```
+
+
+
+Select genes for correlation analysis
+```{r}
+# Include genetic genes from top or all, depending on which enrichment selection you are interested in from your gene list. Also include all drug targets for brain and non-brain related traits that overlap with all genetically associated genes for the trait.
+all_genes_cormat <- unique(c(OpenTargets_BIP_Genetic_top_,(all_genes_brain[all_genes_brain %in% OpenTargets_BIP_Genetic_]),(all_genes_non_brain[all_genes_non_brain %in% OpenTargets_BIP_Genetic_])))
+
+
+#subset_genes_cormat <- unique(c(all_genes_non_brain[all_genes_non_brain %in% all_genes_cormat],all_genes_brain[all_genes_brain %in% all_genes_cormat]))
+
+```
+
+
+Select data from OT gene list
+```{r}
+mydata <- FetchData(se,vars=all_genes_cormat)
+```
+
+
+Create spearman correlation heat map
+```{r}
+cormat <- cor(mydata,method = c("spearman"))
+melted_cormat <- reshape2::melt(cormat)
+melted_cormat$value <- ifelse(melted_cormat$Var1 == melted_cormat$Var2, NA, melted_cormat$value)
+
+```
+
+
+Prepare data legends
+```{r}
+BIP_genes_legend_Genetic <- as.character(rownames(cormat) %in% OpenTargets_BIP_Genetic_)
+BIP_genes_legend_Genetic <- replace(BIP_genes_legend_Genetic,BIP_genes_legend_Genetic=="TRUE","BIP_Genetic")
+BIP_genes_legend_Genetic <- replace(BIP_genes_legend_Genetic,BIP_genes_legend_Genetic=="FALSE","nonBIP_Genetic")
+
+BIP_genes_legend_Drugs <- as.character(rownames(cormat) %in% OpenTargets_BIP_drug_targets_)
+BIP_genes_legend_Drugs <- replace(BIP_genes_legend_Drugs,BIP_genes_legend_Drugs=="TRUE","BIP_Drug_targets")
+BIP_genes_legend_Drugs <- replace(BIP_genes_legend_Drugs,BIP_genes_legend_Drugs=="FALSE","nonBIP_Drug_targets")
+
+Brain_trait_genes_legend <- as.character(rownames(cormat) %in% all_genes_brain)
+Brain_trait_genes_legend <- replace(Brain_trait_genes_legend,Brain_trait_genes_legend=="TRUE","Brain_traits_drug_targets")
+Brain_trait_genes_legend <- replace(Brain_trait_genes_legend,Brain_trait_genes_legend=="FALSE","nonBrain_traits")
+
+Non_brain_trait_genes_legend <- as.character(rownames(cormat) %in% all_genes_non_brain)
+Non_brain_trait_genes_legend <- replace(Non_brain_trait_genes_legend,Non_brain_trait_genes_legend=="TRUE","Non_brain_trait_drug_targets")
+Non_brain_trait_genes_legend <- replace(Non_brain_trait_genes_legend,Non_brain_trait_genes_legend=="FALSE","Brain_traits")
+
+
+df_legend <- data.frame(BIP_genes_legend_Genetic,BIP_genes_legend_Drugs,Brain_trait_genes_legend,Non_brain_trait_genes_legend)
+
+```
+
+
+```{r}
+library(circlize)
+col_fun = colorRamp2(c(-0.4, 0, 0.4), c("blue","white","red"))
+col_fun(seq(-3, 3))
+```
+
+
+Complex Heatmaps
+```{r}
+#Heatmat annotations
+ha = HeatmapAnnotation(
+    BIP_genetic = BIP_genes_legend_Genetic,
+    BIP_drug_targets = BIP_genes_legend_Drugs,
+    Brain_traits_drug_targets = Brain_trait_genes_legend,
+    Non_brain_trait_drug_targets = Non_brain_trait_genes_legend,
+    col = list(BIP_genetic = c("BIP_Genetic" = "dodgerblue3", "nonBIP_Genetic" = "white"),
+               BIP_drug_targets =c("BIP_Drug_targets"="red","nonBIP_Drug_targets"="white"),
+               Brain_traits_drug_targets = c("Brain_traits_drug_targets" = "gold", "nonBrain_traits" = "white"),
+               Non_brain_trait_drug_targets = c("Non_brain_trait_drug_targets" = "gold4", "Brain_traits" = "white")
+    ),
+    annotation_legend_param = list(at=c("BIP_Genetic","BIP_Drug_targets","Brain_traits_drug_targets","Non_brain_trait_drug_targets"))
+)
+
+set.seed(123)
+
+myheatmap <-  Heatmap(cormat,name="Spearman\nCorrelation",row_names_gp = gpar(fontsize = 4),column_names_gp = gpar(fontsize = 4),clustering_method_columns = "complete",clustering_method_rows = "complete",show_row_dend = F,show_column_names = T,top_annotation = ha,row_split = 5, column_split = 5,col = col_fun)
+
+myheatmap
+```
+
+
+PDF
+```{r, eval=FALSE}
+pdf(file = "Drug_repurposing_genetic_top80_screen_mouse_brain_10X_BIP_v2.pdf", height = 9, width = 10)
+
+myheatmap
+
+dev.off()
+```
+
+
+Find drug targets that spatially co-localize with trait enriched tissue substructures by selecting the heatmap cluster that includes substructure specific genes.
+```{r}
+# Initialize the heatmap (this ensures clusters are finalized)
+myheatmap <- draw(myheatmap)
+
+# Extract the row order of genes for each cluster
+row_order_list <- row_order(myheatmap)
+
+# Retrieve the genes in clusters of interest
+genes_cluster_2 <- rownames(cormat)[row_order_list[[2]]]
+
+genes_clusters_of_interest <- c(genes_cluster_2)
+
+# Print or store the genes in cluster of interest
+print(genes_clusters_of_interest)
+
+```
+
+
+
+Non-intersected genes
+```{r}
+# Add a not-in function
+`%!in%` <- Negate(`%in%`)
+```
+
+
+Drug targets with genetic evidence brain related traits
+```{r}
+Brain_trait_genes <- unique(genes_clusters_of_interest[genes_clusters_of_interest %in% all_genes_brain])
+Non_brain_trait_genes <- unique(genes_clusters_of_interest[genes_clusters_of_interest %in% all_genes_non_brain])
+
+
+length(Brain_trait_genes)
+length(Non_brain_trait_genes)
+length(intersect(Brain_trait_genes,Non_brain_trait_genes))
+
+BIP_brain_drug_targets <- unique(OpenTargets_BIP_Genetic_[OpenTargets_BIP_Genetic_ %in% Brain_trait_genes])
+BIP_brain_drug_targets
+
+BIP_non_brain_drug_targets <- unique(OpenTargets_BIP_Genetic_[OpenTargets_BIP_Genetic_ %in% Non_brain_trait_genes])
+BIP_non_brain_drug_targets
+
+Potential_new_drug_targets <- unique(c(BIP_brain_drug_targets,BIP_non_brain_drug_targets))
+Potential_new_drug_targets <- unique(Potential_new_drug_targets[Potential_new_drug_targets %!in% OpenTargets_BIP_drug_targets_])
+Potential_new_drug_targets
+```
+
+
+```{r, fig.height=8, fig.width=15}
+ST.FeaturePlot(se, features = Potential_new_drug_targets, cols = c("lightgray", "mistyrose", "red", "dark red", "black"), pt.size = 1.3, grid.ncol = 3)
+```
+
+
+
+Create matrix with drug target candidates and from which drug gene lists they overalped with
+```{r}
+Drug_repurposing_candidates <- as.data.frame(matrix(data = NA, nrow = length(Potential_new_drug_targets), ncol = 2, dimnames = list(Potential_new_drug_targets,c("Potential_new_drug_targets","OpenTargets_Drug_gene_list_overlap"))))
+
+Drug_repurposing_candidates$Potential_new_drug_targets <- Potential_new_drug_targets
+
+
+```
+
+
+```{r}
+# Loop through each target in Potential_new_drug_targets
+for (i in 1:length(Potential_new_drug_targets)) {
+    # Check which gene sets contain the current drug target
+    found_in <- sapply(all_gene_sets, function(x) Potential_new_drug_targets[i] %in% x)
+    
+    # Get the names of the gene sets where the target was found
+    found_gene_sets <- names(all_gene_sets)[found_in]
+    
+    # Remove the 'OpenTarget_Drugs_' prefix from each found gene set name
+    found_gene_sets_clean <- gsub("OpenTarget_Drugs_", "", found_gene_sets)
+    
+    # Store the results as a comma-separated string in column 2 of the matrix
+    Drug_repurposing_candidates[i, 2] <- paste(found_gene_sets_clean, collapse = ", ")
+}
+
+# View the updated matrix
+Drug_repurposing_candidates
+
+```
+
+Save
+```{r, eval=FALSE}
+write.table(Drug_repurposing_candidates,file = "Drug_repurposing_genetic_screen_output/Drug_repurposing_genetic_screen_mouse_brain_10X_BIP_top80.csv", row.names = F, col.names = T,sep = ";")
+```
+
+Notes
+```{r}
+sessionInfo()
+```
+

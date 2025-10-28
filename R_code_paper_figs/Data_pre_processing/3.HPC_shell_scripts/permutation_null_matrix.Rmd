@@ -1,0 +1,100 @@
+---
+title: "permutation_null_matrix"
+author: "Linda Kvastad"
+date: '`r format(Sys.Date(), "%B %d, %Y")`'
+params:
+  arg: null
+---
+
+Load libraries
+```{r, message=FALSE}
+library(STutility)
+library(dplyr)
+library(MASS)
+```
+
+
+Load ST data
+```{r}
+
+idx <- params$arg
+gnum<-as.numeric(readLines("gnum.txt"))
+
+se <- readRDS(file = "spatial_data/seurat_object.RDS") # Filtered
+```
+
+
+Normalize data: se <- SCTransform(se,return.only.var.genes = T)
+```{r, message=FALSE, include=FALSE}
+se <- SCTransform(se,return.only.var.genes = T)
+```
+
+Load cluster annotations
+```{r}
+seurat_clusters <- read.csv(file = "spatial_data/seurat_clusters.csv", sep = ";")
+```
+
+Add annotations to seurat object
+```{r}
+rownames(seurat_clusters) <- seurat_clusters$Barcode
+seurat_clusters$Barcode <- NULL
+se$seurat_clusters <- seurat_clusters
+head(se[[]])
+```
+
+AddModuleScore loop NULL gene set:
+```{r}
+
+# All genes in seurat object
+ref_genes_se <- rownames(se)
+
+# Run settings
+permutation.nr <- 10000
+genes.in.NULL.set <- gnum[idx]
+
+#Cluster names
+cluster_names <- rep("cluster_", length(table(se$seurat_clusters)))
+cluster_names <- paste0(cluster_names,as.character(0:(length(table(se$seurat_clusters))-1)))
+
+#Permutation names
+Perm_names <- rep("Perm_nr", permutation.nr)
+Perm_names <- paste0(Perm_names,sep=1:length(Perm_names))
+
+#Permutation matrix
+perm.mat <- matrix(data = NA, nrow = permutation.nr, ncol = length(cluster_names), dimnames = list(Perm_names,cluster_names))
+
+for (i in 1:permutation.nr) {
+  
+  # Calculates NULL scores
+  set.seed(i)
+  NULL_gene_set_ <- sample(ref_genes_se,genes.in.NULL.set)
+  all_gene_sets_ref_NULL_markers <- list(NULL_gene_set_=NULL_gene_set_)
+  genes <- unlist(all_gene_sets_ref_NULL_markers[1]) # character vector of genes in a gene set
+  se <- AddModuleScore(se,list(genes), ctrl = 100, name = list(names(all_gene_sets_ref_NULL_markers[1])))
+  
+  # Summarize NULL scores by Median from each Cluster
+  se_metadata_NULL <- se@meta.data
+  se_metadata_NULL <- se_metadata_NULL[c("seurat_clusters","NULL_gene_set_1")]
+
+  se_metadata_by_cluster_NULL <- se_metadata_NULL %>%
+                  group_by(seurat_clusters)%>%
+                  summarise(median(NULL_gene_set_1))
+
+  col.names.clusters <- cluster_names
+  se_metadata_by_cluster_NULL <- t(se_metadata_by_cluster_NULL)
+  colnames(se_metadata_by_cluster_NULL) <- col.names.clusters
+  perm.mat[i,] <- as.numeric(se_metadata_by_cluster_NULL[2,]) 
+  
+}
+
+```
+
+Save perm.mat
+```{r}
+saveRDS(perm.mat,file = paste0("permutation_matrices/perm.mat_p10000_g", gnum[idx], ".RDS"))
+write.matrix(perm.mat, file=paste0("permutation_matrices/perm.mat_p10000_g", gnum[idx], ".csv"), sep = ";")
+```
+
+```{r}
+sessionInfo()
+```

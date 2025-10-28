@@ -1,0 +1,27 @@
+﻿Enrichment;Trait;Structures;Gene set;Comment
+n.s. STEAM all;ALZ;7;STEAM_all;adult_ACH003
+significant STEAM all;ALZ;0;STEAM_all;adult_ACH003
+n.s. STEAM top;ALZ;7;STEAM_top;adult_ACH003
+significant STEAM top;ALZ;0;STEAM_top;adult_ACH003
+n.s. gsMap;ALZ;4;gsMap;adult_ACH003
+significant gsMap;ALZ;3;gsMap;adult_ACH003
+n.s. STEAM all;ADHD;7;STEAM_all;adult_ACH003
+significant STEAM all;ADHD;0;STEAM_all;adult_ACH003
+N/A;ADHD;7;STEAM_top;adult_ACH003
+n.s. gsMap;ADHD;4;gsMap;adult_ACH003
+significant gsMap;ADHD;3;gsMap;adult_ACH003
+n.s. STEAM all;ASD;7;STEAM_all;adult_ACH003
+significant STEAM all;ASD;0;STEAM_all;adult_ACH003
+N/A;ASD;7;STEAM_top;adult_ACH003
+n.s. gsMap;ASD;7;gsMap;adult_ACH003
+significant gsMap;ASD;0;gsMap;adult_ACH003
+n.s. STEAM all;BIP;7;STEAM_all;adult_ACH003
+significant STEAM all;BIP;0;STEAM_all;adult_ACH003
+N/A;BIP;7;STEAM_top;adult_ACH003
+n.s. gsMap;BIP;0;gsMap;adult_ACH003
+significant gsMap;BIP;7;gsMap;adult_ACH003
+n.s. STEAM all;SCZ;7;STEAM_all;adult_ACH003
+significant STEAM all;SCZ;0;STEAM_all;adult_ACH003
+N/A;SCZ;7;STEAM_top;adult_ACH003
+n.s. gsMap;SCZ;0;gsMap;adult_ACH003
+significant gsMap;SCZ;7;gsMap;adult_ACH003

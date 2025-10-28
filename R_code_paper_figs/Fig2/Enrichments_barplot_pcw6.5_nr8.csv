@@ -1,0 +1,23 @@
+﻿Enrichment;Trait;Structures;Gene set;Comment
+n.s. genetic all;CAD;6;Genetic_all;pcw6.5_nr8
+significant genetic all;CAD;0;Genetic_all;pcw6.5_nr8
+n.s. genetic top;CAD;5;Genetic_top;pcw6.5_nr8
+significant genetic top;CAD;1;Genetic_top;pcw6.5_nr8
+n.s. drugs all;CAD;0;Drugs_all;pcw6.5_nr8
+significant drugs all;CAD;6;Drugs_all;pcw6.5_nr8
+n.s. genetic all;CHD;0;Genetic_all;pcw6.5_nr8
+significant genetic all;CHD;6;Genetic_all;pcw6.5_nr8
+n.s. genetic top;CHD;1;Genetic_top;pcw6.5_nr8
+significant genetic top;CHD;5;Genetic_top;pcw6.5_nr8
+n.s. drugs all;CHD;2;Drugs_all;pcw6.5_nr8
+significant drugs all;CHD;4;Drugs_all;pcw6.5_nr8
+n.s. genetic all;LDL;6;Genetic_all;pcw6.5_nr8
+significant genetic all;LDL;0;Genetic_all;pcw6.5_nr8
+N/A;LDL;6;Genetic_top;pcw6.5_nr8
+n.s. drugs all;LDL;0;Drugs_all;pcw6.5_nr8
+n.s. genetic all;MI;6;Genetic_all;pcw6.5_nr8
+significant genetic all;MI;0;Genetic_all;pcw6.5_nr8
+n.s. genetic top;MI;6;Genetic_top;pcw6.5_nr8
+significant genetic top;MI;0;Genetic_top;pcw6.5_nr8
+n.s. drugs all;MI;3;Drugs_all;pcw6.5_nr8
+significant drugs all;MI;3;Drugs_all;pcw6.5_nr8

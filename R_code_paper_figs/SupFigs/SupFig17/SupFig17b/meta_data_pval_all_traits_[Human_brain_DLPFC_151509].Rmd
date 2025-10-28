@@ -1,0 +1,347 @@
+---
+title: "meta_data_pval_all_traits_[Human_brain_DLPFC_151509]"
+author: "Linda Kvastad"
+date: '`r format(Sys.Date(), "%B %d, %Y")`'
+output:
+ html_document:
+    toc: true
+    toc_depth: 3
+    toc_float: true
+    code_folding: hide
+---
+
+NOTE: Plots SupFig 17b. For top genes NA, values were set to zero and colored grey manually.
+
+# Load data
+
+Load libraries:
+```{r, message=FALSE}
+library(dplyr)
+library(tidyverse)
+library(STutility)
+library(viridis)
+```
+
+Load ST data:
+```{r}
+
+infoTable <- read.csv("spatial_data/infoTable.csv", sep = ";")
+
+
+se <- InputFromTable(infotable = infoTable, 
+                      minUMICountsPerGene = 100, 
+                      minSpotsPerGene = 5,
+                      minUMICountsPerSpot = 500,
+                      platform =  "Visium")
+
+```
+
+Load image:
+```{r}
+se <- LoadImages(se, time.resolve = FALSE)
+```
+
+Load meta data:
+```{r}
+meta.data.ADHD <- readRDS(file = "Meta_data_pval/meta.data.pval_ADHD_all_genes.RDS")
+#meta.data.ADHD_topgenes <- readRDS(file = "Meta_data_pval/meta.data.pval_ADHD_topGenes_genes.RDS") N/A
+
+# N/A for top genes, set all to zero
+rownames(meta.data.ADHD) <- meta.data.ADHD$CellID
+meta.data.ADHD_topgenes <- meta.data.ADHD
+meta.data.ADHD_topgenes$neg.log10.p.val.g <- 0
+meta.data.ADHD_topgenes$neg.log10.p.val.adj.g <- 0
+meta.data.ADHD_topgenes$neg.log10.p.val.d <- 0
+meta.data.ADHD_topgenes$neg.log10.p.val.adj.d <- 0
+
+meta.data.AHD <- readRDS(file = "Meta_data_pval/meta.data.pval_AHD_all_genes.RDS")
+#meta.data.AHD_topgenes <- readRDS(file = "Meta_data_pval/meta.data.pval_AHD_topGenes_genes.RDS") N/A
+
+# N/A for top genes, set all to zero
+rownames(meta.data.AHD) <- meta.data.AHD$CellID
+meta.data.AHD_topgenes <- meta.data.AHD
+meta.data.AHD_topgenes$neg.log10.p.val.g <- 0
+meta.data.AHD_topgenes$neg.log10.p.val.adj.g <- 0
+meta.data.AHD_topgenes$neg.log10.p.val.d <- 0
+meta.data.AHD_topgenes$neg.log10.p.val.adj.d <- 0
+
+meta.data.ALS <- readRDS(file = "Meta_data_pval/meta.data.pval_ALS_all_genes.RDS")
+#meta.data.ALS_topgenes <- readRDS(file = "Meta_data_pval/meta.data.pval_ALS_topGenes_genes.RDS") N/A
+
+# N/A for top genes, set all to zero
+rownames(meta.data.ALS) <- meta.data.ALS$CellID
+meta.data.ALS_topgenes <- meta.data.ALS
+meta.data.ALS_topgenes$neg.log10.p.val.g <- 0
+meta.data.ALS_topgenes$neg.log10.p.val.adj.g <- 0
+meta.data.ALS_topgenes$neg.log10.p.val.d <- 0
+meta.data.ALS_topgenes$neg.log10.p.val.adj.d <- 0
+
+meta.data.ALZ <- readRDS(file = "Meta_data_pval/meta.data.pval_ALZ_all_genes.RDS")
+meta.data.ALZ_topgenes <- readRDS(file = "Meta_data_pval/meta.data.pval_ALZ_top60_genes.RDS")
+
+rownames(meta.data.ALZ) <- meta.data.ALZ$CellID
+rownames(meta.data.ALZ_topgenes) <- meta.data.ALZ_topgenes$CellID
+
+meta.data.ASD <- readRDS(file = "Meta_data_pval/meta.data.pval_ASD_all_genes.RDS")
+#meta.data.ASD_topgenes <- readRDS(file = "Meta_data_pval/meta.data.pval_ASD_topGenes_genes.RDS") N/A
+
+# N/A for top genes, set all to zero
+rownames(meta.data.ASD) <- meta.data.ASD$CellID
+meta.data.ASD_topgenes <- meta.data.ASD
+meta.data.ASD_topgenes$neg.log10.p.val.g <- 0
+meta.data.ASD_topgenes$neg.log10.p.val.adj.g <- 0
+meta.data.ASD_topgenes$neg.log10.p.val.d <- 0
+meta.data.ASD_topgenes$neg.log10.p.val.adj.d <- 0
+
+meta.data.BIP <- readRDS(file = "Meta_data_pval/meta.data.pval_BIP_all_genes.RDS")
+#meta.data.BIP_topgenes <- readRDS(file = "Meta_data_pval/meta.data.pval_BIP_topGenes_genes.RDS") N/A
+
+# N/A for top genes, set all to zero
+rownames(meta.data.BIP) <- meta.data.BIP$CellID
+meta.data.BIP_topgenes <- meta.data.BIP
+meta.data.BIP_topgenes$neg.log10.p.val.g <- 0
+meta.data.BIP_topgenes$neg.log10.p.val.adj.g <- 0
+meta.data.BIP_topgenes$neg.log10.p.val.d <- 0
+meta.data.BIP_topgenes$neg.log10.p.val.adj.d <- 0
+
+meta.data.EPI <- readRDS(file = "Meta_data_pval/meta.data.pval_EPI_all_genes.RDS")
+meta.data.EPI_topgenes <- readRDS(file = "Meta_data_pval/meta.data.pval_EPI_top200_genes.RDS")
+
+rownames(meta.data.EPI) <- meta.data.EPI$CellID
+rownames(meta.data.EPI_topgenes) <- meta.data.EPI_topgenes$CellID
+
+meta.data.INS <- readRDS(file = "Meta_data_pval/meta.data.pval_INS_all_genes.RDS")
+meta.data.INS_topgenes <- readRDS(file = "Meta_data_pval/meta.data.pval_INS_top50_genes.RDS")
+
+rownames(meta.data.INS) <- meta.data.INS$CellID
+rownames(meta.data.INS_topgenes) <- meta.data.INS_topgenes$CellID
+
+meta.data.MDD <- readRDS(file = "Meta_data_pval/meta.data.pval_MDD_all_genes.RDS")
+#meta.data.MDD_topgenes <- readRDS(file = "Meta_data_pval/meta.data.pval_MDD_topGenes_genes.RDS") N/A
+
+# N/A for top genes, set all to zero
+rownames(meta.data.MDD) <- meta.data.MDD$CellID
+meta.data.MDD_topgenes <- meta.data.MDD
+meta.data.MDD_topgenes$neg.log10.p.val.g <- 0
+meta.data.MDD_topgenes$neg.log10.p.val.adj.g <- 0
+meta.data.MDD_topgenes$neg.log10.p.val.d <- 0
+meta.data.MDD_topgenes$neg.log10.p.val.adj.d <- 0
+
+meta.data.MS <- readRDS(file = "Meta_data_pval/meta.data.pval_MS_all_genes.RDS")
+#meta.data.MS_topgenes <- readRDS(file = "Meta_data_pval/meta.data.pval_MS_topGenes_genes.RDS") N/A
+
+# N/A for top genes, set all to zero
+rownames(meta.data.MS) <- meta.data.MS$CellID
+meta.data.MS_topgenes <- meta.data.MS
+meta.data.MS_topgenes$neg.log10.p.val.g <- 0
+meta.data.MS_topgenes$neg.log10.p.val.adj.g <- 0
+meta.data.MS_topgenes$neg.log10.p.val.d <- 0
+meta.data.MS_topgenes$neg.log10.p.val.adj.d <- 0
+
+meta.data.PAR <- readRDS(file = "Meta_data_pval/meta.data.pval_PAR_all_genes.RDS")
+meta.data.PAR_topgenes <- readRDS(file = "Meta_data_pval/meta.data.pval_PAR_top100_genes.RDS")
+
+rownames(meta.data.PAR) <- meta.data.PAR$CellID
+rownames(meta.data.PAR_topgenes) <- meta.data.PAR_topgenes$CellID
+
+meta.data.SCZ <- readRDS(file = "Meta_data_pval/meta.data.pval_SCZ_all_genes.RDS")
+meta.data.SCZ_topgenes <- readRDS(file = "Meta_data_pval/meta.data.pval_SCZ_top210_genes.RDS")
+
+rownames(meta.data.SCZ) <- meta.data.SCZ$CellID
+rownames(meta.data.SCZ_topgenes) <- meta.data.SCZ_topgenes$CellID
+
+nr_of_pvals <- 19*12
+```
+
+
+Merge meta data
+```{r}
+meta.data.ADHD$neg.log10.p.val.g_topgenes <- meta.data.ADHD_topgenes$neg.log10.p.val.g
+meta.data.ADHD$neg.log10.p.val.adj.g_topgenes <- meta.data.ADHD_topgenes$neg.log10.p.val.adj.g
+
+meta.data.AHD$neg.log10.p.val.g_topgenes <- meta.data.AHD_topgenes$neg.log10.p.val.g
+meta.data.AHD$neg.log10.p.val.adj.g_topgenes <- meta.data.AHD_topgenes$neg.log10.p.val.adj.g
+
+meta.data.ALS$neg.log10.p.val.g_topgenes <- meta.data.ALS_topgenes$neg.log10.p.val.g
+meta.data.ALS$neg.log10.p.val.adj.g_topgenes <- meta.data.ALS_topgenes$neg.log10.p.val.adj.g
+
+meta.data.ALZ$neg.log10.p.val.g_topgenes <- meta.data.ALZ_topgenes$neg.log10.p.val.g
+meta.data.ALZ$neg.log10.p.val.adj.g_topgenes <- meta.data.ALZ_topgenes$neg.log10.p.val.adj.g
+
+meta.data.ASD$neg.log10.p.val.g_topgenes <- meta.data.ASD_topgenes$neg.log10.p.val.g
+meta.data.ASD$neg.log10.p.val.adj.g_topgenes <- meta.data.ASD_topgenes$neg.log10.p.val.adj.g
+
+meta.data.BIP$neg.log10.p.val.g_topgenes <- meta.data.BIP_topgenes$neg.log10.p.val.g
+meta.data.BIP$neg.log10.p.val.adj.g_topgenes <- meta.data.BIP_topgenes$neg.log10.p.val.adj.g
+
+meta.data.EPI$neg.log10.p.val.g_topgenes <- meta.data.EPI_topgenes$neg.log10.p.val.g
+meta.data.EPI$neg.log10.p.val.adj.g_topgenes <- meta.data.EPI_topgenes$neg.log10.p.val.adj.g
+
+meta.data.INS$neg.log10.p.val.g_topgenes <- meta.data.INS_topgenes$neg.log10.p.val.g
+meta.data.INS$neg.log10.p.val.adj.g_topgenes <- meta.data.INS_topgenes$neg.log10.p.val.adj.g
+
+meta.data.MDD$neg.log10.p.val.g_topgenes <- meta.data.MDD_topgenes$neg.log10.p.val.g
+meta.data.MDD$neg.log10.p.val.adj.g_topgenes <- meta.data.MDD_topgenes$neg.log10.p.val.adj.g
+
+meta.data.MS$neg.log10.p.val.g_topgenes <- meta.data.MS_topgenes$neg.log10.p.val.g
+meta.data.MS$neg.log10.p.val.adj.g_topgenes <- meta.data.MS_topgenes$neg.log10.p.val.adj.g
+
+meta.data.PAR$neg.log10.p.val.g_topgenes <- meta.data.PAR_topgenes$neg.log10.p.val.g
+meta.data.PAR$neg.log10.p.val.adj.g_topgenes <- meta.data.PAR_topgenes$neg.log10.p.val.adj.g
+
+meta.data.SCZ$neg.log10.p.val.g_topgenes <- meta.data.SCZ_topgenes$neg.log10.p.val.g
+meta.data.SCZ$neg.log10.p.val.adj.g_topgenes <- meta.data.SCZ_topgenes$neg.log10.p.val.adj.g
+```
+
+Re-name colnames
+```{r}
+meta.data.ADHD$neg.log10.p.val.g.ADHD <- meta.data.ADHD$neg.log10.p.val.g
+meta.data.ADHD$neg.log10.p.val.adj.g.ADHD <- meta.data.ADHD$neg.log10.p.val.adj.g
+meta.data.ADHD$neg.log10.p.val.d.ADHD <- meta.data.ADHD$neg.log10.p.val.d
+meta.data.ADHD$neg.log10.p.val.adj.d.ADHD <- meta.data.ADHD$neg.log10.p.val.adj.d
+meta.data.ADHD$neg.log10.p.val.g_topgenes.ADHD <- meta.data.ADHD$neg.log10.p.val.g_topgenes
+meta.data.ADHD$neg.log10.p.val.adj.g_topgenes.ADHD <- meta.data.ADHD$neg.log10.p.val.adj.g_topgenes
+
+meta.data.AHD$neg.log10.p.val.g.AHD <- meta.data.AHD$neg.log10.p.val.g
+meta.data.AHD$neg.log10.p.val.adj.g.AHD <- meta.data.AHD$neg.log10.p.val.adj.g
+meta.data.AHD$neg.log10.p.val.d.AHD <- meta.data.AHD$neg.log10.p.val.d
+meta.data.AHD$neg.log10.p.val.adj.d.AHD <- meta.data.AHD$neg.log10.p.val.adj.d
+meta.data.AHD$neg.log10.p.val.g_topgenes.AHD <- meta.data.AHD$neg.log10.p.val.g_topgenes
+meta.data.AHD$neg.log10.p.val.adj.g_topgenes.AHD <- meta.data.AHD$neg.log10.p.val.adj.g_topgenes
+
+meta.data.ALS$neg.log10.p.val.g.ALS <- meta.data.ALS$neg.log10.p.val.g
+meta.data.ALS$neg.log10.p.val.adj.g.ALS <- meta.data.ALS$neg.log10.p.val.adj.g
+meta.data.ALS$neg.log10.p.val.d.ALS <- meta.data.ALS$neg.log10.p.val.d
+meta.data.ALS$neg.log10.p.val.adj.d.ALS <- meta.data.ALS$neg.log10.p.val.adj.d
+meta.data.ALS$neg.log10.p.val.g_topgenes.ALS <- meta.data.ALS$neg.log10.p.val.g_topgenes
+meta.data.ALS$neg.log10.p.val.adj.g_topgenes.ALS <- meta.data.ALS$neg.log10.p.val.adj.g_topgenes
+
+meta.data.ALZ$neg.log10.p.val.g.ALZ <- meta.data.ALZ$neg.log10.p.val.g
+meta.data.ALZ$neg.log10.p.val.adj.g.ALZ <- meta.data.ALZ$neg.log10.p.val.adj.g
+meta.data.ALZ$neg.log10.p.val.d.ALZ <- meta.data.ALZ$neg.log10.p.val.d
+meta.data.ALZ$neg.log10.p.val.adj.d.ALZ <- meta.data.ALZ$neg.log10.p.val.adj.d
+meta.data.ALZ$neg.log10.p.val.g_topgenes.ALZ <- meta.data.ALZ$neg.log10.p.val.g_topgenes
+meta.data.ALZ$neg.log10.p.val.adj.g_topgenes.ALZ <- meta.data.ALZ$neg.log10.p.val.adj.g_topgenes
+  
+meta.data.ASD$neg.log10.p.val.g.ASD <- meta.data.ASD$neg.log10.p.val.g
+meta.data.ASD$neg.log10.p.val.adj.g.ASD <- meta.data.ASD$neg.log10.p.val.adj.g
+meta.data.ASD$neg.log10.p.val.d.ASD <- meta.data.ASD$neg.log10.p.val.d
+meta.data.ASD$neg.log10.p.val.adj.d.ASD <- meta.data.ASD$neg.log10.p.val.adj.d
+meta.data.ASD$neg.log10.p.val.g_topgenes.ASD <- meta.data.ASD$neg.log10.p.val.g_topgenes
+meta.data.ASD$neg.log10.p.val.adj.g_topgenes.ASD <- meta.data.ASD$neg.log10.p.val.adj.g_topgenes
+
+meta.data.BIP$neg.log10.p.val.g.BIP <- meta.data.BIP$neg.log10.p.val.g
+meta.data.BIP$neg.log10.p.val.adj.g.BIP <- meta.data.BIP$neg.log10.p.val.adj.g
+meta.data.BIP$neg.log10.p.val.d.BIP <- meta.data.BIP$neg.log10.p.val.d
+meta.data.BIP$neg.log10.p.val.adj.d.BIP <- meta.data.BIP$neg.log10.p.val.adj.d
+meta.data.BIP$neg.log10.p.val.g_topgenes.BIP <- meta.data.BIP$neg.log10.p.val.g_topgenes
+meta.data.BIP$neg.log10.p.val.adj.g_topgenes.BIP <- meta.data.BIP$neg.log10.p.val.adj.g_topgenes
+
+meta.data.EPI$neg.log10.p.val.g.EPI <- meta.data.EPI$neg.log10.p.val.g
+meta.data.EPI$neg.log10.p.val.adj.g.EPI <- meta.data.EPI$neg.log10.p.val.adj.g
+meta.data.EPI$neg.log10.p.val.d.EPI <- meta.data.EPI$neg.log10.p.val.d
+meta.data.EPI$neg.log10.p.val.adj.d.EPI <- meta.data.EPI$neg.log10.p.val.adj.d
+meta.data.EPI$neg.log10.p.val.g_topgenes.EPI <- meta.data.EPI$neg.log10.p.val.g_topgenes
+meta.data.EPI$neg.log10.p.val.adj.g_topgenes.EPI <- meta.data.EPI$neg.log10.p.val.adj.g_topgenes
+
+meta.data.INS$neg.log10.p.val.g.INS <- meta.data.INS$neg.log10.p.val.g
+meta.data.INS$neg.log10.p.val.adj.g.INS <- meta.data.INS$neg.log10.p.val.adj.g
+meta.data.INS$neg.log10.p.val.d.INS <- meta.data.INS$neg.log10.p.val.d
+meta.data.INS$neg.log10.p.val.adj.d.INS <- meta.data.INS$neg.log10.p.val.adj.d
+meta.data.INS$neg.log10.p.val.g_topgenes.INS <- meta.data.INS$neg.log10.p.val.g_topgenes
+meta.data.INS$neg.log10.p.val.adj.g_topgenes.INS <- meta.data.INS$neg.log10.p.val.adj.g_topgenes
+
+meta.data.MDD$neg.log10.p.val.g.MDD <- meta.data.MDD$neg.log10.p.val.g
+meta.data.MDD$neg.log10.p.val.adj.g.MDD <- meta.data.MDD$neg.log10.p.val.adj.g
+meta.data.MDD$neg.log10.p.val.d.MDD <- meta.data.MDD$neg.log10.p.val.d
+meta.data.MDD$neg.log10.p.val.adj.d.MDD <- meta.data.MDD$neg.log10.p.val.adj.d
+meta.data.MDD$neg.log10.p.val.g_topgenes.MDD <- meta.data.MDD$neg.log10.p.val.g_topgenes
+meta.data.MDD$neg.log10.p.val.adj.g_topgenes.MDD <- meta.data.MDD$neg.log10.p.val.adj.g_topgenes
+
+meta.data.MS$neg.log10.p.val.g.MS <- meta.data.MS$neg.log10.p.val.g
+meta.data.MS$neg.log10.p.val.adj.g.MS <- meta.data.MS$neg.log10.p.val.adj.g
+meta.data.MS$neg.log10.p.val.d.MS <- meta.data.MS$neg.log10.p.val.d
+meta.data.MS$neg.log10.p.val.adj.d.MS <- meta.data.MS$neg.log10.p.val.adj.d
+meta.data.MS$neg.log10.p.val.g_topgenes.MS <- meta.data.MS$neg.log10.p.val.g_topgenes
+meta.data.MS$neg.log10.p.val.adj.g_topgenes.MS <- meta.data.MS$neg.log10.p.val.adj.g_topgenes
+
+meta.data.PAR$neg.log10.p.val.g.PAR <- meta.data.PAR$neg.log10.p.val.g
+meta.data.PAR$neg.log10.p.val.adj.g.PAR <- meta.data.PAR$neg.log10.p.val.adj.g
+meta.data.PAR$neg.log10.p.val.d.PAR <- meta.data.PAR$neg.log10.p.val.d
+meta.data.PAR$neg.log10.p.val.adj.d.PAR <- meta.data.PAR$neg.log10.p.val.adj.d
+meta.data.PAR$neg.log10.p.val.g_topgenes.PAR <- meta.data.PAR$neg.log10.p.val.g_topgenes
+meta.data.PAR$neg.log10.p.val.adj.g_topgenes.PAR <- meta.data.PAR$neg.log10.p.val.adj.g_topgenes
+
+meta.data.SCZ$neg.log10.p.val.g.SCZ <- meta.data.SCZ$neg.log10.p.val.g
+meta.data.SCZ$neg.log10.p.val.adj.g.SCZ <- meta.data.SCZ$neg.log10.p.val.adj.g
+meta.data.SCZ$neg.log10.p.val.d.SCZ <- meta.data.SCZ$neg.log10.p.val.d
+meta.data.SCZ$neg.log10.p.val.adj.d.SCZ <- meta.data.SCZ$neg.log10.p.val.adj.d
+meta.data.SCZ$neg.log10.p.val.g_topgenes.SCZ <- meta.data.SCZ$neg.log10.p.val.g_topgenes
+meta.data.SCZ$neg.log10.p.val.adj.g_topgenes.SCZ <- meta.data.SCZ$neg.log10.p.val.adj.g_topgenes
+
+```
+
+Add meta data:
+```{r}
+se <- AddMetaData(se, metadata = meta.data.ADHD)
+
+se <- AddMetaData(se, metadata = meta.data.AHD)
+
+se <- AddMetaData(se, metadata = meta.data.ALS)
+
+se <- AddMetaData(se, metadata = meta.data.ALZ)
+
+se <- AddMetaData(se, metadata = meta.data.ASD)
+
+se <- AddMetaData(se, metadata = meta.data.BIP)
+
+se <- AddMetaData(se, metadata = meta.data.EPI)
+
+se <- AddMetaData(se, metadata = meta.data.INS)
+
+se <- AddMetaData(se, metadata = meta.data.MDD)
+
+se <- AddMetaData(se, metadata = meta.data.MS)
+
+se <- AddMetaData(se, metadata = meta.data.PAR)
+
+se <- AddMetaData(se, metadata = meta.data.SCZ)
+
+se$neg.log10.p.val.g <- NULL
+se$neg.log10.p.val.adj.g <- NULL
+se$neg.log10.p.val.g_topgenes <- NULL
+se$neg.log10.p.val.adj.g_topgenes <- NULL
+se$neg.log10.p.val.d <- NULL
+se$neg.log10.p.val.adj.d <- NULL
+
+head(se[[]])
+
+```
+
+All same scale
+```{r, fig.height=44,fig.width=14}
+ST.FeaturePlot(object = se, features = c("neg.log10.p.val.adj.g.ADHD","neg.log10.p.val.adj.g_topgenes.ADHD","neg.log10.p.val.adj.d.ADHD","neg.log10.p.val.adj.g.AHD","neg.log10.p.val.adj.g_topgenes.AHD","neg.log10.p.val.adj.d.AHD","neg.log10.p.val.adj.g.ALS","neg.log10.p.val.adj.g_topgenes.ALS","neg.log10.p.val.adj.d.ALS","neg.log10.p.val.adj.g.ALZ","neg.log10.p.val.adj.g_topgenes.ALZ","neg.log10.p.val.adj.d.ALZ","neg.log10.p.val.adj.g.ASD","neg.log10.p.val.adj.g_topgenes.ASD","neg.log10.p.val.adj.d.ASD","neg.log10.p.val.adj.g.BIP","neg.log10.p.val.adj.g_topgenes.BIP","neg.log10.p.val.adj.d.BIP","neg.log10.p.val.adj.g.EPI","neg.log10.p.val.adj.g_topgenes.EPI","neg.log10.p.val.adj.d.EPI","neg.log10.p.val.adj.g.INS","neg.log10.p.val.adj.g_topgenes.INS","neg.log10.p.val.adj.d.INS","neg.log10.p.val.adj.g.MDD","neg.log10.p.val.adj.g_topgenes.MDD","neg.log10.p.val.adj.d.MDD","neg.log10.p.val.adj.g.MS","neg.log10.p.val.adj.g_topgenes.MS","neg.log10.p.val.adj.d.MS","neg.log10.p.val.adj.g.PAR","neg.log10.p.val.adj.g_topgenes.PAR","neg.log10.p.val.adj.d.PAR","neg.log10.p.val.adj.g.SCZ","neg.log10.p.val.adj.g_topgenes.SCZ","neg.log10.p.val.adj.d.SCZ"), pt.size = 1.5, cols = viridis(nr_of_pvals),value.scale = "all",grid.ncol =3)
+```
+
+Samplewise scaling
+```{r, fig.height=44,fig.width=14}
+ST.FeaturePlot(object = se, features = c("neg.log10.p.val.adj.g.ADHD","neg.log10.p.val.adj.g_topgenes.ADHD","neg.log10.p.val.adj.d.ADHD","neg.log10.p.val.adj.g.AHD","neg.log10.p.val.adj.g_topgenes.AHD","neg.log10.p.val.adj.d.AHD","neg.log10.p.val.adj.g.ALS","neg.log10.p.val.adj.g_topgenes.ALS","neg.log10.p.val.adj.d.ALS","neg.log10.p.val.adj.g.ALZ","neg.log10.p.val.adj.g_topgenes.ALZ","neg.log10.p.val.adj.d.ALZ","neg.log10.p.val.adj.g.ASD","neg.log10.p.val.adj.g_topgenes.ASD","neg.log10.p.val.adj.d.ASD","neg.log10.p.val.adj.g.BIP","neg.log10.p.val.adj.g_topgenes.BIP","neg.log10.p.val.adj.d.BIP","neg.log10.p.val.adj.g.EPI","neg.log10.p.val.adj.g_topgenes.EPI","neg.log10.p.val.adj.d.EPI","neg.log10.p.val.adj.g.INS","neg.log10.p.val.adj.g_topgenes.INS","neg.log10.p.val.adj.d.INS","neg.log10.p.val.adj.g.MDD","neg.log10.p.val.adj.g_topgenes.MDD","neg.log10.p.val.adj.d.MDD","neg.log10.p.val.adj.g.MS","neg.log10.p.val.adj.g_topgenes.MS","neg.log10.p.val.adj.d.MS","neg.log10.p.val.adj.g.PAR","neg.log10.p.val.adj.g_topgenes.PAR","neg.log10.p.val.adj.d.PAR","neg.log10.p.val.adj.g.SCZ","neg.log10.p.val.adj.g_topgenes.SCZ","neg.log10.p.val.adj.d.SCZ"), pt.size = 1.5, cols = viridis(nr_of_pvals),value.scale = "samplewise",grid.ncol =3)
+```
+
+
+PDF
+```{r}
+pdf(file = "meta_data_pval_all_traits_[Human_brain_DLPFC_151509].pdf", height = 44, width = 14)
+
+ST.FeaturePlot(object = se, features = c("neg.log10.p.val.adj.g.ADHD","neg.log10.p.val.adj.g_topgenes.ADHD","neg.log10.p.val.adj.d.ADHD","neg.log10.p.val.adj.g.AHD","neg.log10.p.val.adj.g_topgenes.AHD","neg.log10.p.val.adj.d.AHD","neg.log10.p.val.adj.g.ALS","neg.log10.p.val.adj.g_topgenes.ALS","neg.log10.p.val.adj.d.ALS","neg.log10.p.val.adj.g.ALZ","neg.log10.p.val.adj.g_topgenes.ALZ","neg.log10.p.val.adj.d.ALZ","neg.log10.p.val.adj.g.ASD","neg.log10.p.val.adj.g_topgenes.ASD","neg.log10.p.val.adj.d.ASD","neg.log10.p.val.adj.g.BIP","neg.log10.p.val.adj.g_topgenes.BIP","neg.log10.p.val.adj.d.BIP","neg.log10.p.val.adj.g.EPI","neg.log10.p.val.adj.g_topgenes.EPI","neg.log10.p.val.adj.d.EPI","neg.log10.p.val.adj.g.INS","neg.log10.p.val.adj.g_topgenes.INS","neg.log10.p.val.adj.d.INS","neg.log10.p.val.adj.g.MDD","neg.log10.p.val.adj.g_topgenes.MDD","neg.log10.p.val.adj.d.MDD","neg.log10.p.val.adj.g.MS","neg.log10.p.val.adj.g_topgenes.MS","neg.log10.p.val.adj.d.MS","neg.log10.p.val.adj.g.PAR","neg.log10.p.val.adj.g_topgenes.PAR","neg.log10.p.val.adj.d.PAR","neg.log10.p.val.adj.g.SCZ","neg.log10.p.val.adj.g_topgenes.SCZ","neg.log10.p.val.adj.d.SCZ"), pt.size = 1.5, cols = viridis(nr_of_pvals),value.scale = "all",grid.ncol =3)
+
+dev.off()
+```
+
+
+
+# Notes
+```{r}
+sessionInfo()
+```
+

@@ -1,0 +1,36 @@
+﻿Enrichment;Trait;Structures;Gene set;Comment
+n.s. STEAM all;ALZ;19;STEAM_all;10X
+significant STEAM all;ALZ;0;STEAM_all;10X
+n.s. STEAM top;ALZ;16;STEAM_top;10X
+significant STEAM top;ALZ;3;STEAM_top;10X
+n.s. gsMap;ALZ;15;gsMap;10X
+significant gsMap;ALZ;2;gsMap;10X
+N/A;ALZ;2;gsMap;10X
+n.s. STEAM all;ADHD;18;STEAM_all;10X
+significant STEAM all;ADHD;1;STEAM_all;10X
+n.s. STEAM top;ADHD;18;STEAM_top;10X
+significant STEAM top;ADHD;1;STEAM_top;10X
+n.s. gsMap;ADHD;3;gsMap;10X
+significant gsMap;ADHD;14;gsMap;10X
+N/A;ADHD;2;gsMap;10X
+n.s. STEAM all;ASD;1;STEAM_all;10X
+significant STEAM all;ASD;18;STEAM_all;10X
+n.s. STEAM top;ASD;13;STEAM_top;10X
+significant STEAM top;ASD;6;STEAM_top;10X
+n.s. gsMap;ASD;6;gsMap;10X
+significant gsMap;ASD;11;gsMap;10X
+N/A;ASD;2;gsMap;10X
+n.s. STEAM all;BIP;19;STEAM_all;10X
+significant STEAM all;BIP;0;STEAM_all;10X
+n.s. STEAM top;BIP;17;STEAM_top;10X
+significant STEAM top;BIP;2;STEAM_top;10X
+n.s. gsMap;BIP;2;gsMap;10X
+significant gsMap;BIP;15;gsMap;10X
+N/A;BIP;2;gsMap;10X
+n.s. STEAM all;SCZ;12;STEAM_all;10X
+significant STEAM all;SCZ;7;STEAM_all;10X
+n.s. STEAM top;SCZ;17;STEAM_top;10X
+significant STEAM top;SCZ;2;STEAM_top;10X
+n.s. gsMap;SCZ;2;gsMap;10X
+significant gsMap;SCZ;15;gsMap;10X
+N/A;SCZ;2;gsMap;10X
