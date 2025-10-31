@@ -13,6 +13,8 @@ or:
 ```
 # install.packages("devtools")
 devtools::install_github("kvastad/steamR")
+
+library(STEAM)
 ```
 
 To install the latest stable STEAM R-package version:
