@@ -1513,7 +1513,7 @@ library(dplyr)
 library(MASS)
 library(future)
 library(parallel)
-library(steam)</code></pre>
+library(STEAM)</code></pre>
 </div>
 <div id="load-data" class="section level1" number="2">
 <h1><span class="header-section-number">2</span> Load data</h1>
@@ -1579,18 +1579,18 @@ different number of workers using a gene list of 50 genes and 100
 permutations.</p>
 <pre class="r"><code>perm.mat.par &lt;- generate_permutation_matrix(se, gnum = 50, permutation_nr = 100, cluster_anno = &quot;subclass_label&quot;, workers = 7)</code></pre>
 <pre><code>##    user  system elapsed 
-##   6.501   4.466  24.286</code></pre>
+##   7.225   4.326  19.657</code></pre>
 <pre class="r"><code>perm.mat.par &lt;- generate_permutation_matrix(se, gnum = 50, permutation_nr = 100, cluster_anno = &quot;subclass_label&quot;, workers = 5)</code></pre>
 <pre><code>##    user  system elapsed 
-##   3.899   3.325  29.849</code></pre>
+##   3.532   3.315  13.926</code></pre>
 <pre class="r"><code>perm.mat.par &lt;- generate_permutation_matrix(se, gnum = 50, permutation_nr = 100, cluster_anno = &quot;subclass_label&quot;, workers = 3)</code></pre>
 <pre><code>##    user  system elapsed 
-##   2.030   2.063  11.627</code></pre>
+##   2.134   1.818  11.824</code></pre>
 <p>In this case, we select workers = 3 to generate our permutation
 matrix.</p>
 <pre class="r"><code>perm.mat.par &lt;- generate_permutation_matrix(se, gnum = 50, permutation_nr = 10000, cluster_anno = &quot;subclass_label&quot;, workers = 3)</code></pre>
 <pre><code>##    user  system elapsed 
-##   7.620   0.801 324.577</code></pre>
+##   7.310   0.782 321.504</code></pre>
 <pre class="r"><code>perm.mat.par[1:5,1:5]</code></pre>
 <pre><code>##                Astro     CA1-ProS   CA2-IG-FC          CA3        Car3
 ## Perm_nr1 -0.01655073  0.107323817  0.11838675  0.138390480  0.11241636
@@ -1626,7 +1626,7 @@ Click to show Session Info
 ## [8] base     
 ## 
 ## other attached packages:
-## [1] steam_0.0.0.9001   future_1.67.0      MASS_7.3-65        dplyr_1.1.4       
+## [1] STEAM_0.1.0        future_1.67.0      MASS_7.3-65        dplyr_1.1.4       
 ## [5] ggplot2_3.5.2      hdf5r_1.3.12       Seurat_5.3.0       SeuratObject_5.1.0
 ## [9] sp_2.2-0          
 ## 
