@@ -3,9 +3,11 @@
   <img src="images/STEAM_logo.png" alt="STEAM logo" width="100"/> 
 </div>
 
-STEAM is an algorithm for **S**patial **T**rait **E**nrichment **A**nalysis with per**M**utation testing, a robust computational approach to measure the enrichment of average gene expression across clusters in a dataset from a given gene list; it calculates a permutation p-value and performs multiple testing corrections based on the number of clusters. For ranked gene lists, STEAM enables interrogation of the topmost relevant sets of genes based on their combined average enrichment. 
+STEAM is a framework for **S**patial **T**rait **E**nrichment **A**nalysis with per**M**utation testing, a robust computational approach for measuring the enrichment of average gene expression across clusters in a dataset from a given gene list. It calculates a permutation p-value and performs multiple-testing corrections based on the number of clusters. For ranked gene lists, STEAM enables interrogation of the topmost relevant sets of genes based on their combined average enrichment. The STEAM framework also includes an approach using MetaSpots (or MetaCells or MetaBins) within assigned clusters for sparse and high-resolution data. Using permutations to guide the selection of topmost relevant ranked genes and then testing for trait gene set enrichment among differentially expressed genes. 
 
-We applied STEAM to spatially resolved transcriptomics (SRT) datasets to elucidate the genetic basis of complex traits and diseases. We analyzed 31 SRT datasets from humans and mice spanning 8 organs and 32 complex traits. We also applied STEAM to single-cell and single-nuclei RNAseq datasets from the mouse and human brain, highlighting the complementary insights from the two data types. Here, we will provide the source code and scripts for our manuscript upon peer-reviewed publication. The code for re-creating the manuscript figures is stored in their corresponding folders.
+We applied STEAM to spatially resolved transcriptomics (SRT) datasets to elucidate the genetic basis of complex traits and diseases. We analyzed 31 SRT datasets from humans and mice spanning 8 organs and 32 complex traits. We also applied STEAM to single-cell and single-nuclei RNA-seq datasets from the mouse and human brains, highlighting complementary insights from the two data types and a high-resolution mouse brain dataset.
+
+Here, we provide scripts used for the analysis and figures in our publication. The code for re-creating the manuscript figures is stored in their corresponding folders.
 
 To install the latest STEAM R-package version, visit: https://github.com/kvastad/steamR
 or:
