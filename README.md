@@ -25,7 +25,7 @@ To install the latest stable STEAM R-package version:
 devtools::install_github("kvastad/steamR@v0.1.0")
 ```
 
-For STEAM R-package vignettes, visit: https://kvastad.github.io/STEAM/
+For STEAM R-package vignettes, visit: https://kvastad.github.io/steamR/
 
 For ranked genetically associated gene lists, visit the Open Targets platform: https://platform.opentargets.org/
 
