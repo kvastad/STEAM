@@ -1,5 +1,0 @@
-median(genes);median(umi);median(score_genetic);-log10(p.val_genetic);-log10(p.val.adj_genetic);cluster
-1643     ; 4929    ;0.1166523;4.000043 ;3.397983 ;cluster_0
-3052     ;14812    ;0.1178287;4.000043 ;3.397983 ;cluster_1
-2889     ;12716    ;0.1220939;4.000043 ;3.397983 ;cluster_2
-1077     ; 2030    ;0.1038504;4.000043 ;3.397983 ;cluster_3
