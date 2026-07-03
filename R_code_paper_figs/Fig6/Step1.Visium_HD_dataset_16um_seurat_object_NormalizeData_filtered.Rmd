@@ -1,0 +1,176 @@
+---
+title: "Visium_HD_dataset_16um_Seurat_object_NormalizeData_filtered"
+output: html_document
+date: '`r format(Sys.Date(), "%B %d, %Y")`'
+---
+
+Load libraries
+```{r}
+library(Seurat)
+library(arrow)
+library(dplyr)
+```
+
+
+Load data
+```{r}
+se <- readRDS(file = "Seurat_objects/mouse_coronal_HD_016um.rds")
+se
+```
+
+
+```{r}
+head(se[[]])
+tail(se[[]])
+range(se$nCount_Spatial.016um)
+range(se$nFeature_Spatial.016um)
+median(se$nCount_Spatial.016um)
+median(se$nFeature_Spatial.016um)
+```
+
+
+```{r}
+DefaultAssay(se) <- "Spatial.016um"
+VlnPlot(se, features = "nCount_Spatial.016um", pt.size = 0)
+VlnPlot(se, features = "nFeature_Spatial.016um", pt.size = 0)
+
+```
+
+
+```{r}
+SpatialFeaturePlot(se, features = ("nCount_Spatial.016um"))
+SpatialFeaturePlot(se, features = ("nFeature_Spatial.016um"))
+```
+
+
+```{r}
+hist(se$nCount_Spatial.016um)
+hist(se$nFeature_Spatial.016um)
+```
+
+
+```{r}
+#Check distribution of gene with low number of UMIs
+gene_umi_totals <- rowSums(GetAssayData(se, assay = "Spatial.016um", layer = "counts"))
+
+#Plot
+hist(gene_umi_totals[gene_umi_totals])
+
+hist(gene_umi_totals[gene_umi_totals <= 10000],
+     breaks = seq(0, 10000, by = 100),
+     main = "Genes with 1–10000 UMIs",
+     xlab = "Total UMIs per gene")
+
+hist(gene_umi_totals[gene_umi_totals <= 100],
+     breaks = seq(0, 100, by = 10),
+     main = "Genes with 1–100 UMIs",
+     xlab = "Total UMIs per gene")
+
+```
+
+```{r}
+#Check distribution of spots with low number of UMIs
+spot_umi_totals <- colSums(GetAssayData(se, assay = "Spatial.016um", layer = "counts"))
+
+#Plot
+hist(spot_umi_totals[spot_umi_totals])
+
+hist(spot_umi_totals[spot_umi_totals <= 10000],
+     breaks = seq(0, 10000, by = 100),
+     main = "Spots with 1–10000 UMIs",
+     xlab = "Total UMIs per spot")
+
+hist(spot_umi_totals[spot_umi_totals <= 2000],
+     breaks = seq(0, 2000, by = 10),
+     main = "Spots with 1–2000 UMIs",
+     xlab = "Total UMIs per spot")
+
+```
+
+
+
+Filter out low abundance genes and spots.
+```{r}
+# Extract counts matrix once
+counts_mat <- GetAssayData(se, layer = "counts")
+
+# ---- Filter genes ----
+min_gene_umi <- 10
+
+gene_totals <- Matrix::rowSums(counts_mat)
+keep_genes <- names(gene_totals[gene_totals >= min_gene_umi])
+
+se <- subset(se, features = keep_genes)
+
+# ---- Filter spots ----
+min_spot_umi <- 500
+
+# Recalculate after gene filtering
+counts_mat <- GetAssayData(se, layer = "counts")
+
+spot_totals <- Matrix::colSums(counts_mat)
+keep_spots <- names(spot_totals[spot_totals >= min_spot_umi])
+
+se <- subset(se, cells = keep_spots)
+```
+
+```{r}
+#Check distribution of gene with low number of UMIs
+gene_umi_totals <- rowSums(GetAssayData(se, assay = "Spatial.016um", layer = "counts"))
+
+#Plot
+hist(gene_umi_totals[gene_umi_totals])
+
+hist(gene_umi_totals[gene_umi_totals <= 10000],
+     breaks = seq(0, 10000, by = 100),
+     main = "Genes with 1–10000 UMIs",
+     xlab = "Total UMIs per gene")
+
+```
+
+
+```{r}
+#Check distribution of spots with low number of UMIs
+spot_umi_totals <- colSums(GetAssayData(se, assay = "Spatial.016um", layer = "counts"))
+
+#Plot
+hist(spot_umi_totals[spot_umi_totals])
+
+hist(spot_umi_totals[spot_umi_totals <= 10000],
+     breaks = seq(0, 10000, by = 100),
+     main = "Spots with 1–10000 UMIs",
+     xlab = "Total UMIs per spot")
+
+```
+
+
+```{r}
+SpatialFeaturePlot(se, features = ("nCount_Spatial.016um"))
+SpatialFeaturePlot(se, features = ("nFeature_Spatial.016um"))
+```
+
+
+
+Save Seurat object
+```{r}
+saveRDS(se, file = "Seurat_objects/mouse_coronal_HD_016um_filtered.rds")
+```
+
+
+```{r}
+DefaultAssay(se) <- "Spatial.016um"
+se <- NormalizeData(se)
+```
+
+
+Save Seurat object
+```{r}
+saveRDS(se, file = "Seurat_objects/mouse_coronal_HD_016um_NormalizeData_filtered.rds")
+```
+
+
+# Notes
+```{r}
+sessionInfo()
+```
+

@@ -1,0 +1,23 @@
+﻿Enrichment;Trait;Structures;Gene set;Comment
+n.s. genetic all;AST;4;Genetic_all;HLA_Parenchyma_A37
+significant genetic all;AST;0;Genetic_all;HLA_Parenchyma_A37
+N/A;AST;4;Genetic_top;HLA_Parenchyma_A37
+n.s. drugs all;AST;4;Drugs_all;HLA_Parenchyma_A37
+significant drugs all;AST;0;Drugs_all;HLA_Parenchyma_A37
+n.s. genetic all;BRD;4;Genetic_all;HLA_Parenchyma_A37
+significant genetic all;BRD;0;Genetic_all;HLA_Parenchyma_A37
+N/A;BRD;4;Genetic_top;HLA_Parenchyma_A37
+n.s. drugs all;BRD;4;Drugs_all;HLA_Parenchyma_A37
+significant drugs all;BRD;0;Drugs_all;HLA_Parenchyma_A37
+n.s. genetic all;COPD;4;Genetic_all;HLA_Parenchyma_A37
+significant genetic all;COPD;0;Genetic_all;HLA_Parenchyma_A37
+n.s. genetic top;COPD;4;Genetic_top;HLA_Parenchyma_A37
+significant genetic top;COPD;0;Genetic_top;HLA_Parenchyma_A37
+n.s. drugs all;COPD;1;Drugs_all;HLA_Parenchyma_A37
+significant drugs all;COPD;3;Drugs_all;HLA_Parenchyma_A37
+n.s. genetic all;LUD;0;Genetic_all;HLA_Parenchyma_A37
+significant genetic all;LUD;4;Genetic_all;HLA_Parenchyma_A37
+n.s. genetic top;LUD;0;Genetic_top;HLA_Parenchyma_A37
+significant genetic top;LUD;4;Genetic_top;HLA_Parenchyma_A37
+n.s. drugs all;LUD;3;Drugs_all;HLA_Parenchyma_A37
+significant drugs all;LUD;1;Drugs_all;HLA_Parenchyma_A37

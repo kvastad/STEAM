@@ -1,0 +1,202 @@
+---
+title: "AllNeurons_Adult_human_seurat_object_random_250_cells_Supercluster_h5ad"
+output: html_document
+date: "2025-01-06"
+---
+
+Note: Downsamples AllNeurons to 250 cells per supercluster.
+
+Load libraries:
+```{r, message=FALSE}
+library(Seurat)
+library(zellkonverter)
+library(SingleCellExperiment)
+library(HDF5Array)
+library(dplyr)
+library(biomaRt)
+library(MASS)
+```
+
+
+Load metadata
+```{r}
+sce_object <- readH5AD("c2f66cd5-4ff4-4578-876c-55783a57cf8f.h5ad",use_hdf5 = TRUE)
+head(sce_object) 
+colnames(colData(sce_object))# View cell metadata
+```
+
+
+```{r}
+# Convert metadata to a DataFrame for easy filtering
+metadata <- as.data.frame(colData(sce_object))
+head(metadata)
+table(metadata$supercluster_term)
+```
+
+```{r}
+metadata$cell_id <- rownames(metadata)  # Preserve row names
+
+# Sample up to 250 cells per supercluster_term
+set.seed(123)
+sampled_cells <- metadata %>%
+  group_by(supercluster_term) %>%
+  slice_sample(n = 250) %>%
+  ungroup()
+
+# Restore rownames
+sampled_cells <- as.data.frame(sampled_cells)
+rownames(sampled_cells) <- sampled_cells$cell_id
+sampled_cells$cell_id <- NULL  # Remove temporary column
+
+# Get selected cell names
+selected_cells <- rownames(sampled_cells)
+
+table(sampled_cells$supercluster_term)
+```
+
+```{r}
+# Subset the SingleCellExperiment object by selected cell names
+sce_subset <- sce_object[, colnames(sce_object) %in% selected_cells]
+dim(sce_object)
+dim(sce_subset)
+```
+
+Extract the subsetted counts and metadata
+```{r}
+counts_sub <- assay(sce_subset, "X")
+counts_sub[1:5,1:5]
+```
+
+
+```{r}
+# Convert metadata_sub to a DataFrame for easy filtering
+metadata_sub <- as.data.frame(colData(sce_subset))
+head(metadata_sub)
+table(metadata_sub$supercluster_term)
+```
+
+
+Convert from ENSG to HGNC symbols Ensembl version 113: listEnsemblArchives()
+```{r}
+# Connect to Ensembl database
+ensembl <- useMart("ensembl", dataset = "hsapiens_gene_ensembl")
+
+# Query for mapping ENSG to HGNC symbols
+gene_mapping <- getBM(attributes = c("ensembl_gene_id", "hgnc_symbol"),
+                      filters = "ensembl_gene_id",
+                      values = rownames(counts_sub),
+                      mart = ensembl)
+
+# Inspect the first few rows of the mapping
+head(gene_mapping)
+```
+
+
+```{r}
+# Create a vector of the corresponding HGNC symbols for each ENSG ID
+gene_names <- gene_mapping$hgnc_symbol
+names(gene_names) <- gene_mapping$ensembl_gene_id
+#gene_names[is.na(gene_names)] <- names(gene_names)[is.na(gene_names)]  # Keep ENSG IDs if HGNC is missing
+
+head(gene_names)
+
+# check before update
+head(rownames(counts_sub))
+counts_sub[1:5,1:5]
+
+# Replace ENSG IDs with HGNC symbols in the Seurat object
+rownames(counts_sub) <- gene_names[rownames(counts_sub)]
+
+# Check the result
+head(rownames(counts_sub))
+counts_sub[1:5,1:5]
+```
+
+
+Some ENSG are no longer in the database (n=994)
+```{r}
+sum(is.na(rownames(counts_sub)))
+na_indices <- which(is.na(rownames(counts_sub)))
+```
+
+Re-extract counts_sub to check which indices does not have ENSG
+```{r}
+# re-extract counts_sub and save as counts_sub_check
+counts_sub_check <- assay(sce_object, "X")
+
+# Extract the ENSG IDs (row names) for those rows
+na_ensg_ids <- rownames(counts_sub_check)[na_indices]
+
+# Display the first few ENSG IDs that have missing HGNC symbols
+length(na_ensg_ids)
+head(na_ensg_ids)
+```
+
+Put back ENSG for that did not have a replacement gene symbol
+```{r}
+# Ensure that you are only replacing rows that had NA values in their rownames
+rownames(counts_sub)[na_indices] <- na_ensg_ids
+
+# Check the result to ensure that ENSG IDs have been added back to the missing rows
+head(rownames(counts_sub))
+
+sum(is.na(rownames(counts_sub)))
+```
+
+For some this did not work, checking manually in Ensembl database, these are 'novel transcripts' (n=17914)
+```{r}
+# Identify which rows have empty row names
+empty_row_indices <- which(rownames(counts_sub) == "")
+length(empty_row_indices)
+
+# Check the first few empty row names
+empty_row_names <- rownames(counts_sub)[empty_row_indices]
+head(empty_row_names)
+tail(empty_row_names)
+```
+
+```{r}
+# Replace empty row names with a unique placeholder or ENSG IDs
+rownames(counts_sub)[empty_row_indices] <- paste0("UnknownNovelTranscript_", seq_along(empty_row_indices))
+
+# Check again if there are any remaining empty row names
+sum(rownames(counts_sub) == "")  # Should now return 0
+
+```
+
+
+
+```{r}
+# Convert sparse matrix to dense matrix
+counts_matrix <- as.matrix(counts_sub)
+
+# Now, let's create a Seurat object using this matrix
+se <- CreateSeuratObject(counts = counts_matrix)
+se
+
+# Add metadata_sub to the Seurat object
+se <- AddMetaData(se, metadata = metadata_sub)
+head(se[[]])
+```
+
+
+
+```{r}
+table(se$supercluster_term)
+```
+
+
+Save Seurat Object
+```{r}
+saveRDS(se, file = "se_250_cells.RDS")
+```
+
+Save gene_mapping
+```{r, eval=FALSE}
+saveRDS(gene_mapping, file = "gene_mapping.RDS")
+write.matrix(gene_mapping, file=paste0("gene_mapping.csv"), sep = ";")
+```
+
+
+
+

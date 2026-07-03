@@ -1,0 +1,546 @@
+---
+title: "Visium_HD_dataset_16um_seurat_object_DEGs_STEAM_MetaSpots_BIP"
+output: html_document
+date: '`r format(Sys.Date(), "%B %d, %Y")`'
+---
+
+
+# Load libraries
+
+```{r}
+library(Seurat)
+library(arrow)
+library(dplyr)
+library(STEAM)
+library(ggplot2)
+library(viridis)
+library(readr)
+```
+
+
+# Load data
+
+```{r}
+se <- readRDS(file="MetasSpot_objects/metaspot_seurat_normalized.rds")
+se
+```
+
+
+```{r}
+VlnPlot(se, features = "nCount_RNA", pt.size = 0, group.by = "cluster_anno")
+VlnPlot(se, features = "nFeature_RNA", pt.size = 0, group.by = "cluster_anno")
+```
+
+
+
+```{r}
+table(se$cluster_anno)
+```
+
+
+# Prepare data for STEAM analysis
+
+
+Load ranked gene lists (here from Open Targets).
+```{r}
+OpenTargets_BIP_Genetic_ <- as.character(t(read.table(file = "Open_Target_gene_list/OT-MONDO_0004985-associated-targets-5_15_2026-v26_03_BIP_genetic_mouse.csv")))
+length(OpenTargets_BIP_Genetic_)
+```
+
+
+Filter out genes not present in the Seurat object.
+```{r}
+# Extract gene names from the Seurat object
+gene_names <- rownames(se)
+length(gene_names)
+
+# Check gene list size before filtering
+length(OpenTargets_BIP_Genetic_)
+
+# Remove genes not present in the Seurat object from the gene lists
+OpenTargets_BIP_Genetic_ <- unique(OpenTargets_BIP_Genetic_[OpenTargets_BIP_Genetic_ %in% gene_names])
+
+# Check gene list size after filtering
+length(OpenTargets_BIP_Genetic_)
+```
+
+
+Generate sliding window gene sets from gene lists. Select your choice of trait abbreviation (disease_abbr) and a gene list descriptive term (ot_gene_set_label). We select a window size of 50 genes, moving by 10 genes for each window.
+```{r}
+window_rank_list_BIP_Genetic <- generate_sliding_windows(OpenTargets_BIP_Genetic_, window_size = 50, step_size = 10, disease_abbr = "BIP", ot_gene_set_label = "Genetic")
+```
+
+
+Add gene sets to a list.
+```{r}
+all_gene_sets_OpenTargets <- list(OpenTargets_BIP_Genetic_=OpenTargets_BIP_Genetic_)
+```
+
+
+Merge all gene sets into one list.
+```{r}
+all_gene_sets <- all_gene_sets_OpenTargets
+all_gene_sets <- append(all_gene_sets,window_rank_list_BIP_Genetic)
+```
+
+
+Calculate the average gene expression per gene list and check the percentage of genes present in the Seurat object. It is important that all genes used are present in the Seurat object, otherwise the downstream statistic assumptions are invalid.
+```{r}
+score.mat <- matrix(data = NA, nrow = length(all_gene_sets), ncol = 1, dimnames = list(names(all_gene_sets), "% of genes present"))
+
+for (i in 1:length(all_gene_sets)) {
+  genes <- unlist(all_gene_sets[i]) 
+  score.mat[i] <- mean(genes %in% rownames(se))
+  se <- AddModuleScore(se,list(genes), ctrl = 100, name = list(names(all_gene_sets[i])))
+}
+
+score.mat*100
+```
+
+
+```{r}
+VlnPlot(se, features = c("OpenTargets_BIP_Genetic_1"), ncol = 1, group.by = "cluster_anno")
+VlnPlot(se, features = c("BIP_Genetic_Rank1_1"), ncol = 1, group.by = "cluster_anno")
+VlnPlot(se, features = c("BIP_Genetic_Rank2_1"), ncol = 1, group.by = "cluster_anno")
+```
+
+
+Load permutation matrices for your selected window size and genetic gene list.
+```{r}
+perm_files <- c(
+  "permutation_matrices_MetaSpots/perm.mat.par_p10000_g50.rds"
+)
+
+perm_matrices <- load_permutation_matrices(perm_files)
+perm.mat.window.data <- as.data.frame(perm_matrices[[1]])
+
+perm.mat.window.data[1:5,1:5]
+```
+
+
+# Empirical selection of top genetic genes
+
+
+Derive an empirical threshold for top genes of a ranked gene list by comparing the ranked window gene set signal to a null gene set of equal size.
+```{r}
+window_results.g <- window_rank_enrichment_analysis(
+   se = se,
+   perm.mat.window.data = perm.mat.window.data,
+   window_rank_list = window_rank_list_BIP_Genetic,
+   ot_gene_set_label = "Genetic",
+   disease_abbr = "BIP",
+   cluster_anno = "cluster_anno",
+   imputation = "all"#,
+   #log_file = "data/human_brain_cortex/log_files/log_file_pval_mat_genetic_window_BIP.txt"
+ )
+
+head(window_results.g)
+```
+
+
+Plot median scores for each window in each cluster. Use these to identify sets of top genes. 
+```{r}
+rank_plot_for_clusters(
+   window_results = window_results.g,
+   perm.mat.window = perm.mat.window.data,
+   ylim = c(-0.3, 0.6)
+ )
+```
+
+Subset to select the top ranked genes.
+```{r}
+OpenTargets_BIP_Genetic_topGenes_ <- OpenTargets_BIP_Genetic_[1:80]
+length(OpenTargets_BIP_Genetic_topGenes_)
+```
+
+
+Add the top gene set to a list.
+```{r}
+all_gene_sets_OpenTargets_top <- list(OpenTargets_BIP_Genetic_topGenes_=OpenTargets_BIP_Genetic_topGenes_)
+```
+
+
+Calculate the average gene expression in the top gene list and check the percentage of genes present in the Seurat object.
+```{r}
+score.mat.top <- matrix(data = NA, nrow = length(all_gene_sets_OpenTargets_top), ncol = 1, dimnames = list(names(all_gene_sets_OpenTargets_top), "% of genes present"))
+
+for (i in 1:length(all_gene_sets_OpenTargets_top)) {
+  genes <- unlist(all_gene_sets_OpenTargets_top[i]) 
+  score.mat.top[i] <- mean(genes %in% rownames(se))
+  se <- AddModuleScore(se,list(genes), ctrl = 100, name = list(names(all_gene_sets_OpenTargets_top[i])))
+}
+
+score.mat.top*100
+```
+
+
+```{r}
+se$cluster_anno_plot <- factor(
+  se$cluster_anno,
+  levels = as.character(0:23)
+)
+
+se <- SetIdent(se, value = "cluster_anno_plot")
+p_metaspots <- VlnPlot(se, features = "OpenTargets_BIP_Genetic_topGenes_1",alpha = 1)
+p_metaspots
+```
+
+Save
+```{r, fig.width=6, fig.height=12}
+pdf("STEAM_plots/spatial_enrichment_score_topGenes_BIP_Vlnplot_metaspots.pdf")
+
+p_metaspots
+
+dev.off()
+```
+
+
+# DEGs and Fisher’s exact test
+
+
+```{r, eval=F}
+DefaultAssay(se) <- "RNA"
+se
+
+se <- se %>%
+  NormalizeData() %>%
+  ScaleData() 
+
+se
+
+se <- SetIdent(se, value = "cluster_anno")
+
+
+DEG_genes_all_tested <- FindAllMarkers(se, only.pos = TRUE, min.pct = 0.25, logfc.threshold = 0.25,slot = "data", return.thresh = 1)
+
+DEG_genes <- subset(DEG_genes_all_tested, subset = p_val_adj <= 0.05) # using only significant DEG
+```
+
+Save DEG results.
+```{r, eval=F}
+write.table(DEG_genes_all_tested,file="DEG_output/DEG_genes_all_tested_MetaSpots_BIP.csv", col.names = T, row.names = F,quote = FALSE,sep = ";")
+
+saveRDS(DEG_genes_all_tested, file="DEG_output/DEG_genes_all_tested_MetaSpots_BIP.rds")
+```
+
+Load DEGs.
+```{r}
+DEG_genes_all_tested <- readRDS(file="DEG_output/DEG_genes_all_tested_MetaSpots.rds")
+DEG_genes <- subset(DEG_genes_all_tested, subset = p_val_adj <= 0.05) # using only significant DEG
+```
+
+
+
+
+Subset to select the top ranked genes.
+```{r}
+OpenTargets_BIP_Genetic_top <- OpenTargets_BIP_Genetic_[1:80]
+length(OpenTargets_BIP_Genetic_top)
+```
+
+
+Run Fisher’s exact test.
+```{r}
+fisher_results <- run_fisher_test_degs(se, DEG_genes = DEG_genes, OT_genes = OpenTargets_BIP_Genetic_top)
+fisher_results
+```
+
+
+Plot results.
+```{r, fig.width=10}
+# Ensure clusters are ordered by significance
+fisher_results$cluster <- factor(fisher_results$cluster, 
+                                 levels = fisher_results$cluster[order(fisher_results$adj_p_value)])
+
+# Create the updated plot with viridis scale
+p1 <- ggplot(fisher_results, aes(x = cluster, color = -log10(p_value), y = -log10(adj_p_value), size = odds_ratio)) +
+  geom_point() +  
+  geom_hline(yintercept = -log10(0.05), linetype = "dashed", color = "gray50") +  
+  scale_color_viridis(option = "D", direction = 1, name = "-log10(p-value)") +  # Use Viridis color scale
+  scale_size_continuous(range = c(2, 8), name = "Odds ratio") +  
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1,size = 14),axis.text.y = element_text(size = 14),axis.title.x = element_text(size = 16, face = "bold"),axis.title.y = element_text(size = 16, face = "bold"),plot.title = element_text(size = 18, face = "bold"),legend.title = element_text(size = 14),legend.text = element_text(size = 12)) +  
+  labs(title = "Top BIP genes (MetaSpots)",
+       x = "Spatial clusters",
+       y = "-log10(adj p-value)") +
+  guides(color = guide_colorbar(order = 1), size = guide_legend(order = 2))
+
+p1
+```
+
+Save
+```{r, fig.height=6, fig.width=12}
+pdf("STEAM_plots/spatial_enrichment_topGenes_BIP_dotplot.pdf")
+
+p1
+
+dev.off()
+```
+
+
+```{r}
+fisher_results_save <- fisher_results[
+  order(as.numeric(as.character(fisher_results$cluster))), 
+]
+
+fisher_results_save
+```
+
+Save
+```{r}
+write_csv(fisher_results_save, file = "STEAM_results/fisher_test_BIP_topGenes.csv")
+```
+
+
+
+All genes.
+```{r}
+length(OpenTargets_BIP_Genetic_)
+```
+
+
+Run Fisher’s exact test.
+```{r}
+fisher_results_all <- run_fisher_test_degs(se, DEG_genes = DEG_genes, OT_genes = OpenTargets_BIP_Genetic_)
+fisher_results_all
+```
+
+
+Plot results.
+```{r, fig.width=10}
+# Ensure clusters are ordered by significance
+fisher_results_all$cluster <- factor(fisher_results_all$cluster, 
+                                 levels = fisher_results_all$cluster[order(fisher_results_all$adj_p_value)])
+
+# Create the updated plot with viridis scale
+p2 <- ggplot(fisher_results_all, aes(x = cluster, color = -log10(p_value), y = -log10(adj_p_value), size = odds_ratio)) +
+  geom_point() +  
+  geom_hline(yintercept = -log10(0.05), linetype = "dashed", color = "gray50") +  
+  scale_color_viridis(option = "D", direction = 1, name = "-log10(p-value)") +  # Use Viridis color scale
+  scale_size_continuous(range = c(2, 8), name = "Odds ratio") +  
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1,size = 14),axis.text.y = element_text(size = 14),axis.title.x = element_text(size = 16, face = "bold"),axis.title.y = element_text(size = 16, face = "bold"),plot.title = element_text(size = 18, face = "bold"),legend.title = element_text(size = 14),legend.text = element_text(size = 12)) +  
+  labs(title = "All BIP genes (MetaSpots)",
+       x = "Spatial clusters",
+       y = "-log10(adj p-value)") +
+  guides(color = guide_colorbar(order = 1), size = guide_legend(order = 2))
+
+p2
+```
+
+
+Save
+```{r, fig.height=6, fig.width=12}
+pdf("STEAM_plots/spatial_enrichment_allGenes_BIP_dotplot.pdf")
+
+p2
+
+dev.off()
+```
+
+
+```{r}
+fisher_results_all_save <- fisher_results_all[
+  order(as.numeric(as.character(fisher_results_all$cluster))), 
+]
+
+fisher_results_all_save
+```
+
+Save
+```{r}
+write_csv(fisher_results_all_save, file = "STEAM_results/fisher_test_BIP_allGenes.csv")
+```
+
+
+
+# Plot spatial enrichments
+
+
+```{r}
+se_plot <- readRDS(file = "Seurat_objects/mouse_coronal_HD_016um_Clusters_filtered.rds")
+se_plot
+```
+
+```{r}
+se_spatial_clusters <- readRDS(file = "spatial_clusters/mouse_coronal_HD_016um_spatial_clusters.rds")
+head(se_spatial_clusters)
+```
+
+
+```{r}
+se_plot$seurat_cluster.016um <- se_spatial_clusters$seurat_cluster.016um
+head(se_plot[[]])
+```
+
+
+
+```{r}
+se_plot <- SetIdent(se_plot, value = "seurat_cluster.016um")
+SpatialDimPlot(se_plot)
+```
+
+
+```{r}
+SpatialDimPlot(se_plot, cells.highlight = CellsByIdentities(object = se_plot, idents = c(7)), facet.highlight = TRUE, ncol = 1)
+SpatialDimPlot(se_plot, cells.highlight = CellsByIdentities(object = se_plot, idents = c(5)), facet.highlight = TRUE, ncol = 1)
+```
+
+
+```{r}
+# Oligodendrocytes
+SpatialFeaturePlot(object = se_plot, features = "Mbp", pt.size.factor = 1.5)
+
+# Microglia
+SpatialFeaturePlot(object = se_plot, features = "P2ry12", pt.size.factor = 1.5)
+
+# Astrocytes
+SpatialFeaturePlot(object = se_plot, features = "Gfap", pt.size.factor = 1.5)
+
+# Hypothalamus
+SpatialFeaturePlot(object = se_plot, features = "Ghrh", pt.size.factor = 1.5)
+SpatialFeaturePlot(object = se_plot, features = "Oxt", pt.size.factor = 1.5)
+SpatialFeaturePlot(object = se_plot, features = "Avp", pt.size.factor = 1.5)
+```
+
+
+```{r}
+VlnPlot(se_plot, features = "Mbp",alpha = 0)
+VlnPlot(se_plot, features = "P2ry12",alpha = 0)
+VlnPlot(se_plot, features = "Gfap",alpha = 0)
+```
+
+
+```{r}
+# Ensure cluster column is character or factor
+fisher_results$cluster <- as.character(fisher_results$cluster)
+
+
+# Convert cluster to factor to match Seurat metadata
+#fisher_results$cluster <- factor(fisher_results$cluster, levels = all_clusters)
+
+# Create a data frame for metadata mapping
+meta_to_add <- fisher_results[, c("cluster", "p_value", "odds_ratio", "adj_p_value")]
+
+# Map metadata to each cell in the Seurat object
+cluster_ids <- as.character(se_plot$seurat_cluster.016um)
+meta_matched <- meta_to_add[match(cluster_ids, meta_to_add$cluster), -1]
+
+# Add the metadata columns to the Seurat object
+se_plot$p_value_fisher <- meta_matched$p_value
+se_plot$odds_ratio_fisher <- meta_matched$odds_ratio
+se_plot$adj_p_value_fisher <- meta_matched$adj_p_value
+
+# Compute -log10(p_value) and add as metadata
+se_plot$neg.log.10.p_value_fisher <- -log10(meta_matched$p_value)
+se_plot$neg.log.10.p_value_fisher[is.infinite(meta_matched$neg.log.10.p_value_fisher)] <- NA
+se_plot$neg.log.10.adj_p_value_fisher <- -log10(meta_matched$adj_p_value)
+se_plot$neg.log.10.adj_p_value_fisher[is.infinite(meta_matched$neg.log.10.adj_p_value_fisher)] <- NA
+```
+
+
+Plot the adjusted p-values
+```{r}
+p3 <- SpatialFeaturePlot(se_plot,features = "neg.log.10.adj_p_value_fisher") + scale_fill_viridis_c()
+p3
+```
+
+Save
+```{r, fig.width=5, fig.height=5}
+pdf("STEAM_plots/spatial_enrichment_topGenes_BIP.pdf")
+
+p3
+
+dev.off()
+```
+
+
+Plot the adjusted p-values
+```{r}
+p3b <- SpatialFeaturePlot(se_plot,features = "neg.log.10.adj_p_value_fisher", image.alpha = 0) + scale_fill_viridis_c()
+p3b
+```
+
+Save
+```{r, fig.width=5, fig.height=5}
+pdf("STEAM_plots/spatial_enrichment_topGenes_BIP_noHE.pdf")
+
+p3b
+
+dev.off()
+```
+
+
+```{r}
+se_score <- readRDS(file = "Seurat_objects/mouse_coronal_HD_016um_SCTransform_filtered_clusters.rds")
+se_score
+```
+
+
+
+Subset to select the top ranked genes.
+```{r}
+OpenTargets_BIP_Genetic_topGenes_ <- OpenTargets_BIP_Genetic_[1:80]
+length(OpenTargets_BIP_Genetic_topGenes_)
+```
+
+
+Add the top gene set to a list.
+```{r}
+all_gene_sets_OpenTargets_top <- list(OpenTargets_BIP_Genetic_topGenes_=OpenTargets_BIP_Genetic_topGenes_)
+```
+
+
+Calculate the average gene expression in the top gene list and check the percentage of genes present in the Seurat object.
+```{r}
+score.mat.top <- matrix(data = NA, nrow = length(all_gene_sets_OpenTargets_top), ncol = 1, dimnames = list(names(all_gene_sets_OpenTargets_top), "% of genes present"))
+
+for (i in 1:length(all_gene_sets_OpenTargets_top)) {
+  genes <- unlist(all_gene_sets_OpenTargets_top[i]) 
+  score.mat.top[i] <- mean(genes %in% rownames(se_score))
+  se_score <- AddModuleScore(se_score,list(genes), ctrl = 100, name = list(names(all_gene_sets_OpenTargets_top[i])))
+}
+
+score.mat.top*100
+```
+
+
+```{r}
+p4 <- SpatialFeaturePlot(object = se_score, features = "OpenTargets_BIP_Genetic_topGenes_1", pt.size.factor = 1.5)
+
+p4
+```
+
+
+Save
+```{r, fig.width=5, fig.height=5}
+pdf("STEAM_plots/spatial_enrichment_score_topGenes_BIP.pdf")
+
+p4
+
+dev.off()
+```
+
+
+```{r}
+se_score <- SetIdent(se_score, value = "seurat_cluster.016um")
+p5 <- VlnPlot(se_score, features = "OpenTargets_BIP_Genetic_topGenes_1",alpha = 0)
+p5
+```
+
+
+Save
+```{r, fig.width=6, fig.height=12}
+pdf("STEAM_plots/spatial_enrichment_score_topGenes_BIP_Vlnplot.pdf")
+
+p5
+
+dev.off()
+```
+
+
+# Notes
+```{r}
+sessionInfo()
+```
+

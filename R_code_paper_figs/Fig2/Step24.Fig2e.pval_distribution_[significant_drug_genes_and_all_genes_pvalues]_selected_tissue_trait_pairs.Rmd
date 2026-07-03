@@ -1,0 +1,133 @@
+---
+title: "pval_distribution_[significant_drug_genes_and_all_genes_pvalues]_selected_tissue_trait_pairs"
+author: "Linda Kvastad"
+date: '`r format(Sys.Date(), "%B %d, %Y")`'
+output:
+ html_document:
+    toc: true
+    toc_depth: 3
+    toc_float: true
+    code_folding: hide
+---
+
+NOTE: Creates the plot for Figure 2 e, and calculates the pi1 statistics (nominal p-value distribution) for selected trait-tissue pairs, by calculating the proportion of significant drug target enriched structures that are also enriched for genetically implicated gene sets (genetic all).
+
+#Load libraries
+```{r}
+library(dplyr)
+library(ggplot2)
+library(qvalue)
+```
+
+
+#Load data
+```{r}
+pval_data <- read.csv(file="pval_distribution_[all_datasets]_summary_selected_tissue_trait_pairs.csv",sep = ";")
+```
+
+
+Subset to significant drug targets
+```{r}
+#subset to significant drugs (based on p.val.adj)
+data_drugs <- subset(pval_data, neg.log10.p.val.adj_drugs >= -log10(0.05))
+
+# Remove rows with N/A (some traits did not have drug associated genes on Open Targets)
+data_drugs[data_drugs == "N/A"] <- NA
+data_drugs <- na.omit(data_drugs)
+
+#remove columns with genetic data
+data_drugs <- data_drugs[, !names(data_drugs) %in% c("median.score_genetic","neg.log10.p.val_genetic","neg.log10.p.val.adj_genetic")]
+```
+
+
+```{r}
+# select traits to get allGene data from
+patterns <- names(table(data_drugs$trait))
+
+# Combine patterns into a single regular expression
+pattern_string <- paste(patterns, collapse = "|")
+
+# Subset rows from pval_data where trait matches any of the patterns
+data_drugs_allGenes <- pval_data[grepl(pattern_string, pval_data$trait), ]
+
+# Only include data from allGenes
+data_drugs_allGenes <- data_drugs_allGenes[grepl("all", data_drugs_allGenes$gene_list), ]
+
+# Find traits with no drug data
+no_drug_data <- pval_data[!grepl("top", pval_data$gene_list), ]
+no_drug_data <- no_drug_data[grepl("N/A", no_drug_data$neg.log10.p.val.adj_drugs), ]
+patterns_no_drugs <- names(table(no_drug_data$trait))
+pattern_string_no_drugs <- paste(patterns_no_drugs, collapse = "|")
+
+# Subset rows from data_drugs_allGenes to remove traits with no pval data
+data_drugs_allGenes <- data_drugs_allGenes[!grepl(pattern_string_no_drugs, data_drugs_allGenes$trait), ]
+
+# Prepare for merging: remove columns and only save allGene data and identifiers
+data_drugs_allGenes <- data_drugs_allGenes[, names(data_drugs_allGenes) %in% c("dataset","trait","cluster","median.score_genetic","neg.log10.p.val_genetic","neg.log10.p.val.adj_genetic")]
+```
+
+Merge
+```{r}
+# Merge the data
+pval_data_allGenes_of_drugs <- merge(data_drugs,data_drugs_allGenes)
+
+```
+
+Change p-value scale
+```{r}
+# change from character to numeric
+pval_data_allGenes_of_drugs$neg.log10.p.val_genetic <- as.numeric(pval_data_allGenes_of_drugs$neg.log10.p.val_genetic)
+
+# change/add new p-value scale to dataframe
+pval_data_allGenes_of_drugs$p.val_genetic <- 10^(-pval_data_allGenes_of_drugs$neg.log10.p.val_genetic)
+```
+
+Plot
+```{r}
+theme_set(theme_classic())
+
+# Color by groups
+p1 <- ggplot(pval_data_allGenes_of_drugs, aes(x=p.val_genetic)) + 
+                geom_histogram(alpha=1, color="black",position="identity", fill="grey") +
+                ylab("trait-structure pairs")+
+                xlab("p-values Genetic") +
+                ggtitle("Significant Drug targets") +
+                ylim(0,250)+
+                #coord_cartesian(ylim = c(0, 10))+
+                theme_classic(base_size = 25)+
+                theme(plot.title = element_text(size = 25))+
+                geom_vline(xintercept = 0.05, linetype = "dashed", color = "red", size = 1)
+
+p1
+```
+
+
+PDF
+```{r, eval=FALSE}
+pdf(file = "Fig_traits_with_significant_drug_targets_all_Genes_selected_tissue_trait_pairs.pdf", width=5,height=5)
+
+p1
+
+dev.off()
+```
+
+
+
+Estimate π1 with pi0est function from the qvalue package
+```{r}
+pi0_estimate <- pi0est(p=pval_data_allGenes_of_drugs$p.val_genetic, pi0.method = c("bootstrap"))
+pi0_estimate
+
+pi0 <- pi0_estimate$pi0
+pi1 <- 1-pi0
+
+pi1
+```
+
+
+
+#Notes
+```{r}
+sessionInfo()
+```
+

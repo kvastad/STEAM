@@ -1,0 +1,36 @@
+---
+title: "Merge_Seurat"
+output: html_document
+date: "2025-02-06"
+---
+
+Note: Merge downsampled datasets into one.
+
+Load libraries
+```{r}
+library(Seurat)
+```
+
+
+Load Seurat Objects
+```{r}
+se1 <- readRDS(file="AllNeurons/se_250_cells.RDS")
+se2 <- readRDS(file="AllNonNeurons/se_250_cells.RDS")
+```
+
+Merge
+```{r}
+merged_seurat <- merge(se1, y = se2)
+```
+
+Check
+```{r}
+table(merged_seurat$supercluster_term)
+```
+
+Save
+```{r}
+saveRDS(merged_seurat, file = "Merged_whole_human_brain_random_250/se_250_cells.RDS")
+```
+
+

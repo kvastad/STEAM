@@ -1,0 +1,172 @@
+---
+title: "meta_data_pval_CHD_CAD_MI_LDL_[pcw6.5_nr8]"
+author: "Linda Kvastad"
+date: '`r format(Sys.Date(), "%B %d, %Y")`'
+output:
+ html_document:
+    toc: true
+    toc_depth: 3
+    toc_float: true
+    code_folding: hide
+---
+
+For top genes NA, values were set to zero and colored grey manually. For drugs with no data, values were set to zero and plot removed manually.
+
+# Load data
+
+Load libraries:
+```{r, message=FALSE}
+library(dplyr)
+library(tidyverse)
+library(STutility)
+library(viridis)
+```
+
+Load ST data:
+```{r}
+se <- readRDS(file = "spatial_data/se_8.RDS")
+```
+
+
+View image:
+```{r, fig.width=5, fig.height=4}
+transforms <- list("1" = list("angle" = 180,"mirror.x" = T))
+se <- WarpImages(se, transforms)
+
+ImagePlot(se, method = "raster", annotate = FALSE)
+```
+
+Load meta data:
+```{r}
+meta.data.CHD <- readRDS(file = "Meta_data_pval/meta.data.pval_CHD_all_genes.RDS")
+meta.data.CHD_topgenes <- readRDS(file = "Meta_data_pval/meta.data.pval_CHD_top60_genes.RDS")
+
+rownames(meta.data.CHD) <- meta.data.CHD$CellID
+rownames(meta.data.CHD_topgenes) <- meta.data.CHD_topgenes$CellID
+
+
+meta.data.CAD <- readRDS(file = "Meta_data_pval/meta.data.pval_CAD_all_genes.RDS")
+meta.data.CAD_topgenes <- readRDS(file = "Meta_data_pval/meta.data.pval_CAD_top70_genes.RDS")
+
+rownames(meta.data.CAD) <- meta.data.CAD$CellID
+rownames(meta.data.CAD_topgenes) <- meta.data.CAD_topgenes$CellID
+
+
+meta.data.MI <- readRDS(file = "Meta_data_pval/meta.data.pval_MI_all_genes.RDS")
+meta.data.MI_topgenes <- readRDS(file = "Meta_data_pval/meta.data.pval_MI_top60_genes.RDS")
+
+rownames(meta.data.MI) <- meta.data.MI$CellID
+rownames(meta.data.MI_topgenes) <- meta.data.MI_topgenes$CellID
+
+
+meta.data.LDL <- readRDS(file = "Meta_data_pval/meta.data.pval_LDL_all_genes.RDS")
+#meta.data.LDL_topgenes <- readRDS(file = "Meta_data_pval/meta.data.pval_LDL_topGenes_genes.RDS") N/A
+
+# N/A for top genes, set all to zero
+rownames(meta.data.LDL) <- meta.data.LDL$CellID
+meta.data.LDL_topgenes <- meta.data.LDL
+meta.data.LDL$neg.log10.p.val.d <- 0
+meta.data.LDL$neg.log10.p.val.adj.d <- 0
+meta.data.LDL_topgenes$neg.log10.p.val.d <- 0
+meta.data.LDL_topgenes$neg.log10.p.val.adj.d <- 0
+
+meta.data.LDL$matrix.nrow...nrow.meta.data_all...ncol...1. <- NULL
+meta.data.LDL_topgenes$matrix.nrow...nrow.meta.data_all...ncol...1. <- NULL
+
+nr_of_pvals <- 6*4
+```
+
+
+Merge meta data
+```{r}
+meta.data.CHD$neg.log10.p.val.g_topgenes <- meta.data.CHD_topgenes$neg.log10.p.val.g
+meta.data.CHD$neg.log10.p.val.adj.g_topgenes <- meta.data.CHD_topgenes$neg.log10.p.val.adj.g
+
+meta.data.CAD$neg.log10.p.val.g_topgenes <- meta.data.CAD_topgenes$neg.log10.p.val.g
+meta.data.CAD$neg.log10.p.val.adj.g_topgenes <- meta.data.CAD_topgenes$neg.log10.p.val.adj.g
+
+meta.data.MI$neg.log10.p.val.g_topgenes <- meta.data.MI_topgenes$neg.log10.p.val.g
+meta.data.MI$neg.log10.p.val.adj.g_topgenes <- meta.data.MI_topgenes$neg.log10.p.val.adj.g
+
+meta.data.LDL$neg.log10.p.val.g_topgenes <- meta.data.LDL_topgenes$neg.log10.p.val.g
+meta.data.LDL$neg.log10.p.val.adj.g_topgenes <- meta.data.LDL_topgenes$neg.log10.p.val.adj.g
+```
+
+Re-name colnames
+```{r}
+meta.data.CHD$neg.log10.p.val.g.CHD <- meta.data.CHD$neg.log10.p.val.g
+meta.data.CHD$neg.log10.p.val.adj.g.CHD <- meta.data.CHD$neg.log10.p.val.adj.g
+meta.data.CHD$neg.log10.p.val.d.CHD <- meta.data.CHD$neg.log10.p.val.d
+meta.data.CHD$neg.log10.p.val.adj.d.CHD <- meta.data.CHD$neg.log10.p.val.adj.d
+meta.data.CHD$neg.log10.p.val.g_topgenes.CHD <- meta.data.CHD$neg.log10.p.val.g_topgenes
+meta.data.CHD$neg.log10.p.val.adj.g_topgenes.CHD <- meta.data.CHD$neg.log10.p.val.adj.g_topgenes
+  
+meta.data.CAD$neg.log10.p.val.g.CAD <- meta.data.CAD$neg.log10.p.val.g
+meta.data.CAD$neg.log10.p.val.adj.g.CAD <- meta.data.CAD$neg.log10.p.val.adj.g
+meta.data.CAD$neg.log10.p.val.d.CAD <- meta.data.CAD$neg.log10.p.val.d
+meta.data.CAD$neg.log10.p.val.adj.d.CAD <- meta.data.CAD$neg.log10.p.val.adj.d
+meta.data.CAD$neg.log10.p.val.g_topgenes.CAD <- meta.data.CAD$neg.log10.p.val.g_topgenes
+meta.data.CAD$neg.log10.p.val.adj.g_topgenes.CAD <- meta.data.CAD$neg.log10.p.val.adj.g_topgenes
+
+meta.data.MI$neg.log10.p.val.g.MI <- meta.data.MI$neg.log10.p.val.g
+meta.data.MI$neg.log10.p.val.adj.g.MI <- meta.data.MI$neg.log10.p.val.adj.g
+meta.data.MI$neg.log10.p.val.d.MI <- meta.data.MI$neg.log10.p.val.d
+meta.data.MI$neg.log10.p.val.adj.d.MI <- meta.data.MI$neg.log10.p.val.adj.d
+meta.data.MI$neg.log10.p.val.g_topgenes.MI <- meta.data.MI$neg.log10.p.val.g_topgenes
+meta.data.MI$neg.log10.p.val.adj.g_topgenes.MI <- meta.data.MI$neg.log10.p.val.adj.g_topgenes
+
+meta.data.LDL$neg.log10.p.val.g.LDL <- meta.data.LDL$neg.log10.p.val.g
+meta.data.LDL$neg.log10.p.val.adj.g.LDL <- meta.data.LDL$neg.log10.p.val.adj.g
+meta.data.LDL$neg.log10.p.val.d.LDL <- meta.data.LDL$neg.log10.p.val.d
+meta.data.LDL$neg.log10.p.val.adj.d.LDL <- meta.data.LDL$neg.log10.p.val.adj.d
+meta.data.LDL$neg.log10.p.val.g_topgenes.LDL <- meta.data.LDL$neg.log10.p.val.g_topgenes
+meta.data.LDL$neg.log10.p.val.adj.g_topgenes.LDL <- meta.data.LDL$neg.log10.p.val.adj.g_topgenes
+```
+
+Add meta data:
+```{r}
+se <- AddMetaData(se, metadata = meta.data.CHD)
+
+se <- AddMetaData(se, metadata = meta.data.CAD)
+
+se <- AddMetaData(se, metadata = meta.data.MI)
+
+se <- AddMetaData(se, metadata = meta.data.LDL)
+
+se$neg.log10.p.val.g <- NULL
+se$neg.log10.p.val.adj.g <- NULL
+se$neg.log10.p.val.g_topgenes <- NULL
+se$neg.log10.p.val.adj.g_topgenes <- NULL
+se$neg.log10.p.val.d <- NULL
+se$neg.log10.p.val.adj.d <- NULL
+
+head(se[[]])
+
+```
+
+
+```{r, fig.height=15,fig.width=14}
+ST.FeaturePlot(object = se, features = c("neg.log10.p.val.adj.g.CAD","neg.log10.p.val.adj.g_topgenes.CAD","neg.log10.p.val.adj.d.CAD","neg.log10.p.val.adj.g.CHD","neg.log10.p.val.adj.g_topgenes.CHD","neg.log10.p.val.adj.d.CHD","neg.log10.p.val.adj.g.LDL","neg.log10.p.val.adj.g_topgenes.LDL","neg.log10.p.val.adj.d.LDL","neg.log10.p.val.adj.g.MI","neg.log10.p.val.adj.g_topgenes.MI","neg.log10.p.val.adj.d.MI"), pt.size = 1.5, cols = viridis(nr_of_pvals),value.scale = "all",grid.ncol =3)
+```
+
+
+```{r, fig.height=15,fig.width=14}
+ST.FeaturePlot(object = se, features = c("neg.log10.p.val.adj.g.CAD","neg.log10.p.val.adj.g_topgenes.CAD","neg.log10.p.val.adj.d.CAD","neg.log10.p.val.adj.g.CHD","neg.log10.p.val.adj.g_topgenes.CHD","neg.log10.p.val.adj.d.CHD","neg.log10.p.val.adj.g.LDL","neg.log10.p.val.adj.g_topgenes.LDL","neg.log10.p.val.adj.d.LDL","neg.log10.p.val.adj.g.MI","neg.log10.p.val.adj.g_topgenes.MI","neg.log10.p.val.adj.d.MI"), pt.size = 1.5, cols = viridis(nr_of_pvals),value.scale = "samplewise",grid.ncol =3)
+```
+
+
+PDF
+```{r}
+pdf(file = "meta_data_pval_CHD_CAD_MI_LDL_[pcw6.5_nr8].pdf", height = 15, width = 14)
+
+ST.FeaturePlot(object = se, features = c("neg.log10.p.val.adj.g.CAD","neg.log10.p.val.adj.g_topgenes.CAD","neg.log10.p.val.adj.d.CAD","neg.log10.p.val.adj.g.CHD","neg.log10.p.val.adj.g_topgenes.CHD","neg.log10.p.val.adj.d.CHD","neg.log10.p.val.adj.g.LDL","neg.log10.p.val.adj.g_topgenes.LDL","neg.log10.p.val.adj.d.LDL","neg.log10.p.val.adj.g.MI","neg.log10.p.val.adj.g_topgenes.MI","neg.log10.p.val.adj.d.MI"), pt.size = 1.5, cols = viridis(nr_of_pvals),value.scale = "all",grid.ncol=3)
+
+dev.off()
+```
+
+
+# Notes
+```{r}
+sessionInfo()
+```
+

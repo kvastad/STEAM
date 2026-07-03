@@ -1,0 +1,23 @@
+﻿Enrichment;Trait;Structures;Gene set;Comment
+n.s. genetic all;CD;9;Genetic_all;pcw19_HFGA_A4
+significant genetic all;CD;0;Genetic_all;pcw19_HFGA_A4
+N/A;CD;9;Genetic_top;pcw19_HFGA_A4
+n.s. drugs all;CD;9;Drugs_all;pcw19_HFGA_A4
+significant drugs all;CD;0;Drugs_all;pcw19_HFGA_A4
+n.s. genetic all;IBD;9;Genetic_all;pcw19_HFGA_A4
+significant genetic all;IBD;0;Genetic_all;pcw19_HFGA_A4
+N/A;IBD;9;Genetic_top;pcw19_HFGA_A4
+n.s. drugs all;IBD;3;Drugs_all;pcw19_HFGA_A4
+significant drugs all;IBD;6;Drugs_all;pcw19_HFGA_A4
+n.s. genetic all;LID;9;Genetic_all;pcw19_HFGA_A4
+significant genetic all;LID;0;Genetic_all;pcw19_HFGA_A4
+n.s. genetic top;LID;9;Genetic_top;pcw19_HFGA_A4
+significant genetic top;LID;0;Genetic_top;pcw19_HFGA_A4
+n.s. drugs all;LID;0;Drugs_all;pcw19_HFGA_A4
+significant drugs all;LID;9;Drugs_all;pcw19_HFGA_A4
+n.s. genetic all;UC;9;Genetic_all;pcw19_HFGA_A4
+significant genetic all;UC;0;Genetic_all;pcw19_HFGA_A4
+n.s. genetic top;UC;9;Genetic_top;pcw19_HFGA_A4
+significant genetic top;UC;0;Genetic_top;pcw19_HFGA_A4
+n.s. drugs all;UC;0;Drugs_all;pcw19_HFGA_A4
+significant drugs all;UC;9;Drugs_all;pcw19_HFGA_A4

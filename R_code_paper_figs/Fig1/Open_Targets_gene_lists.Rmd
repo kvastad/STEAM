@@ -1,0 +1,68 @@
+---
+title: "Open_Targets_gene_lists"
+author: "Linda Kvastad"
+output: html_document
+date: "2024-04-11"
+---
+
+NOTE: Script to plot the barplot to the side of Figure 1a, the rest in that panel was assembled manually. For example scripts of the other panels in Fig1, please view code for the following; Fig1b,c (SupFig1_to_4) and Fig1d,e (Fig2).
+
+Load libraries
+```{r}
+library(ggplot2)
+```
+
+
+Load data
+```{r}
+mydata <- read.csv(file = "Open_Targets_gene_lists_plot.csv",sep = ";")
+```
+
+Prepare data
+```{r}
+Trait_ID <- mydata$Trait_ID
+Open_Targets <- mydata$Open_Targets
+Gene_list <- as.numeric(mydata$Gene_list)
+factor_lvl <- 1:length(mydata[,1])
+```
+
+Setting factor levels
+```{r}
+Open_Targets <- factor(Open_Targets, levels = unique(Open_Targets))
+Trait_ID <- factor(Trait_ID, levels = c("ADHD","AHD","ALS","ALZ","ASD","BIP","EPI","INS","MDD","MS","PAR","SCZ","CAD","CHD","LDL","MI","CD","IBD","LID","UC","CKD","IKD","CHOL","CIRR","LD","NAFLD","AST","BRD","COPD","LUD","T1D","T2D"))
+```
+
+Create dataframe
+```{r}
+# creating data frame 
+mydata_plot <- data.frame(Trait_ID,Open_Targets,Gene_list,factor_lvl)
+```
+
+
+```{r, fig.width=15}
+p <- ggplot(mydata_plot, aes(fill=Open_Targets, y=Gene_list, x=Trait_ID)) + 
+    geom_bar(position="dodge", stat="identity") +
+    scale_fill_manual(values=c("darkgoldenrod1", "grey")) +
+    theme(axis.text = element_text(size = 10), legend.text = element_text(size = 20), legend.title = element_text(size = 20))+
+  theme_classic()
+p
+```
+
+
+PDF
+```{r}
+pdf(file = "Open_Targets_gene_lists_plot.pdf", width = 16)
+
+p
+
+dev.off()
+```
+
+
+
+
+SessionInfo
+```{r}
+sessionInfo()
+```
+

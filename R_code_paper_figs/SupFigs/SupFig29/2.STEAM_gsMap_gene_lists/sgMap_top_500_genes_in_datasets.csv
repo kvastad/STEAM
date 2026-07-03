@@ -1,0 +1,51 @@
+﻿trait;dataset;category;nr_of_genes;dataset_ID
+ALZ;human_brain;not in dataset;29;151673
+ALZ;human_brain;in dataset;471;151673
+ADHD;human_brain;not in dataset;0;151673
+ADHD;human_brain;in dataset;500;151673
+ASD;human_brain;not in dataset;0;151673
+ASD;human_brain;in dataset;500;151673
+BIP;human_brain;not in dataset;0;151673
+BIP;human_brain;in dataset;500;151673
+SCZ;human_brain;not in dataset;0;151673
+SCZ;human_brain;in dataset;500;151673
+ALZ;mouse_brain;not in dataset;36;10X
+ALZ;mouse_brain;in dataset;464;10X
+ADHD;mouse_brain;not in dataset;5;10X
+ADHD;mouse_brain;in dataset;495;10X
+ASD;mouse_brain;not in dataset;7;10X
+ASD;mouse_brain;in dataset;493;10X
+BIP;mouse_brain;not in dataset;5;10X
+BIP;mouse_brain;in dataset;495;10X
+SCZ;mouse_brain;not in dataset;5;10X
+SCZ;mouse_brain;in dataset;495;10X
+ALZ;human_liver;not in dataset;2;JBO0018
+ALZ;human_liver;in dataset;498;JBO0018
+ADHD;human_liver;not in dataset;371;JBO0018
+ADHD;human_liver;in dataset;129;JBO0018
+ASD;human_liver;not in dataset;195;JBO0018
+ASD;human_liver;in dataset;305;JBO0018
+BIP;human_liver;not in dataset;326;JBO0018
+BIP;human_liver;in dataset;174;JBO0018
+SCZ;human_liver;not in dataset;41;JBO0018
+SCZ;human_liver;in dataset;459;JBO0018
+ALZ;mouse_liver;not in dataset;9;JBO002
+ALZ;mouse_liver;in dataset;491;JBO002
+ADHD;mouse_liver;not in dataset;335;JBO002
+ADHD;mouse_liver;in dataset;165;JBO002
+ASD;mouse_liver;not in dataset;174;JBO002
+ASD;mouse_liver;in dataset;326;JBO002
+BIP;mouse_liver;not in dataset;144;JBO002
+BIP;mouse_liver;in dataset;356;JBO002
+SCZ;mouse_liver;not in dataset;25;JBO002
+SCZ;mouse_liver;in dataset;475;JBO002
+ALZ;human_heart;not in dataset;9;ACH003
+ALZ;human_heart;in dataset;491;ACH003
+ADHD;human_heart;not in dataset;271;ACH003
+ADHD;human_heart;in dataset;229;ACH003
+ASD;human_heart;not in dataset;300;ACH003
+ASD;human_heart;in dataset;200;ACH003
+BIP;human_heart;not in dataset;199;ACH003
+BIP;human_heart;in dataset;301;ACH003
+SCZ;human_heart;not in dataset;181;ACH003
+SCZ;human_heart;in dataset;319;ACH003

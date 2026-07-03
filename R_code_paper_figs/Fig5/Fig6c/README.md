@@ -1,0 +1,1 @@
+To generate the 'se_allen_brain_atlas_random_250_subclass_label.rds' file, see Fig6a_and_b

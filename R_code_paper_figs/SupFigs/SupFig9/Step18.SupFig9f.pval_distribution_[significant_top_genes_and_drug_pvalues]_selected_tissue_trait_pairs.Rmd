@@ -1,0 +1,126 @@
+---
+title: "pval_distribution_[significant_top_genes_and_drug_pvalues]_selected_tissue_trait_pairs"
+author: "Linda Kvastad"
+date: '`r format(Sys.Date(), "%B %d, %Y")`'
+output:
+ html_document:
+    toc: true
+    toc_depth: 3
+    toc_float: true
+    code_folding: hide
+---
+
+NOTE: Creates the plot for supplementary figure 9f, and calculates the pi1 statistics (nominal p-value distribution) for selected trait-tissue pairs, by calculating the proportion of the significant genetically enriched structures (based on the Open Targets top ranked genes) that are also enriched for drug targets
+
+
+#Load libraries
+```{r}
+library(dplyr)
+library(ggplot2)
+```
+
+
+#Load data
+```{r}
+pval_data <- read.csv(file="pval_distribution_[all_datasets]_summary_selected_tissue_trait_pairs.csv",sep = ";")
+```
+
+
+Subset to significant top Genes
+```{r}
+#subset top genes data
+data_topGenes <- pval_data[grep("top", pval_data$gene_list),]
+
+#subset to significant top genes (based on p.val.adj)
+data_topGenes <- subset(data_topGenes, neg.log10.p.val.adj_genetic >= -log10(0.05))
+
+#remove columns with drug data
+data_topGenes <- data_topGenes[, !names(data_topGenes) %in% c("median.score_drugs","neg.log10.p.val_drugs","neg.log10.p.val.adj_drugs")]
+
+```
+
+Subset to drug data for the significant top Genes
+```{r}
+# select traits to get drug data from
+patterns <- names(table(data_topGenes$trait))
+
+# Combine patterns into a single regular expression
+pattern_string <- paste(patterns, collapse = "|")
+
+# Subset rows from pval_data where trait matches any of the patterns
+data_topGenes_drugs <- pval_data[grepl(pattern_string, pval_data$trait), ]
+
+# Remove row with topX_genes, the drug data was only computed for all_genes
+data_topGenes_drugs <- data_topGenes_drugs[!grepl("top", data_topGenes_drugs$gene_list), ]
+
+# Prepare for merging: remove columns and only save drug data and identifiers
+data_topGenes_drugs <- data_topGenes_drugs[, names(data_topGenes_drugs) %in% c("dataset","trait","cluster","median.score_drugs","neg.log10.p.val_drugs","neg.log10.p.val.adj_drugs")]
+```
+
+Merge and remove N/A
+```{r}
+# Merge the data
+pval_data_drugs_of_topGenes <- merge(data_topGenes,data_topGenes_drugs)
+
+# Remove rows with N/A (some traits did not have drug associated genes on Open Targets)
+pval_data_drugs_of_topGenes[pval_data_drugs_of_topGenes == "N/A"] <- NA
+pval_data_drugs_of_topGenes <- na.omit(pval_data_drugs_of_topGenes)
+
+```
+
+Change p-value scale
+```{r}
+# change from character to numeric
+pval_data_drugs_of_topGenes$neg.log10.p.val_drugs <- as.numeric(pval_data_drugs_of_topGenes$neg.log10.p.val_drugs)
+
+# change/add new p-value scale to dataframe
+pval_data_drugs_of_topGenes$p.val_drugs <- 10^(-pval_data_drugs_of_topGenes$neg.log10.p.val_drugs)
+```
+
+Plot
+```{r}
+theme_set(theme_classic())
+
+# Color by groups
+p1 <- ggplot(pval_data_drugs_of_topGenes, aes(x=p.val_drugs)) + 
+                geom_histogram(alpha=1, color="black",position="identity", fill="grey") +
+                ylab("trait-structure pairs")+
+                xlab("p-values Drug targets") +
+                ggtitle("Significant Genetic top") +
+                ylim(0,200)+
+                #coord_cartesian(ylim = c(0, 10))+
+                theme_classic(base_size = 25)+
+                theme(plot.title = element_text(size = 25))+
+                geom_vline(xintercept = 0.05, linetype = "dashed", color = "red", size = 1)
+
+p1
+```
+
+PDF
+```{r, eval=FALSE}
+pdf(file = "Fig_traits_with_significant_top_Genes_drug_targets_selected_tissue_trait_pairs.pdf", width=5,height=5)
+
+p1
+
+dev.off()
+```
+
+
+Estimate π1 with pi0est function from the qvalue package
+```{r}
+pi0_estimate <- pi0est(p=pval_data_drugs_of_topGenes$p.val_drugs, pi0.method = c("bootstrap"))
+pi0_estimate
+
+pi0 <- pi0_estimate$pi0
+pi1 <- 1-pi0
+
+pi1
+```
+
+
+
+#Notes
+```{r}
+sessionInfo()
+```
+

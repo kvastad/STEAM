@@ -1,0 +1,2224 @@
+---
+title: "NULL_permutation_all_genes_schizophrenia_[human_JBO0018]_NegCtrl"
+author: "Linda Kvastad"
+date: '`r format(Sys.Date(), "%B %d, %Y")`'
+output:
+ html_document:
+    toc: true
+    toc_depth: 3
+    toc_float: true
+    code_folding: hide
+---
+
+# Load and Normalize data
+
+Load libraries:
+```{r, message=FALSE}
+library(STutility)
+library(dplyr)
+library(RColorBrewer)
+library(scales)
+library(reshape2)
+library(corrplot)
+library(lawstat)
+library(MASS)
+library(viridis)
+```
+
+Load ST data:
+```{r}
+
+infoTable <- read.csv("spatial_data/infoTable.csv", sep = ";")
+
+
+se <- InputFromTable(infotable = infoTable, 
+                      minUMICountsPerGene = 100, 
+                      minSpotsPerGene = 5,
+                      minUMICountsPerSpot = 500,
+                      platform =  "Visium")
+
+```
+
+
+Load image:
+```{r}
+se <- LoadImages(se, time.resolve = FALSE)
+```
+
+View image:
+```{r, fig.height=4, fig.width=5}
+ImagePlot(se, method = "raster", annotate = FALSE)
+```
+
+# QC plots  {.tabset}
+
+QC metrics se:
+```{r}
+# Collect all genes coded on the mitochondrial genome
+mt.genes <- grep(pattern = "^MT-", x = rownames(se), value = TRUE)
+se$percent.mito <- (Matrix::colSums(se@assays$RNA@counts[mt.genes, ])/Matrix::colSums(se@assays$RNA@counts))*100
+
+# Collect all genes coding for ribosomal proteins
+rp.genes <- grep(pattern = "^RPL|^RPS", x = rownames(se), value = TRUE)
+se$percent.ribo <- (Matrix::colSums(se@assays$RNA@counts[rp.genes, ])/Matrix::colSums(se@assays$RNA@counts))*100
+```
+
+## percent.mito
+```{r, fig.width=5, fig.height=4}
+ST.FeaturePlot(se, features = "percent.mito", cols = c("lightgray", "mistyrose", "red", "dark red", "black"), pt.size = 1.3)
+
+```
+
+## percent.ribo
+```{r, fig.width=5, fig.height=4}
+ST.FeaturePlot(se, features = "percent.ribo", cols = c("lightgray", "mistyrose", "red", "dark red", "black"), pt.size = 1.3)
+```
+
+## nFeature_RNA
+```{r, fig.width=5, fig.height=4}
+ST.FeaturePlot(se, features = "nFeature_RNA", cols = c("lightgray", "mistyrose", "red", "dark red", "black"), pt.size = 1.3)
+```
+
+## nCount_RNA
+```{r, fig.width=5, fig.height=4}
+ST.FeaturePlot(se, features = "nCount_RNA", cols = c("lightgray", "mistyrose", "red", "dark red", "black"), pt.size = 1.3)
+```
+
+
+# Spatial clusters  {.tabset}
+
+Normalize data: se <- SCTransform(se,return.only.var.genes = T)
+```{r, message=FALSE, include=FALSE}
+se <- SCTransform(se,return.only.var.genes = T)
+```
+
+Load cluster annotations
+```{r}
+seurat_clusters <- read.csv(file = "spatial_structures/seurat_clusters.csv", sep = ";")
+```
+
+Add annotations to seurat object
+```{r}
+rownames(seurat_clusters) <- seurat_clusters$Barcode
+seurat_clusters$Barcode <- NULL
+se$seurat_clusters <- seurat_clusters
+se$seurat_clusters_plot <- as.factor(se$seurat_clusters) # For plotting of spatial structures
+head(se[[]])
+```
+
+## Plot seurat_clusters
+```{r, fig.height=4, fig.width=5}
+n <- 6
+qual_col_pals = brewer.pal.info[brewer.pal.info$category == 'qual',]
+col_vector = unlist(mapply(brewer.pal, qual_col_pals$maxcolors, rownames(qual_col_pals)))
+  
+col_vector <- col_vector[1:6]
+
+se <- SetIdent(se, value = "seurat_clusters_plot")
+ST.FeaturePlot(object = se, features = "seurat_clusters_plot", pt.size = 1, cols = col_vector)
+```
+
+## FeatureOverlay seurat_clusters
+```{r, fig.width=5, fig.height=4}
+spot_alpha = 0.5
+point.size = 1
+
+FeatureOverlay(se, 
+               features = c("seurat_clusters_plot"),
+               pt.alpha = spot_alpha,
+               pt.size = point.size,
+               add.alpha=T,
+               ncols = 1,
+               cols = col_vector)
+```
+
+
+# OpenTargets gene sets
+
+Load OpenTargets gene sets
+```{r class.source = 'fold-show'}
+
+OpenTargets_SCZ_Genetic_ <- as.character(t(read.table(file = "OpenTargets_gene_sets/Human_OpenTargets_SCZ_Genetic.csv")))
+length(OpenTargets_SCZ_Genetic_)
+
+OpenTargets_SCZ_Genetic_topGenes_ <- OpenTargets_SCZ_Genetic_[1:50]
+
+OpenTargets_SCZ_Drugs_ <- as.character(t(read.table(file = "OpenTargets_gene_sets/Human_OpenTargets_SCZ_Drugs.csv")))
+length(OpenTargets_SCZ_Drugs_)
+
+```
+
+
+
+Load structure marker gene sets
+```{r}
+cluster0_marker_genes_ <- as.character(t(read.table(file = "spatial_structures/cluster0_marker_genes_.csv")))
+cluster1_marker_genes_ <- as.character(t(read.table(file = "spatial_structures/cluster1_marker_genes_.csv")))
+cluster2_marker_genes_ <- as.character(t(read.table(file = "spatial_structures/cluster2_marker_genes_.csv")))
+cluster3_marker_genes_ <- as.character(t(read.table(file = "spatial_structures/cluster3_marker_genes_.csv")))
+cluster4_marker_genes_ <- as.character(t(read.table(file = "spatial_structures/cluster4_marker_genes_.csv")))
+cluster5_marker_genes_ <- as.character(t(read.table(file = "spatial_structures/cluster5_marker_genes_.csv")))
+```
+
+
+Load window rank lists
+```{r}
+window50_rank_list_SCZ_Genetic <- readRDS(file = "OpenTargets_windowLists/Human_window50_rank_list_SCZ_Genetic.RDS")
+window50_rank_list_SCZ_Drugs <- readRDS(file = "OpenTargets_windowLists/Human_window50_rank_list_SCZ_Drugs.RDS")
+
+```
+
+
+Make a list of all OpenTargets gene sets:
+```{r}
+all_gene_sets_OpenTargets <- list(OpenTargets_SCZ_Genetic_=OpenTargets_SCZ_Genetic_,OpenTargets_SCZ_Genetic_topGenes_=OpenTargets_SCZ_Genetic_topGenes_,OpenTargets_SCZ_Drugs_=OpenTargets_SCZ_Drugs_)
+```
+
+
+Structure marker gene sets
+```{r}
+all_gene_sets_structure_markers <- list(cluster0_marker_genes_=cluster0_marker_genes_,cluster1_marker_genes_=cluster1_marker_genes_,cluster2_marker_genes_=cluster2_marker_genes_,cluster3_marker_genes_=cluster3_marker_genes_,cluster4_marker_genes_=cluster4_marker_genes_,cluster5_marker_genes_=cluster5_marker_genes_)
+```
+
+
+Merge gene sets
+```{r}
+all_gene_sets <- all_gene_sets_OpenTargets
+all_gene_sets <- append(all_gene_sets,all_gene_sets_structure_markers)
+all_gene_sets <- append(all_gene_sets,window50_rank_list_SCZ_Genetic)
+all_gene_sets <- append(all_gene_sets,window50_rank_list_SCZ_Drugs)
+```
+
+
+# Score data based on gene sets
+
+AddModuleScore loop se:
+
+```{r, eval=FALSE}
+score.mat <- matrix(data = NA, nrow = length(all_gene_sets), ncol = 1, dimnames = list(names(all_gene_sets), "% of genes present"))
+
+for (i in 1:length(all_gene_sets)) {
+  genes <- unlist(all_gene_sets[i]) # character vector of genes in a gene set
+  score.mat[i] <- mean(genes %in% rownames(se)) # calculate and collect % of genes present in se from the gene set
+  print(list(names(all_gene_sets[i])))
+  se <- AddModuleScore(se,list(genes), ctrl = 100, name = list(names(all_gene_sets[i])))
+}
+
+```
+
+
+```{r, message=FALSE, include=FALSE}
+
+score.mat <- matrix(data = NA, nrow = length(all_gene_sets), ncol = 1, dimnames = list(names(all_gene_sets), "% of genes present"))
+
+for (i in 1:length(all_gene_sets)) {
+  genes <- unlist(all_gene_sets[i]) # character vector of genes in a gene set
+  score.mat[i] <- mean(genes %in% rownames(se)) # calculate and collect % of genes present in se from the gene set
+  print(list(names(all_gene_sets[i])))
+  se <- AddModuleScore(se,list(genes), ctrl = 100, name = list(names(all_gene_sets[i])))
+}
+
+```
+
+Print % of genes present in scores, should be 100 %
+```{r}
+score.mat*100
+```
+
+
+# Violin plots {.tabset}
+
+```{r}
+se <- SetIdent(se, value = "seurat_clusters")
+```
+
+## SCZ_Genetic
+```{r}
+VlnPlot(se, features = c("OpenTargets_SCZ_Genetic_1"), ncol = 1, group.by = "seurat_clusters", cols = col_vector) + geom_boxplot(width=0.4) + theme(plot.title = element_text(size = 12))
+```
+
+## SCZ_Genetic_topGenes
+```{r}
+VlnPlot(se, features = c("OpenTargets_SCZ_Genetic_topGenes_1"), ncol = 1, group.by = "seurat_clusters", cols = col_vector) + geom_boxplot(width=0.4) + theme(plot.title = element_text(size = 12))
+```
+
+## SCZ_Drugs
+```{r}
+VlnPlot(se, features = c("OpenTargets_SCZ_Drugs_1"), ncol = 1, group.by = "seurat_clusters", cols = col_vector) + geom_boxplot(width=0.4) + theme(plot.title = element_text(size = 12))
+```
+
+## nFeature_RNA
+```{r}
+VlnPlot(se, features = c("nFeature_RNA"), ncol = 1, group.by = "seurat_clusters", cols = col_vector) + geom_boxplot(width=0.4) + theme(plot.title = element_text(size = 12))
+```
+
+## nCount_RNA
+```{r}
+VlnPlot(se, features = c("nCount_RNA"), ncol = 1, group.by = "seurat_clusters", cols = col_vector) + geom_boxplot(width=0.4) + theme(plot.title = element_text(size = 12))
+```
+
+
+# Spatial plots
+
+
+FeatureOverlay: Genetic & Drugs
+```{r, fig.width=5, fig.height=4}
+spot_alpha = 0.5
+point.size = 1
+
+
+FeatureOverlay(se, 
+               features = c("OpenTargets_SCZ_Genetic_1"),
+               pt.alpha = spot_alpha,
+               pt.size = point.size,
+               add.alpha=T,
+               ncols = 1,
+               cols = c("black", "darkblue", "cyan", "yellow", "red", "darkred"))
+
+FeatureOverlay(se, 
+               features = c("OpenTargets_SCZ_Genetic_topGenes_1"),
+               pt.alpha = spot_alpha,
+               pt.size = point.size,
+               add.alpha=T,
+               ncols = 1,
+               cols = c("black", "darkblue", "cyan", "yellow", "red", "darkred"))
+
+
+FeatureOverlay(se, 
+               features = c("OpenTargets_SCZ_Drugs_1"),
+               pt.alpha = spot_alpha,
+               pt.size = point.size,
+               add.alpha=T,
+               ncols = 1,
+               cols = c("black", "darkblue", "cyan", "yellow", "red", "darkred"))
+
+```
+
+
+# NULL set permutation
+
+
+Load perm.mat from NULL gene sets
+```{r class.source = 'fold-show'}
+perm.mat.window50 <- readRDS(file = "Permutation_matrices/perm.mat_p10000_g50.RDS")
+perm.mat.genetic <- readRDS(file = "Permutation_matrices/perm.mat_p10000_g849.RDS")
+perm.mat.drugs <- readRDS(file = "Permutation_matrices/perm.mat_p10000_g103.RDS")
+```
+
+
+Permutation test settings
+```{r class.source = 'fold-show'}
+permutation.nr <- 10000
+
+perm.mat.window50.data <- as.data.frame(perm.mat.window50)
+perm.mat.genetic.data <- as.data.frame(perm.mat.genetic)
+perm.mat.drugs.data <- as.data.frame(perm.mat.drugs)
+
+nr_of_tests <- 6 
+
+#Cluster names
+cluster_names <- rep("cluster_", length(table(se$seurat_clusters)))
+cluster_names <- paste0(cluster_names,as.character(0:(length(table(se$seurat_clusters))-1)))
+
+#P-value matrices
+p.val.mat.g <- matrix(data = NA, nrow = 2, ncol = length(cluster_names), dimnames = list(c("-log10(p.val)","-log10(p.val.adj)"),cluster_names))
+p.val.mat.d <- matrix(data = NA, nrow = 2, ncol = length(cluster_names), dimnames = list(c("-log10(p.val)","-log10(p.val.adj)"),cluster_names))
+
+```
+
+
+
+# Sliding window OT Genetic
+
+Subset to relevant spatial structures
+```{r}
+se_0 <- SubsetSTData(se, expression = seurat_clusters == 0)
+se_1 <- SubsetSTData(se, expression = seurat_clusters == 1)
+se_2 <- SubsetSTData(se, expression = seurat_clusters == 2)
+se_3 <- SubsetSTData(se, expression = seurat_clusters == 3)
+se_4 <- SubsetSTData(se, expression = seurat_clusters == 4)
+se_5 <- SubsetSTData(se, expression = seurat_clusters == 5)
+```
+
+Extract meta data and AddModuleScores
+```{r}
+meta_data_se <- se[[]]
+meta_data_se_0 <- se_0[[]]
+meta_data_se_1 <- se_1[[]]
+meta_data_se_2 <- se_2[[]]
+meta_data_se_3 <- se_3[[]]
+meta_data_se_4 <- se_4[[]]
+meta_data_se_5 <- se_5[[]]
+```
+
+Subset data: SCZ_Genetic
+```{r}
+start_with_SCZ_Genetic <- grep("^SCZ_Genetic", colnames(meta_data_se), value = TRUE)
+meta_data_se_SCZ_Genetic <- subset(meta_data_se, select = start_with_SCZ_Genetic)
+
+start_with_SCZ_Genetic <- grep("^SCZ_Genetic", colnames(meta_data_se_0), value = TRUE)
+meta_data_se_0_SCZ_Genetic <- subset(meta_data_se_0, select = start_with_SCZ_Genetic)
+
+start_with_SCZ_Genetic <- grep("^SCZ_Genetic", colnames(meta_data_se_1), value = TRUE)
+meta_data_se_1_SCZ_Genetic <- subset(meta_data_se_1, select = start_with_SCZ_Genetic)
+
+start_with_SCZ_Genetic <- grep("^SCZ_Genetic", colnames(meta_data_se_2), value = TRUE)
+meta_data_se_2_SCZ_Genetic <- subset(meta_data_se_2, select = start_with_SCZ_Genetic)
+
+start_with_SCZ_Genetic <- grep("^SCZ_Genetic", colnames(meta_data_se_3), value = TRUE)
+meta_data_se_3_SCZ_Genetic <- subset(meta_data_se_3, select = start_with_SCZ_Genetic)
+
+start_with_SCZ_Genetic <- grep("^SCZ_Genetic", colnames(meta_data_se_4), value = TRUE)
+meta_data_se_4_SCZ_Genetic <- subset(meta_data_se_4, select = start_with_SCZ_Genetic)
+
+start_with_SCZ_Genetic <- grep("^SCZ_Genetic", colnames(meta_data_se_5), value = TRUE)
+meta_data_se_5_SCZ_Genetic <- subset(meta_data_se_5, select = start_with_SCZ_Genetic)
+```
+
+
+## SCZ_Genetic all structures {.tabset}
+
+Extract quantile: SCZ_Genetic all structures
+```{r}
+meta_data_vector <- NULL
+SCZ_Genetic_structure <- NULL
+
+for (i in 1:length(meta_data_se_SCZ_Genetic)){
+        meta_data_vector$Rank <- as.character(i)
+        meta_data_vector$quantile <- quantile(as.numeric(meta_data_se_SCZ_Genetic[,i]), probs = 0.99)
+        SCZ_Genetic_structure <- rbind(SCZ_Genetic_structure,meta_data_vector)
+}
+rownames(SCZ_Genetic_structure) <- 1:length(meta_data_se_SCZ_Genetic)
+SCZ_Genetic_structure <- as.data.frame(SCZ_Genetic_structure)
+SCZ_Genetic_structure <- unlist(SCZ_Genetic_structure$quantile)
+SCZ_Genetic_structure <- as.data.frame(SCZ_Genetic_structure)
+SCZ_Genetic_structure$Rank <- 1:length(meta_data_se_SCZ_Genetic)
+colnames(SCZ_Genetic_structure) <- c("quantile","Rank")
+```
+
+### SCZ_Genetic all structures
+```{r, fig.width=10}
+plot(SCZ_Genetic_structure$Rank,SCZ_Genetic_structure$quantile, main = "SCZ Genetic all structures", xlab = "Rank", ylab = "Score", type = "o", ylim=c(-0.1,0.5))
+axis(1, at = seq(1, 200, by = 1), cex.axis = 0.5)
+
+abline(h = max(perm.mat.window50), col="darkred", lwd = 2, lty = 2)
+abline(h = quantile(as.numeric(perm.mat.window50), probs = 0.95), col = "red", lwd = 2, lty = 2)
+abline(h = median(perm.mat.window50), col="blue", lwd = 2, lty = 2)
+abline(h = quantile(as.numeric(perm.mat.window50), probs = 0.05), col = "red", lwd = 2, lty = 2)
+abline(h = min(perm.mat.window50), col="darkred", lwd = 2, lty = 2)
+```
+
+### ST.FeaturePlot
+```{r, fig.width=10, fig.height=6}
+
+spot_alpha = 0.5
+point.size = 1
+
+ST.FeaturePlot(se, 
+               features = c("SCZ_Genetic_Rank1_1","SCZ_Genetic_Rank2_1","SCZ_Genetic_Rank3_1","SCZ_Genetic_Rank4_1","SCZ_Genetic_Rank5_1","SCZ_Genetic_Rank6_1","SCZ_Genetic_Rank7_1","SCZ_Genetic_Rank8_1","SCZ_Genetic_Rank9_1","SCZ_Genetic_Rank10_1","SCZ_Genetic_Rank11_1","SCZ_Genetic_Rank12_1"),
+               pt.alpha = spot_alpha,
+               pt.size = point.size,
+               grid.ncol = 4,
+               cols = c("black", "darkblue", "cyan", "yellow", "red", "darkred"),
+               value.scale = "all")
+
+
+ST.FeaturePlot(se, 
+               features = c("SCZ_Genetic_Rank13_1","SCZ_Genetic_Rank14_1","SCZ_Genetic_Rank15_1","SCZ_Genetic_Rank16_1","SCZ_Genetic_Rank17_1","SCZ_Genetic_Rank18_1","SCZ_Genetic_Rank19_1","SCZ_Genetic_Rank20_1","SCZ_Genetic_Rank21_1","SCZ_Genetic_Rank22_1","SCZ_Genetic_Rank23_1","SCZ_Genetic_Rank24_1"),
+               pt.alpha = spot_alpha,
+               pt.size = point.size,
+               grid.ncol = 4,
+               cols = c("black", "darkblue", "cyan", "yellow", "red", "darkred"),
+               value.scale = "all")
+
+
+ST.FeaturePlot(se, 
+               features = c("SCZ_Genetic_Rank25_1","SCZ_Genetic_Rank26_1","SCZ_Genetic_Rank27_1","SCZ_Genetic_Rank28_1","SCZ_Genetic_Rank29_1","SCZ_Genetic_Rank30_1","SCZ_Genetic_Rank31_1","SCZ_Genetic_Rank32_1","SCZ_Genetic_Rank33_1","SCZ_Genetic_Rank34_1","SCZ_Genetic_Rank35_1","SCZ_Genetic_Rank36_1"),
+               pt.alpha = spot_alpha,
+               pt.size = point.size,
+               grid.ncol = 4,
+               cols = c("black", "darkblue", "cyan", "yellow", "red", "darkred"),
+               value.scale = "all")
+
+
+ST.FeaturePlot(se, 
+               features = c("SCZ_Genetic_Rank37_1","SCZ_Genetic_Rank38_1","SCZ_Genetic_Rank39_1","SCZ_Genetic_Rank40_1","SCZ_Genetic_Rank41_1","SCZ_Genetic_Rank42_1","SCZ_Genetic_Rank43_1","SCZ_Genetic_Rank44_1","SCZ_Genetic_Rank45_1","SCZ_Genetic_Rank46_1","SCZ_Genetic_Rank47_1","SCZ_Genetic_Rank48_1"),
+               pt.alpha = spot_alpha,
+               pt.size = point.size,
+               grid.ncol = 4,
+               cols = c("black", "darkblue", "cyan", "yellow", "red", "darkred"),
+               value.scale = "all")
+
+
+ST.FeaturePlot(se, 
+               features = c("SCZ_Genetic_Rank49_1","SCZ_Genetic_Rank50_1","SCZ_Genetic_Rank51_1","SCZ_Genetic_Rank52_1","SCZ_Genetic_Rank53_1","SCZ_Genetic_Rank54_1","SCZ_Genetic_Rank55_1","SCZ_Genetic_Rank56_1","SCZ_Genetic_Rank57_1","SCZ_Genetic_Rank58_1","SCZ_Genetic_Rank59_1","SCZ_Genetic_Rank60_1"),
+               pt.alpha = spot_alpha,
+               pt.size = point.size,
+               grid.ncol = 4,
+               cols = c("black", "darkblue", "cyan", "yellow", "red", "darkred"),
+               value.scale = "all")
+
+
+```
+
+
+### Violin plots 1-10
+```{r}
+se <- SetIdent(se, value = "seurat_clusters")
+
+VlnPlot(se, features = c("SCZ_Genetic_Rank1_1"), ncol = 1, group.by = "seurat_clusters", cols = col_vector) + geom_boxplot(width=0.4) + theme(plot.title = element_text(size = 12))
+VlnPlot(se, features = c("SCZ_Genetic_Rank2_1"), ncol = 1, group.by = "seurat_clusters", cols = col_vector) + geom_boxplot(width=0.4) + theme(plot.title = element_text(size = 12))
+VlnPlot(se, features = c("SCZ_Genetic_Rank3_1"), ncol = 1, group.by = "seurat_clusters", cols = col_vector) + geom_boxplot(width=0.4) + theme(plot.title = element_text(size = 12))
+VlnPlot(se, features = c("SCZ_Genetic_Rank4_1"), ncol = 1, group.by = "seurat_clusters", cols = col_vector) + geom_boxplot(width=0.4) + theme(plot.title = element_text(size = 12))
+VlnPlot(se, features = c("SCZ_Genetic_Rank5_1"), ncol = 1, group.by = "seurat_clusters", cols = col_vector) + geom_boxplot(width=0.4) + theme(plot.title = element_text(size = 12))
+VlnPlot(se, features = c("SCZ_Genetic_Rank6_1"), ncol = 1, group.by = "seurat_clusters", cols = col_vector) + geom_boxplot(width=0.4) + theme(plot.title = element_text(size = 12))
+VlnPlot(se, features = c("SCZ_Genetic_Rank7_1"), ncol = 1, group.by = "seurat_clusters", cols = col_vector) + geom_boxplot(width=0.4) + theme(plot.title = element_text(size = 12))
+VlnPlot(se, features = c("SCZ_Genetic_Rank8_1"), ncol = 1, group.by = "seurat_clusters", cols = col_vector) + geom_boxplot(width=0.4) + theme(plot.title = element_text(size = 12))
+VlnPlot(se, features = c("SCZ_Genetic_Rank9_1"), ncol = 1, group.by = "seurat_clusters", cols = col_vector) + geom_boxplot(width=0.4) + theme(plot.title = element_text(size = 12))
+VlnPlot(se, features = c("SCZ_Genetic_Rank10_1"), ncol = 1, group.by = "seurat_clusters", cols = col_vector) + geom_boxplot(width=0.4) + theme(plot.title = element_text(size = 12))
+
+```
+
+
+### Violin plots 11-20
+```{r}
+se <- SetIdent(se, value = "seurat_clusters")
+
+VlnPlot(se, features = c("SCZ_Genetic_Rank11_1"), ncol = 1, group.by = "seurat_clusters", cols = col_vector) + geom_boxplot(width=0.4) + theme(plot.title = element_text(size = 12))
+VlnPlot(se, features = c("SCZ_Genetic_Rank12_1"), ncol = 1, group.by = "seurat_clusters", cols = col_vector) + geom_boxplot(width=0.4) + theme(plot.title = element_text(size = 12))
+VlnPlot(se, features = c("SCZ_Genetic_Rank13_1"), ncol = 1, group.by = "seurat_clusters", cols = col_vector) + geom_boxplot(width=0.4) + theme(plot.title = element_text(size = 12))
+VlnPlot(se, features = c("SCZ_Genetic_Rank14_1"), ncol = 1, group.by = "seurat_clusters", cols = col_vector) + geom_boxplot(width=0.4) + theme(plot.title = element_text(size = 12))
+VlnPlot(se, features = c("SCZ_Genetic_Rank15_1"), ncol = 1, group.by = "seurat_clusters", cols = col_vector) + geom_boxplot(width=0.4) + theme(plot.title = element_text(size = 12))
+VlnPlot(se, features = c("SCZ_Genetic_Rank16_1"), ncol = 1, group.by = "seurat_clusters", cols = col_vector) + geom_boxplot(width=0.4) + theme(plot.title = element_text(size = 12))
+VlnPlot(se, features = c("SCZ_Genetic_Rank17_1"), ncol = 1, group.by = "seurat_clusters", cols = col_vector) + geom_boxplot(width=0.4) + theme(plot.title = element_text(size = 12))
+VlnPlot(se, features = c("SCZ_Genetic_Rank18_1"), ncol = 1, group.by = "seurat_clusters", cols = col_vector) + geom_boxplot(width=0.4) + theme(plot.title = element_text(size = 12))
+VlnPlot(se, features = c("SCZ_Genetic_Rank19_1"), ncol = 1, group.by = "seurat_clusters", cols = col_vector) + geom_boxplot(width=0.4) + theme(plot.title = element_text(size = 12))
+VlnPlot(se, features = c("SCZ_Genetic_Rank20_1"), ncol = 1, group.by = "seurat_clusters", cols = col_vector) + geom_boxplot(width=0.4) + theme(plot.title = element_text(size = 12))
+
+```
+
+
+## SCZ_Genetic structure 0 {.tabset}
+
+Extract median: SCZ_Genetic structure 0
+```{r}
+meta_data_vector <- NULL
+SCZ_Genetic_structure_0 <- NULL
+
+for (i in 1:length(meta_data_se_0_SCZ_Genetic)){
+        meta_data_vector$Rank <- as.character(i)
+        meta_data_vector$Median <- median(meta_data_se_0_SCZ_Genetic[,i])
+        SCZ_Genetic_structure_0 <- rbind(SCZ_Genetic_structure_0,meta_data_vector)
+}
+rownames(SCZ_Genetic_structure_0) <- 1:length(meta_data_se_0_SCZ_Genetic)
+SCZ_Genetic_structure_0 <- as.data.frame(SCZ_Genetic_structure_0)
+```
+
+### SCZ_Genetic windows
+```{r, fig.width=10}
+plot(SCZ_Genetic_structure_0$Rank,SCZ_Genetic_structure_0$Median, main = "SCZ Genetic Structure 0", xlab = "Rank", ylab = "Score", type = "o", ylim=c(-0.3,0.3))
+axis(1, at = seq(1, 200, by = 1), cex.axis = 0.5)
+
+abline(h = max(perm.mat.window50[,1]), col="darkred", lwd = 2, lty = 2)
+abline(h = quantile(as.numeric(perm.mat.window50[,1]), probs = 0.95), col = "red", lwd = 2, lty = 2)
+abline(h = median(perm.mat.window50[,1]), col="blue", lwd = 2, lty = 2)
+abline(h = quantile(as.numeric(perm.mat.window50[,1]), probs = 0.05), col = "red", lwd = 2, lty = 2)
+abline(h = min(perm.mat.window50[,1]), col="darkred", lwd = 2, lty = 2)
+```
+
+Permutation p-value windows: SCZ Genetic Structure 0
+```{r}
+
+#P.value across window ranks
+Rank_names <- rep("Rank_nr", length(window50_rank_list_SCZ_Genetic))
+Rank_names <- paste0(Rank_names,sep=1:length(Rank_names))
+
+#P.value matrix
+p.mat.cluster0 <- matrix(data = NA, nrow = length(window50_rank_list_SCZ_Genetic), ncol = 2, dimnames = list(Rank_names,c("p.val","p.val.adj")))
+
+
+for (i in 1:length(window50_rank_list_SCZ_Genetic)){
+  
+  OT_genetic_window <- as.numeric(SCZ_Genetic_structure_0[i,2])
+  perm.mat.window50.cluster0_bigger_window <- subset(perm.mat.window50.data,perm.mat.window50.data$cluster_0 >= OT_genetic_window)
+  
+  cluster0_w_p.val <- (nrow(perm.mat.window50.cluster0_bigger_window)+1)/(permutation.nr+1)
+  p.mat.cluster0[i,1] <- as.numeric(cluster0_w_p.val)
+  
+  cluster0_w_p.val.adj <- p.adjust(cluster0_w_p.val,method = c("bonferroni"), n=nr_of_tests)
+  p.mat.cluster0[i,2] <- as.numeric(cluster0_w_p.val.adj)
+}
+
+p.mat.cluster0[,1]
+```
+
+
+### ST.FeaturePlot
+```{r, fig.width=10, fig.height=6}
+
+spot_alpha = 0.5
+point.size = 1
+
+ST.FeaturePlot(se_0, 
+               features = c("SCZ_Genetic_Rank1_1","SCZ_Genetic_Rank2_1","SCZ_Genetic_Rank3_1","SCZ_Genetic_Rank4_1","SCZ_Genetic_Rank5_1","SCZ_Genetic_Rank6_1","SCZ_Genetic_Rank7_1","SCZ_Genetic_Rank8_1","SCZ_Genetic_Rank9_1","SCZ_Genetic_Rank10_1","SCZ_Genetic_Rank11_1","SCZ_Genetic_Rank12_1"),
+               pt.alpha = spot_alpha,
+               pt.size = point.size,
+               grid.ncol = 4,
+               cols = c("black", "darkblue", "cyan", "yellow", "red", "darkred"),
+               value.scale = "all")
+
+```
+
+
+
+### P.val.adj structure
+```{r}
+# Median score of NULL gene set permutations
+median_score_NULL_permutations_cluster_0 <- as.data.frame(perm.mat.genetic.data$cluster_0)
+colnames(median_score_NULL_permutations_cluster_0) <- c("Median_scores")
+
+# permutation p-value
+perm.mat.genetic.cluster0_bigger <- subset(perm.mat.genetic.data,perm.mat.genetic.data$cluster_0 >= as.numeric(median(se_0$OpenTargets_SCZ_Genetic_1)))
+
+cluster0_p.val.g <- (nrow(perm.mat.genetic.cluster0_bigger)+1)/(permutation.nr+1)
+cluster0_p.val.g.adj <- p.adjust(cluster0_p.val.g,method = c("bonferroni"), n=nr_of_tests) # Bonferroni
+
+p.val.mat.g[1,1] <- -log10(cluster0_p.val.g)
+p.val.mat.g[2,1] <- -log10(cluster0_p.val.g.adj)
+
+cluster0_p.val.g.adj_text <- as.character(round(cluster0_p.val.g.adj, digits = 4))
+cluster0_p.val.g.adj_text <- paste0(c("p.val.adj = "),cluster0_p.val.g.adj_text)
+
+theme_set(theme_classic()) # Density plot
+median_score_NULL_permutations_cluster_0 %>%
+  ggplot( aes(x=Median_scores)) +
+    geom_density(fill="#69b3a2", alpha=0.8)+ 
+    geom_vline(xintercept = as.numeric(median(se_0$OpenTargets_SCZ_Genetic_1)), color = "purple", size=1)+
+  annotate("text", x=0, y=0, label= cluster0_p.val.g.adj_text)+
+  ggtitle("Structure 0")+
+  xlab("Median score NULL gene set")+
+  ylab("Density")
+
+```
+
+
+## SCZ_Genetic structure 1 {.tabset}
+
+
+Extract median: SCZ_Genetic structure 1
+```{r}
+meta_data_vector <- NULL
+SCZ_Genetic_structure_1 <- NULL
+
+for (i in 1:length(meta_data_se_1_SCZ_Genetic)){
+        meta_data_vector$Rank <- as.character(i)
+        meta_data_vector$Median <- median(meta_data_se_1_SCZ_Genetic[,i])
+        SCZ_Genetic_structure_1 <- rbind(SCZ_Genetic_structure_1,meta_data_vector)
+}
+rownames(SCZ_Genetic_structure_1) <- 1:length(meta_data_se_1_SCZ_Genetic)
+SCZ_Genetic_structure_1 <- as.data.frame(SCZ_Genetic_structure_1)
+```
+
+### SCZ_Genetic windows
+```{r, fig.width=10}
+plot(SCZ_Genetic_structure_1$Rank,SCZ_Genetic_structure_1$Median, main = "SCZ Genetic Structure 1", xlab = "Rank", ylab = "Score", type = "o", ylim=c(-0.3,0.3))
+axis(1, at = seq(1, 200, by = 1), cex.axis = 0.5)
+
+abline(h = max(perm.mat.window50[,2]), col="darkred", lwd = 2, lty = 2)
+abline(h = quantile(as.numeric(perm.mat.window50[,2]), probs = 0.95), col = "red", lwd = 2, lty = 2)
+abline(h = median(perm.mat.window50[,2]), col="blue", lwd = 2, lty = 2)
+abline(h = quantile(as.numeric(perm.mat.window50[,2]), probs = 0.05), col = "red", lwd = 2, lty = 2)
+abline(h = min(perm.mat.window50[,2]), col="darkred", lwd = 2, lty = 2)
+```
+
+Permutation p-value windows: SCZ Genetic Structure 1
+```{r}
+
+#P.value across window ranks
+Rank_names <- rep("Rank_nr", length(window50_rank_list_SCZ_Genetic))
+Rank_names <- paste0(Rank_names,sep=1:length(Rank_names))
+
+#P.value matrix
+p.mat.cluster1 <- matrix(data = NA, nrow = length(window50_rank_list_SCZ_Genetic), ncol = 2, dimnames = list(Rank_names,c("p.val","p.val.adj")))
+
+
+for (i in 1:length(window50_rank_list_SCZ_Genetic)){
+  
+  OT_genetic_window <- as.numeric(SCZ_Genetic_structure_1[i,2])
+  perm.mat.window50.cluster1_bigger_window <- subset(perm.mat.window50.data,perm.mat.window50.data$cluster_1 >= OT_genetic_window)
+  
+  cluster1_w_p.val <- (nrow(perm.mat.window50.cluster1_bigger_window)+1)/(permutation.nr+1)
+  p.mat.cluster1[i,1] <- as.numeric(cluster1_w_p.val)
+  
+  cluster1_w_p.val.adj <- p.adjust(cluster1_w_p.val,method = c("bonferroni"), n=nr_of_tests)
+  p.mat.cluster1[i,2] <- as.numeric(cluster1_w_p.val.adj)
+}
+
+p.mat.cluster1[,1]
+```
+
+
+### ST.FeaturePlot
+```{r, fig.width=10, fig.height=6}
+
+spot_alpha = 0.5
+point.size = 1
+
+ST.FeaturePlot(se_1, 
+               features = c("SCZ_Genetic_Rank1_1","SCZ_Genetic_Rank2_1","SCZ_Genetic_Rank3_1","SCZ_Genetic_Rank4_1","SCZ_Genetic_Rank5_1","SCZ_Genetic_Rank6_1","SCZ_Genetic_Rank7_1","SCZ_Genetic_Rank8_1","SCZ_Genetic_Rank9_1","SCZ_Genetic_Rank10_1","SCZ_Genetic_Rank11_1","SCZ_Genetic_Rank12_1"),
+               pt.alpha = spot_alpha,
+               pt.size = point.size,
+               grid.ncol = 4,
+               cols = c("black", "darkblue", "cyan", "yellow", "red", "darkred"),
+               value.scale = "all")
+
+```
+
+
+### P.val.adj structure
+```{r}
+# Median score of NULL gene set permutations
+median_score_NULL_permutations_cluster_1 <- as.data.frame(perm.mat.genetic.data$cluster_1)
+colnames(median_score_NULL_permutations_cluster_1) <- c("Median_scores")
+
+# permutation p-value
+perm.mat.genetic.cluster1_bigger <- subset(perm.mat.genetic.data,perm.mat.genetic.data$cluster_1 >= as.numeric(median(se_1$OpenTargets_SCZ_Genetic_1)))
+
+cluster1_p.val.g <- (nrow(perm.mat.genetic.cluster1_bigger)+1)/(permutation.nr+1)
+cluster1_p.val.g.adj <- p.adjust(cluster1_p.val.g,method = c("bonferroni"), n=nr_of_tests) # Bonferroni
+
+cluster1_p.val.g.adj_text <- as.character(round(cluster1_p.val.g.adj, digits = 4))
+cluster1_p.val.g.adj_text <- paste0(c("p.val.adj = "),cluster1_p.val.g.adj_text)
+
+p.val.mat.g[1,2] <- -log10(cluster1_p.val.g)
+p.val.mat.g[2,2] <- -log10(cluster1_p.val.g.adj)
+
+theme_set(theme_classic()) # Density plot
+median_score_NULL_permutations_cluster_1 %>%
+  ggplot( aes(x=Median_scores)) +
+    geom_density(fill="#69b3a2", alpha=0.8)+ 
+    geom_vline(xintercept = as.numeric(median(se_1$OpenTargets_SCZ_Genetic_1)), color = "purple", size=1)+
+  annotate("text", x=0, y=0, label= cluster1_p.val.g.adj_text)+
+  ggtitle("Structure 1")+
+  xlab("Median score NULL gene set")+
+  ylab("Density")
+
+```
+
+
+
+
+## SCZ_Genetic structure 2 {.tabset}
+
+
+Extract median: SCZ_Genetic structure 2
+```{r}
+meta_data_vector <- NULL
+SCZ_Genetic_structure_2 <- NULL
+
+for (i in 1:length(meta_data_se_2_SCZ_Genetic)){
+        meta_data_vector$Rank <- as.character(i)
+        meta_data_vector$Median <- median(meta_data_se_2_SCZ_Genetic[,i])
+        SCZ_Genetic_structure_2 <- rbind(SCZ_Genetic_structure_2,meta_data_vector)
+}
+rownames(SCZ_Genetic_structure_2) <- 1:length(meta_data_se_2_SCZ_Genetic)
+SCZ_Genetic_structure_2 <- as.data.frame(SCZ_Genetic_structure_2)
+```
+
+### SCZ_Genetic windows
+```{r, fig.width=10}
+plot(SCZ_Genetic_structure_2$Rank,SCZ_Genetic_structure_2$Median, main = "SCZ Genetic Structure 2", xlab = "Rank", ylab = "Score", type = "o", ylim=c(-0.3,0.3))
+axis(1, at = seq(1, 200, by = 1), cex.axis = 0.5)
+
+abline(h = max(perm.mat.window50[,3]), col="darkred", lwd = 2, lty = 2)
+abline(h = quantile(as.numeric(perm.mat.window50[,3]), probs = 0.95), col = "red", lwd = 2, lty = 2)
+abline(h = median(perm.mat.window50[,3]), col="blue", lwd = 2, lty = 2)
+abline(h = quantile(as.numeric(perm.mat.window50[,3]), probs = 0.05), col = "red", lwd = 2, lty = 2)
+abline(h = min(perm.mat.window50[,3]), col="darkred", lwd = 2, lty = 2)
+```
+
+Permutation p-value windows: SCZ Genetic Structure 2
+```{r}
+
+#P.value across window ranks
+Rank_names <- rep("Rank_nr", length(window50_rank_list_SCZ_Genetic))
+Rank_names <- paste0(Rank_names,sep=1:length(Rank_names))
+
+#P.value matrix
+p.mat.cluster2 <- matrix(data = NA, nrow = length(window50_rank_list_SCZ_Genetic), ncol = 2, dimnames = list(Rank_names,c("p.val","p.val.adj")))
+
+
+for (i in 1:length(window50_rank_list_SCZ_Genetic)){
+  
+  OT_genetic_window <- as.numeric(SCZ_Genetic_structure_2[i,2])
+  perm.mat.window50.cluster2_bigger_window <- subset(perm.mat.window50.data,perm.mat.window50.data$cluster_2 >= OT_genetic_window)
+  
+  cluster2_w_p.val <- (nrow(perm.mat.window50.cluster2_bigger_window)+1)/(permutation.nr+1)
+  p.mat.cluster2[i,1] <- as.numeric(cluster2_w_p.val)
+  
+  cluster2_w_p.val.adj <- p.adjust(cluster2_w_p.val,method = c("bonferroni"), n=nr_of_tests)
+  p.mat.cluster2[i,2] <- as.numeric(cluster2_w_p.val.adj)
+}
+
+
+p.mat.cluster2[,1]
+```
+
+
+### ST.FeaturePlot
+```{r, fig.width=10, fig.height=6}
+
+spot_alpha = 0.5
+point.size = 1
+
+ST.FeaturePlot(se_2, 
+               features = c("SCZ_Genetic_Rank1_1","SCZ_Genetic_Rank2_1","SCZ_Genetic_Rank3_1","SCZ_Genetic_Rank4_1","SCZ_Genetic_Rank5_1","SCZ_Genetic_Rank6_1","SCZ_Genetic_Rank7_1","SCZ_Genetic_Rank8_1","SCZ_Genetic_Rank9_1","SCZ_Genetic_Rank10_1","SCZ_Genetic_Rank11_1","SCZ_Genetic_Rank12_1"),
+               pt.alpha = spot_alpha,
+               pt.size = point.size,
+               grid.ncol = 4,
+               cols = c("black", "darkblue", "cyan", "yellow", "red", "darkred"),
+               value.scale = "all")
+
+```
+
+
+### P.val.adj structure
+```{r}
+# Median score of NULL gene set permutations
+median_score_NULL_permutations_cluster_2 <- as.data.frame(perm.mat.genetic.data$cluster_2)
+colnames(median_score_NULL_permutations_cluster_2) <- c("Median_scores")
+
+# permutation p-value
+perm.mat.genetic.cluster2_bigger <- subset(perm.mat.genetic.data,perm.mat.genetic.data$cluster_2 >= as.numeric(median(se_2$OpenTargets_SCZ_Genetic_1)))
+
+cluster2_p.val.g <- (nrow(perm.mat.genetic.cluster2_bigger)+1)/(permutation.nr+1)
+cluster2_p.val.g.adj <- p.adjust(cluster2_p.val.g,method = c("bonferroni"), n=nr_of_tests) # Bonferroni
+
+cluster2_p.val.g.adj_text <- as.character(round(cluster2_p.val.g.adj, digits = 4))
+cluster2_p.val.g.adj_text <- paste0(c("p.val.adj = "),cluster2_p.val.g.adj_text)
+
+p.val.mat.g[1,3] <- -log10(cluster2_p.val.g)
+p.val.mat.g[2,3] <- -log10(cluster2_p.val.g.adj)
+
+theme_set(theme_classic()) # Density plot
+median_score_NULL_permutations_cluster_2 %>%
+  ggplot( aes(x=Median_scores)) +
+    geom_density(fill="#69b3a2", alpha=0.8)+ 
+    geom_vline(xintercept = as.numeric(median(se_2$OpenTargets_SCZ_Genetic_1)), color = "purple", size=1)+
+  annotate("text", x=0, y=0, label= cluster2_p.val.g.adj_text)+
+  ggtitle("Structure 2")+
+  xlab("Median score NULL gene set")+
+  ylab("Density")
+
+```
+
+
+
+## SCZ_Genetic structure 3 {.tabset}
+
+
+Extract median: SCZ_Genetic structure 3
+```{r}
+meta_data_vector <- NULL
+SCZ_Genetic_structure_3 <- NULL
+
+for (i in 1:length(meta_data_se_3_SCZ_Genetic)){
+        meta_data_vector$Rank <- as.character(i)
+        meta_data_vector$Median <- median(meta_data_se_3_SCZ_Genetic[,i])
+        SCZ_Genetic_structure_3 <- rbind(SCZ_Genetic_structure_3,meta_data_vector)
+}
+rownames(SCZ_Genetic_structure_3) <- 1:length(meta_data_se_3_SCZ_Genetic)
+SCZ_Genetic_structure_3 <- as.data.frame(SCZ_Genetic_structure_3)
+```
+
+### SCZ_Genetic windows
+```{r, fig.width=10}
+plot(SCZ_Genetic_structure_3$Rank,SCZ_Genetic_structure_3$Median, main = "SCZ Genetic Structure 3", xlab = "Rank", ylab = "Score", type = "o", ylim=c(-0.3,0.3))
+axis(1, at = seq(1, 200, by = 1), cex.axis = 0.5)
+
+abline(h = max(perm.mat.window50[,4]), col="darkred", lwd = 2, lty = 2)
+abline(h = quantile(as.numeric(perm.mat.window50[,4]), probs = 0.95), col = "red", lwd = 2, lty = 2)
+abline(h = median(perm.mat.window50[,4]), col="blue", lwd = 2, lty = 2)
+abline(h = quantile(as.numeric(perm.mat.window50[,4]), probs = 0.05), col = "red", lwd = 2, lty = 2)
+abline(h = min(perm.mat.window50[,4]), col="darkred", lwd = 2, lty = 2)
+```
+
+
+Permutation p-value windows: SCZ Genetic Structure 3
+```{r}
+
+#P.value across window ranks
+Rank_names <- rep("Rank_nr", length(window50_rank_list_SCZ_Genetic))
+Rank_names <- paste0(Rank_names,sep=1:length(Rank_names))
+
+#P.value matrix
+p.mat.cluster3 <- matrix(data = NA, nrow = length(window50_rank_list_SCZ_Genetic), ncol = 2, dimnames = list(Rank_names,c("p.val","p.val.adj")))
+
+
+for (i in 1:length(window50_rank_list_SCZ_Genetic)){
+  
+  OT_genetic_window <- as.numeric(SCZ_Genetic_structure_3[i,2])
+  perm.mat.window50.cluster3_bigger_window <- subset(perm.mat.window50.data,perm.mat.window50.data$cluster_3 >= OT_genetic_window)
+  
+  cluster3_w_p.val <- (nrow(perm.mat.window50.cluster3_bigger_window)+1)/(permutation.nr+1)
+  p.mat.cluster3[i,1] <- as.numeric(cluster3_w_p.val)
+  
+  cluster3_w_p.val.adj <- p.adjust(cluster3_w_p.val,method = c("bonferroni"), n=nr_of_tests)
+  p.mat.cluster3[i,2] <- as.numeric(cluster3_w_p.val.adj)
+}
+
+p.mat.cluster3[,1]
+```
+
+
+### ST.FeaturePlot
+```{r, fig.width=10, fig.height=6}
+
+spot_alpha = 0.5
+point.size = 1
+
+ST.FeaturePlot(se_3, 
+               features = c("SCZ_Genetic_Rank1_1","SCZ_Genetic_Rank2_1","SCZ_Genetic_Rank3_1","SCZ_Genetic_Rank4_1","SCZ_Genetic_Rank5_1","SCZ_Genetic_Rank6_1","SCZ_Genetic_Rank7_1","SCZ_Genetic_Rank8_1","SCZ_Genetic_Rank9_1","SCZ_Genetic_Rank10_1","SCZ_Genetic_Rank11_1","SCZ_Genetic_Rank12_1"),
+               pt.alpha = spot_alpha,
+               pt.size = point.size,
+               grid.ncol = 4,
+               cols = c("black", "darkblue", "cyan", "yellow", "red", "darkred"),
+               value.scale = "all")
+
+```
+
+
+### P.val.adj structure
+```{r}
+# Median score of NULL gene set permutations
+median_score_NULL_permutations_cluster_3 <- as.data.frame(perm.mat.genetic.data$cluster_3)
+colnames(median_score_NULL_permutations_cluster_3) <- c("Median_scores")
+
+# permutation p-value
+perm.mat.genetic.cluster3_bigger <- subset(perm.mat.genetic.data,perm.mat.genetic.data$cluster_3 >= as.numeric(median(se_3$OpenTargets_SCZ_Genetic_1)))
+
+cluster3_p.val.g <- (nrow(perm.mat.genetic.cluster3_bigger)+1)/(permutation.nr+1)
+cluster3_p.val.g.adj <- p.adjust(cluster3_p.val.g,method = c("bonferroni"), n=nr_of_tests) # Bonferroni
+
+cluster3_p.val.g.adj_text <- as.character(round(cluster3_p.val.g.adj, digits = 4))
+cluster3_p.val.g.adj_text <- paste0(c("p.val.adj = "),cluster3_p.val.g.adj_text)
+
+p.val.mat.g[1,4] <- -log10(cluster3_p.val.g)
+p.val.mat.g[2,4] <- -log10(cluster3_p.val.g.adj)
+
+theme_set(theme_classic()) # Density plot
+median_score_NULL_permutations_cluster_3 %>%
+  ggplot( aes(x=Median_scores)) +
+    geom_density(fill="#69b3a2", alpha=0.8)+ 
+    geom_vline(xintercept = as.numeric(median(se_3$OpenTargets_SCZ_Genetic_1)), color = "purple", size=1)+
+  annotate("text", x=0, y=0, label= cluster3_p.val.g.adj_text)+
+  ggtitle("Structure 3")+
+  xlab("Median score NULL gene set")+
+  ylab("Density")
+
+```
+
+
+
+## SCZ_Genetic structure 4 {.tabset}
+
+
+Extract median: SCZ_Genetic structure 4
+```{r}
+meta_data_vector <- NULL
+SCZ_Genetic_structure_4 <- NULL
+
+for (i in 1:length(meta_data_se_4_SCZ_Genetic)){
+        meta_data_vector$Rank <- as.character(i)
+        meta_data_vector$Median <- median(meta_data_se_4_SCZ_Genetic[,i])
+        SCZ_Genetic_structure_4 <- rbind(SCZ_Genetic_structure_4,meta_data_vector)
+}
+rownames(SCZ_Genetic_structure_4) <- 1:length(meta_data_se_4_SCZ_Genetic)
+SCZ_Genetic_structure_4 <- as.data.frame(SCZ_Genetic_structure_4)
+```
+
+### SCZ_Genetic windows
+```{r, fig.width=10}
+plot(SCZ_Genetic_structure_4$Rank,SCZ_Genetic_structure_4$Median, main = "SCZ Genetic Structure 4", xlab = "Rank", ylab = "Score", type = "o", ylim=c(-0.3,0.3))
+axis(1, at = seq(1, 200, by = 1), cex.axis = 0.5)
+
+abline(h = max(perm.mat.window50[,5]), col="darkred", lwd = 2, lty = 2)
+abline(h = quantile(as.numeric(perm.mat.window50[,5]), probs = 0.95), col = "red", lwd = 2, lty = 2)
+abline(h = median(perm.mat.window50[,5]), col="blue", lwd = 2, lty = 2)
+abline(h = quantile(as.numeric(perm.mat.window50[,5]), probs = 0.05), col = "red", lwd = 2, lty = 2)
+abline(h = min(perm.mat.window50[,5]), col="darkred", lwd = 2, lty = 2)
+```
+
+
+Permutation p-value windows: SCZ Genetic Structure 4
+```{r}
+
+#P.value across window ranks
+Rank_names <- rep("Rank_nr", length(window50_rank_list_SCZ_Genetic))
+Rank_names <- paste0(Rank_names,sep=1:length(Rank_names))
+
+#P.value matrix
+p.mat.cluster4 <- matrix(data = NA, nrow = length(window50_rank_list_SCZ_Genetic), ncol = 2, dimnames = list(Rank_names,c("p.val","p.val.adj")))
+
+
+for (i in 1:length(window50_rank_list_SCZ_Genetic)){
+  
+  OT_genetic_window <- as.numeric(SCZ_Genetic_structure_4[i,2])
+  perm.mat.window50.cluster4_bigger_window <- subset(perm.mat.window50.data,perm.mat.window50.data$cluster_4 >= OT_genetic_window)
+  
+  cluster4_w_p.val <- (nrow(perm.mat.window50.cluster4_bigger_window)+1)/(permutation.nr+1)
+  p.mat.cluster4[i,1] <- as.numeric(cluster4_w_p.val)
+  
+  cluster4_w_p.val.adj <- p.adjust(cluster4_w_p.val,method = c("bonferroni"), n=nr_of_tests)
+  p.mat.cluster4[i,2] <- as.numeric(cluster4_w_p.val.adj)
+}
+
+p.mat.cluster4[,1]
+```
+
+
+### ST.FeaturePlot
+```{r, fig.width=10, fig.height=6}
+
+spot_alpha = 0.5
+point.size = 1
+
+ST.FeaturePlot(se_4, 
+               features = c("SCZ_Genetic_Rank1_1","SCZ_Genetic_Rank2_1","SCZ_Genetic_Rank3_1","SCZ_Genetic_Rank4_1","SCZ_Genetic_Rank5_1","SCZ_Genetic_Rank6_1","SCZ_Genetic_Rank7_1","SCZ_Genetic_Rank8_1","SCZ_Genetic_Rank9_1","SCZ_Genetic_Rank10_1","SCZ_Genetic_Rank11_1","SCZ_Genetic_Rank12_1"),
+               pt.alpha = spot_alpha,
+               pt.size = point.size,
+               grid.ncol = 4,
+               cols = c("black", "darkblue", "cyan", "yellow", "red", "darkred"),
+               value.scale = "all")
+
+```
+
+
+### P.val.adj structure
+```{r}
+# Median score of NULL gene set permutations
+median_score_NULL_permutations_cluster_4 <- as.data.frame(perm.mat.genetic.data$cluster_4)
+colnames(median_score_NULL_permutations_cluster_4) <- c("Median_scores")
+
+# permutation p-value
+perm.mat.genetic.cluster4_bigger <- subset(perm.mat.genetic.data,perm.mat.genetic.data$cluster_4 >= as.numeric(median(se_4$OpenTargets_SCZ_Genetic_1)))
+
+cluster4_p.val.g <- (nrow(perm.mat.genetic.cluster4_bigger)+1)/(permutation.nr+1)
+cluster4_p.val.g.adj <- p.adjust(cluster4_p.val.g,method = c("bonferroni"), n=nr_of_tests) # Bonferroni
+
+cluster4_p.val.g.adj_text <- as.character(round(cluster4_p.val.g.adj, digits = 4))
+cluster4_p.val.g.adj_text <- paste0(c("p.val.adj = "),cluster4_p.val.g.adj_text)
+
+p.val.mat.g[1,5] <- -log10(cluster4_p.val.g)
+p.val.mat.g[2,5] <- -log10(cluster4_p.val.g.adj)
+
+theme_set(theme_classic()) # Density plot
+median_score_NULL_permutations_cluster_4 %>%
+  ggplot( aes(x=Median_scores)) +
+    geom_density(fill="#69b3a2", alpha=0.8)+ 
+    geom_vline(xintercept = as.numeric(median(se_4$OpenTargets_SCZ_Genetic_1)), color = "purple", size=1)+
+  annotate("text", x=0, y=0, label= cluster4_p.val.g.adj_text)+
+  ggtitle("Structure 4")+
+  xlab("Median score NULL gene set")+
+  ylab("Density")
+
+```
+
+
+
+## SCZ_Genetic structure 5 {.tabset}
+
+
+Extract median: SCZ_Genetic structure 5
+```{r}
+meta_data_vector <- NULL
+SCZ_Genetic_structure_5 <- NULL
+
+for (i in 1:length(meta_data_se_5_SCZ_Genetic)){
+        meta_data_vector$Rank <- as.character(i)
+        meta_data_vector$Median <- median(meta_data_se_5_SCZ_Genetic[,i])
+        SCZ_Genetic_structure_5 <- rbind(SCZ_Genetic_structure_5,meta_data_vector)
+}
+rownames(SCZ_Genetic_structure_5) <- 1:length(meta_data_se_5_SCZ_Genetic)
+SCZ_Genetic_structure_5 <- as.data.frame(SCZ_Genetic_structure_5)
+```
+
+### SCZ_Genetic windows
+```{r, fig.width=10}
+plot(SCZ_Genetic_structure_5$Rank,SCZ_Genetic_structure_5$Median, main = "SCZ Genetic Structure 5", xlab = "Rank", ylab = "Score", type = "o", ylim=c(-0.3,0.3))
+axis(1, at = seq(1, 200, by = 1), cex.axis = 0.5)
+
+abline(h = max(perm.mat.window50[,6]), col="darkred", lwd = 2, lty = 2)
+abline(h = quantile(as.numeric(perm.mat.window50[,6]), probs = 0.95), col = "red", lwd = 2, lty = 2)
+abline(h = median(perm.mat.window50[,6]), col="blue", lwd = 2, lty = 2)
+abline(h = quantile(as.numeric(perm.mat.window50[,6]), probs = 0.05), col = "red", lwd = 2, lty = 2)
+abline(h = min(perm.mat.window50[,6]), col="darkred", lwd = 2, lty = 2)
+```
+
+
+Permutation p-value windows: SCZ Genetic Structure 5
+```{r}
+
+#P.value across window ranks
+Rank_names <- rep("Rank_nr", length(window50_rank_list_SCZ_Genetic))
+Rank_names <- paste0(Rank_names,sep=1:length(Rank_names))
+
+#P.value matrix
+p.mat.cluster5 <- matrix(data = NA, nrow = length(window50_rank_list_SCZ_Genetic), ncol = 2, dimnames = list(Rank_names,c("p.val","p.val.adj")))
+
+
+for (i in 1:length(window50_rank_list_SCZ_Genetic)){
+  
+  OT_genetic_window <- as.numeric(SCZ_Genetic_structure_5[i,2])
+  perm.mat.window50.cluster5_bigger_window <- subset(perm.mat.window50.data,perm.mat.window50.data$cluster_5 >= OT_genetic_window)
+  
+  cluster5_w_p.val <- (nrow(perm.mat.window50.cluster5_bigger_window)+1)/(permutation.nr+1)
+  p.mat.cluster5[i,1] <- as.numeric(cluster5_w_p.val)
+  
+  cluster5_w_p.val.adj <- p.adjust(cluster5_w_p.val,method = c("bonferroni"), n=nr_of_tests)
+  p.mat.cluster5[i,2] <- as.numeric(cluster5_w_p.val.adj)
+}
+
+p.mat.cluster5[,1]
+```
+
+
+### ST.FeaturePlot
+```{r, fig.width=10, fig.height=6}
+
+spot_alpha = 0.5
+point.size = 1
+
+ST.FeaturePlot(se_5, 
+               features = c("SCZ_Genetic_Rank1_1","SCZ_Genetic_Rank2_1","SCZ_Genetic_Rank3_1","SCZ_Genetic_Rank4_1","SCZ_Genetic_Rank5_1","SCZ_Genetic_Rank6_1","SCZ_Genetic_Rank7_1","SCZ_Genetic_Rank8_1","SCZ_Genetic_Rank9_1","SCZ_Genetic_Rank10_1","SCZ_Genetic_Rank11_1","SCZ_Genetic_Rank12_1"),
+               pt.alpha = spot_alpha,
+               pt.size = point.size,
+               grid.ncol = 4,
+               cols = c("black", "darkblue", "cyan", "yellow", "red", "darkred"),
+               value.scale = "all")
+
+```
+
+
+### P.val.adj structure
+```{r}
+# Median score of NULL gene set permutations
+median_score_NULL_permutations_cluster_5 <- as.data.frame(perm.mat.genetic.data$cluster_5)
+colnames(median_score_NULL_permutations_cluster_5) <- c("Median_scores")
+
+# permutation p-value
+perm.mat.genetic.cluster5_bigger <- subset(perm.mat.genetic.data,perm.mat.genetic.data$cluster_5 >= as.numeric(median(se_5$OpenTargets_SCZ_Genetic_1)))
+
+cluster5_p.val.g <- (nrow(perm.mat.genetic.cluster5_bigger)+1)/(permutation.nr+1)
+cluster5_p.val.g.adj <- p.adjust(cluster5_p.val.g,method = c("bonferroni"), n=nr_of_tests) # Bonferroni
+
+cluster5_p.val.g.adj_text <- as.character(round(cluster5_p.val.g.adj, digits = 4))
+cluster5_p.val.g.adj_text <- paste0(c("p.val.adj = "),cluster5_p.val.g.adj_text)
+
+p.val.mat.g[1,6] <- -log10(cluster5_p.val.g)
+p.val.mat.g[2,6] <- -log10(cluster5_p.val.g.adj)
+
+theme_set(theme_classic()) # Density plot
+median_score_NULL_permutations_cluster_5 %>%
+  ggplot( aes(x=Median_scores)) +
+    geom_density(fill="#69b3a2", alpha=0.8)+ 
+    geom_vline(xintercept = as.numeric(median(se_5$OpenTargets_SCZ_Genetic_1)), color = "purple", size=1)+
+  annotate("text", x=0, y=0, label= cluster5_p.val.g.adj_text)+
+  ggtitle("Structure 5")+
+  xlab("Median score NULL gene set")+
+  ylab("Density")
+
+```
+
+
+
+
+
+# Sliding window OT Drugs
+
+
+Subset data: SCZ_Drugs
+```{r}
+start_with_SCZ_Drugs <- grep("^SCZ_Drugs", colnames(meta_data_se), value = TRUE)
+meta_data_se_SCZ_Drugs <- subset(meta_data_se, select = start_with_SCZ_Drugs)
+
+start_with_SCZ_Drugs <- grep("^SCZ_Drugs", colnames(meta_data_se_0), value = TRUE)
+meta_data_se_0_SCZ_Drugs <- subset(meta_data_se_0, select = start_with_SCZ_Drugs)
+
+start_with_SCZ_Drugs <- grep("^SCZ_Drugs", colnames(meta_data_se_1), value = TRUE)
+meta_data_se_1_SCZ_Drugs <- subset(meta_data_se_1, select = start_with_SCZ_Drugs)
+
+start_with_SCZ_Drugs <- grep("^SCZ_Drugs", colnames(meta_data_se_2), value = TRUE)
+meta_data_se_2_SCZ_Drugs <- subset(meta_data_se_2, select = start_with_SCZ_Drugs)
+
+start_with_SCZ_Drugs <- grep("^SCZ_Drugs", colnames(meta_data_se_3), value = TRUE)
+meta_data_se_3_SCZ_Drugs <- subset(meta_data_se_3, select = start_with_SCZ_Drugs)
+
+start_with_SCZ_Drugs <- grep("^SCZ_Drugs", colnames(meta_data_se_4), value = TRUE)
+meta_data_se_4_SCZ_Drugs <- subset(meta_data_se_4, select = start_with_SCZ_Drugs)
+
+start_with_SCZ_Drugs <- grep("^SCZ_Drugs", colnames(meta_data_se_5), value = TRUE)
+meta_data_se_5_SCZ_Drugs <- subset(meta_data_se_5, select = start_with_SCZ_Drugs)
+```
+
+
+## SCZ_Drugs all structures {.tabset}
+
+Extract quantile: SCZ_Drugs all structures
+```{r}
+meta_data_vector <- NULL
+SCZ_Drugs_structure <- NULL
+
+for (i in 1:length(meta_data_se_SCZ_Drugs)){
+        meta_data_vector$Rank <- as.character(i)
+        meta_data_vector$quantile <- quantile(as.numeric(meta_data_se_SCZ_Drugs[,i]), probs = 0.99)
+        SCZ_Drugs_structure <- rbind(SCZ_Drugs_structure,meta_data_vector)
+}
+rownames(SCZ_Drugs_structure) <- 1:length(meta_data_se_SCZ_Drugs)
+SCZ_Drugs_structure <- as.data.frame(SCZ_Drugs_structure)
+SCZ_Drugs_structure <- unlist(SCZ_Drugs_structure$quantile)
+SCZ_Drugs_structure <- as.data.frame(SCZ_Drugs_structure)
+SCZ_Drugs_structure$Rank <- 1:length(meta_data_se_SCZ_Drugs)
+colnames(SCZ_Drugs_structure) <- c("quantile","Rank")
+```
+
+### SCZ_Drugs all structures
+```{r, fig.width=10}
+plot(SCZ_Drugs_structure$Rank,SCZ_Drugs_structure$quantile, main = "SCZ Drugs all structures", xlab = "Rank", ylab = "Score", type = "o", ylim=c(-0.1,0.5))
+axis(1, at = seq(1, 200, by = 1), cex.axis = 0.5)
+
+abline(h = max(perm.mat.window50), col="darkred", lwd = 2, lty = 2)
+abline(h = quantile(as.numeric(perm.mat.window50), probs = 0.95), col = "red", lwd = 2, lty = 2)
+abline(h = median(perm.mat.window50), col="blue", lwd = 2, lty = 2)
+abline(h = quantile(as.numeric(perm.mat.window50), probs = 0.05), col = "red", lwd = 2, lty = 2)
+abline(h = min(perm.mat.window50), col="darkred", lwd = 2, lty = 2)
+```
+
+
+### ST.FeaturePlot
+```{r, fig.width=10, fig.height=6}
+
+spot_alpha = 0.5
+point.size = 1
+
+ST.FeaturePlot(se, 
+               features = c("SCZ_Drugs_Rank1_1","SCZ_Drugs_Rank2_1","SCZ_Drugs_Rank3_1","SCZ_Drugs_Rank4_1","SCZ_Drugs_Rank5_1","SCZ_Drugs_Rank6_1","SCZ_Drugs_Rank7_1","SCZ_Drugs_Rank8_1","SCZ_Drugs_Rank9_1","SCZ_Drugs_Rank10_1","SCZ_Drugs_Rank11_1"),
+               pt.alpha = spot_alpha,
+               pt.size = point.size,
+               grid.ncol = 4,
+               cols = c("black", "darkblue", "cyan", "yellow", "red", "darkred"),
+               value.scale = "all")
+
+```
+
+
+### Violin plots 1-10
+```{r}
+se <- SetIdent(se, value = "seurat_clusters")
+
+VlnPlot(se, features = c("SCZ_Drugs_Rank1_1"), ncol = 1, group.by = "seurat_clusters", cols = col_vector) + geom_boxplot(width=0.4) + theme(plot.title = element_text(size = 12))
+VlnPlot(se, features = c("SCZ_Drugs_Rank2_1"), ncol = 1, group.by = "seurat_clusters", cols = col_vector) + geom_boxplot(width=0.4) + theme(plot.title = element_text(size = 12))
+VlnPlot(se, features = c("SCZ_Drugs_Rank3_1"), ncol = 1, group.by = "seurat_clusters", cols = col_vector) + geom_boxplot(width=0.4) + theme(plot.title = element_text(size = 12))
+VlnPlot(se, features = c("SCZ_Drugs_Rank4_1"), ncol = 1, group.by = "seurat_clusters", cols = col_vector) + geom_boxplot(width=0.4) + theme(plot.title = element_text(size = 12))
+VlnPlot(se, features = c("SCZ_Drugs_Rank5_1"), ncol = 1, group.by = "seurat_clusters", cols = col_vector) + geom_boxplot(width=0.4) + theme(plot.title = element_text(size = 12))
+VlnPlot(se, features = c("SCZ_Drugs_Rank6_1"), ncol = 1, group.by = "seurat_clusters", cols = col_vector) + geom_boxplot(width=0.4) + theme(plot.title = element_text(size = 12))
+VlnPlot(se, features = c("SCZ_Drugs_Rank7_1"), ncol = 1, group.by = "seurat_clusters", cols = col_vector) + geom_boxplot(width=0.4) + theme(plot.title = element_text(size = 12))
+VlnPlot(se, features = c("SCZ_Drugs_Rank8_1"), ncol = 1, group.by = "seurat_clusters", cols = col_vector) + geom_boxplot(width=0.4) + theme(plot.title = element_text(size = 12))
+VlnPlot(se, features = c("SCZ_Drugs_Rank9_1"), ncol = 1, group.by = "seurat_clusters", cols = col_vector) + geom_boxplot(width=0.4) + theme(plot.title = element_text(size = 12))
+VlnPlot(se, features = c("SCZ_Drugs_Rank10_1"), ncol = 1, group.by = "seurat_clusters", cols = col_vector) + geom_boxplot(width=0.4) + theme(plot.title = element_text(size = 12))
+
+```
+
+
+## SCZ_Drugs structure 0 {.tabset}
+
+
+Extract median: SCZ_Drugs structure 0
+```{r}
+meta_data_vector <- NULL
+SCZ_Drugs_structure_0 <- NULL
+
+for (i in 1:length(meta_data_se_0_SCZ_Drugs)){
+        meta_data_vector$Rank <- as.character(i)
+        meta_data_vector$Median <- median(meta_data_se_0_SCZ_Drugs[,i])
+        SCZ_Drugs_structure_0 <- rbind(SCZ_Drugs_structure_0,meta_data_vector)
+}
+rownames(SCZ_Drugs_structure_0) <- 1:length(meta_data_se_0_SCZ_Drugs)
+SCZ_Drugs_structure_0 <- as.data.frame(SCZ_Drugs_structure_0)
+```
+
+### SCZ_Drugs windows
+```{r, fig.width=10}
+plot(SCZ_Drugs_structure_0$Rank,SCZ_Drugs_structure_0$Median, main = "SCZ Drugs Structure 0", xlab = "Rank", ylab = "Score", type = "o", ylim=c(-0.3,0.3))
+axis(1, at = seq(1, 200, by = 1), cex.axis = 0.5)
+
+abline(h = max(perm.mat.window50[,1]), col="darkred", lwd = 2, lty = 2)
+abline(h = quantile(as.numeric(perm.mat.window50[,1]), probs = 0.95), col = "red", lwd = 2, lty = 2)
+abline(h = median(perm.mat.window50[,1]), col="blue", lwd = 2, lty = 2)
+abline(h = quantile(as.numeric(perm.mat.window50[,1]), probs = 0.05), col = "red", lwd = 2, lty = 2)
+abline(h = min(perm.mat.window50[,1]), col="darkred", lwd = 2, lty = 2)
+```
+
+
+Permutation p-value windows: SCZ Drugs Structure 0
+```{r}
+
+#P.value across window ranks
+Rank_names <- rep("Rank_nr", length(window50_rank_list_SCZ_Drugs))
+Rank_names <- paste0(Rank_names,sep=1:length(Rank_names))
+
+#P.value matrix
+p.mat.cluster0_d <- matrix(data = NA, nrow = length(window50_rank_list_SCZ_Drugs), ncol = 2, dimnames = list(Rank_names,c("p.val","p.val.adj")))
+
+
+for (i in 1:length(window50_rank_list_SCZ_Drugs)){
+  
+  OT_genetic_window <- as.numeric(SCZ_Drugs_structure_0[i,2])
+  perm.mat.window50.cluster0_bigger_window <- subset(perm.mat.window50.data,perm.mat.window50.data$cluster_0 >= OT_genetic_window)
+  
+  cluster0_w_p.val <- (nrow(perm.mat.window50.cluster0_bigger_window)+1)/(permutation.nr+1)
+  p.mat.cluster0_d[i,1] <- as.numeric(cluster0_w_p.val)
+  
+  cluster0_w_p.val.adj <- p.adjust(cluster0_w_p.val,method = c("bonferroni"), n=nr_of_tests)
+  p.mat.cluster0_d[i,2] <- as.numeric(cluster0_w_p.val.adj)
+}
+
+p.mat.cluster0_d[,1]
+```
+
+
+### ST.FeaturePlot
+```{r, fig.width=10, fig.height=6}
+
+spot_alpha = 0.5
+point.size = 1
+
+ST.FeaturePlot(se_0, 
+               features = c("SCZ_Drugs_Rank1_1","SCZ_Drugs_Rank2_1","SCZ_Drugs_Rank3_1","SCZ_Drugs_Rank4_1","SCZ_Drugs_Rank5_1","SCZ_Drugs_Rank6_1","SCZ_Drugs_Rank7_1","SCZ_Drugs_Rank8_1","SCZ_Drugs_Rank9_1","SCZ_Drugs_Rank10_1","SCZ_Drugs_Rank11_1"),
+               pt.alpha = spot_alpha,
+               pt.size = point.size,
+               grid.ncol = 4,
+               cols = c("black", "darkblue", "cyan", "yellow", "red", "darkred"),
+               value.scale = "all")
+
+```
+
+
+### P.val.adj structure
+```{r}
+# Median score of NULL gene set permutations
+median_score_NULL_permutations_cluster_0 <- as.data.frame(perm.mat.drugs.data$cluster_0)
+colnames(median_score_NULL_permutations_cluster_0) <- c("Median_scores")
+
+# permutation p-value
+perm.mat.drugs.cluster0_bigger <- subset(perm.mat.drugs.data,perm.mat.drugs.data$cluster_0 >= as.numeric(median(se_0$OpenTargets_SCZ_Drugs_1)))
+
+cluster0_p.val.d <- (nrow(perm.mat.drugs.cluster0_bigger)+1)/(permutation.nr+1)
+cluster0_p.val.d.adj <- p.adjust(cluster0_p.val.d,method = c("bonferroni"), n=nr_of_tests) # Bonferroni
+
+cluster0_p.val.d.adj_text <- as.character(round(cluster0_p.val.d.adj, digits = 4))
+cluster0_p.val.d.adj_text <- paste0(c("p.val.adj = "),cluster0_p.val.d.adj_text)
+
+p.val.mat.d[1,1] <- -log10(cluster0_p.val.d)
+p.val.mat.d[2,1] <- -log10(cluster0_p.val.d.adj)
+
+theme_set(theme_classic()) # Density plot
+median_score_NULL_permutations_cluster_0 %>%
+  ggplot( aes(x=Median_scores)) +
+    geom_density(fill="#69b3a2", alpha=0.8)+ 
+    geom_vline(xintercept = as.numeric(median(se_0$OpenTargets_SCZ_Drugs_1)), color = "purple", size=1)+
+  annotate("text", x=0, y=0, label= cluster0_p.val.d.adj_text)+
+  ggtitle("Structure 0")+
+  xlab("Median score NULL gene set")+
+  ylab("Density")
+
+```
+
+
+## SCZ_Drugs structure 1 {.tabset}
+
+
+Extract median: SCZ_Drugs structure 1
+```{r}
+meta_data_vector <- NULL
+SCZ_Drugs_structure_1 <- NULL
+
+for (i in 1:length(meta_data_se_1_SCZ_Drugs)){
+        meta_data_vector$Rank <- as.character(i)
+        meta_data_vector$Median <- median(meta_data_se_1_SCZ_Drugs[,i])
+        SCZ_Drugs_structure_1 <- rbind(SCZ_Drugs_structure_1,meta_data_vector)
+}
+rownames(SCZ_Drugs_structure_1) <- 1:length(meta_data_se_1_SCZ_Drugs)
+SCZ_Drugs_structure_1 <- as.data.frame(SCZ_Drugs_structure_1)
+```
+
+### SCZ_Drugs windows
+```{r, fig.width=10}
+plot(SCZ_Drugs_structure_1$Rank,SCZ_Drugs_structure_1$Median, main = "SCZ Drugs Structure 1", xlab = "Rank", ylab = "Score", type = "o", ylim=c(-0.3,0.3))
+axis(1, at = seq(1, 200, by = 1), cex.axis = 0.5)
+
+abline(h = max(perm.mat.window50[,2]), col="darkred", lwd = 2, lty = 2)
+abline(h = quantile(as.numeric(perm.mat.window50[,2]), probs = 0.95), col = "red", lwd = 2, lty = 2)
+abline(h = median(perm.mat.window50[,2]), col="blue", lwd = 2, lty = 2)
+abline(h = quantile(as.numeric(perm.mat.window50[,2]), probs = 0.05), col = "red", lwd = 2, lty = 2)
+abline(h = min(perm.mat.window50[,2]), col="darkred", lwd = 2, lty = 2)
+```
+
+Permutation p-value windows: SCZ Drugs Structure 1
+```{r}
+
+#P.value across window ranks
+Rank_names <- rep("Rank_nr", length(window50_rank_list_SCZ_Drugs))
+Rank_names <- paste0(Rank_names,sep=1:length(Rank_names))
+
+#P.value matrix
+p.mat.cluster1_d <- matrix(data = NA, nrow = length(window50_rank_list_SCZ_Drugs), ncol = 2, dimnames = list(Rank_names,c("p.val","p.val.adj")))
+
+
+for (i in 1:length(window50_rank_list_SCZ_Drugs)){
+  
+  OT_genetic_window <- as.numeric(SCZ_Drugs_structure_1[i,2])
+  perm.mat.window50.cluster1_bigger_window <- subset(perm.mat.window50.data,perm.mat.window50.data$cluster_1 >= OT_genetic_window)
+  
+  cluster1_w_p.val <- (nrow(perm.mat.window50.cluster1_bigger_window)+1)/(permutation.nr+1)
+  p.mat.cluster1_d[i,1] <- as.numeric(cluster1_w_p.val)
+  
+  cluster1_w_p.val.adj <- p.adjust(cluster1_w_p.val,method = c("bonferroni"), n=nr_of_tests)
+  p.mat.cluster1_d[i,2] <- as.numeric(cluster1_w_p.val.adj)
+}
+
+p.mat.cluster1_d[,1]
+```
+
+
+### ST.FeaturePlot
+```{r, fig.width=10, fig.height=6}
+
+spot_alpha = 0.5
+point.size = 1
+
+ST.FeaturePlot(se_1, 
+               features = c("SCZ_Drugs_Rank1_1","SCZ_Drugs_Rank2_1","SCZ_Drugs_Rank3_1","SCZ_Drugs_Rank4_1","SCZ_Drugs_Rank5_1","SCZ_Drugs_Rank6_1","SCZ_Drugs_Rank7_1","SCZ_Drugs_Rank8_1","SCZ_Drugs_Rank9_1","SCZ_Drugs_Rank10_1","SCZ_Drugs_Rank11_1"),
+               pt.alpha = spot_alpha,
+               pt.size = point.size,
+               grid.ncol = 4,
+               cols = c("black", "darkblue", "cyan", "yellow", "red", "darkred"),
+               value.scale = "all")
+
+```
+
+
+### P.val.adj structure
+```{r}
+# Median score of NULL gene set permutations
+median_score_NULL_permutations_cluster_1 <- as.data.frame(perm.mat.drugs.data$cluster_1)
+colnames(median_score_NULL_permutations_cluster_1) <- c("Median_scores")
+
+# permutation p-value
+perm.mat.drugs.cluster1_bigger <- subset(perm.mat.drugs.data,perm.mat.drugs.data$cluster_1 >= as.numeric(median(se_1$OpenTargets_SCZ_Drugs_1)))
+
+cluster1_p.val.d <- (nrow(perm.mat.drugs.cluster1_bigger)+1)/(permutation.nr+1)
+cluster1_p.val.d.adj <- p.adjust(cluster1_p.val.d,method = c("bonferroni"), n=nr_of_tests) # Bonferroni
+
+cluster1_p.val.d.adj_text <- as.character(round(cluster1_p.val.d.adj, digits = 4))
+cluster1_p.val.d.adj_text <- paste0(c("p.val.adj = "),cluster1_p.val.d.adj_text)
+
+p.val.mat.d[1,2] <- -log10(cluster1_p.val.d)
+p.val.mat.d[2,2] <- -log10(cluster1_p.val.d.adj)
+
+theme_set(theme_classic()) # Density plot
+median_score_NULL_permutations_cluster_1 %>%
+  ggplot( aes(x=Median_scores)) +
+    geom_density(fill="#69b3a2", alpha=0.8)+ 
+    geom_vline(xintercept = as.numeric(median(se_1$OpenTargets_SCZ_Drugs_1)), color = "purple", size=1)+
+  annotate("text", x=0, y=0, label= cluster1_p.val.d.adj_text)+
+  ggtitle("Structure 1")+
+  xlab("Median score NULL gene set")+
+  ylab("Density")
+
+```
+
+## SCZ_Drugs structure 2 {.tabset}
+
+
+Extract median: SCZ_Drugs structure 2
+```{r}
+meta_data_vector <- NULL
+SCZ_Drugs_structure_2 <- NULL
+
+for (i in 1:length(meta_data_se_2_SCZ_Drugs)){
+        meta_data_vector$Rank <- as.character(i)
+        meta_data_vector$Median <- median(meta_data_se_2_SCZ_Drugs[,i])
+        SCZ_Drugs_structure_2 <- rbind(SCZ_Drugs_structure_2,meta_data_vector)
+}
+rownames(SCZ_Drugs_structure_2) <- 1:length(meta_data_se_2_SCZ_Drugs)
+SCZ_Drugs_structure_2 <- as.data.frame(SCZ_Drugs_structure_2)
+```
+
+### SCZ_Drugs windows
+```{r, fig.width=10}
+plot(SCZ_Drugs_structure_2$Rank,SCZ_Drugs_structure_2$Median, main = "SCZ Drugs Structure 2", xlab = "Rank", ylab = "Score", type = "o", ylim=c(-0.3,0.3))
+axis(1, at = seq(1, 200, by = 1), cex.axis = 0.5)
+
+abline(h = max(perm.mat.window50[,3]), col="darkred", lwd = 2, lty = 2)
+abline(h = quantile(as.numeric(perm.mat.window50[,3]), probs = 0.95), col = "red", lwd = 2, lty = 2)
+abline(h = median(perm.mat.window50[,3]), col="blue", lwd = 2, lty = 2)
+abline(h = quantile(as.numeric(perm.mat.window50[,3]), probs = 0.05), col = "red", lwd = 2, lty = 2)
+abline(h = min(perm.mat.window50[,3]), col="darkred", lwd = 2, lty = 2)
+```
+
+
+Permutation p-value windows: SCZ Drugs Structure 2
+```{r}
+
+#P.value across window ranks
+Rank_names <- rep("Rank_nr", length(window50_rank_list_SCZ_Drugs))
+Rank_names <- paste0(Rank_names,sep=1:length(Rank_names))
+
+#P.value matrix
+p.mat.cluster2_d <- matrix(data = NA, nrow = length(window50_rank_list_SCZ_Drugs), ncol = 2, dimnames = list(Rank_names,c("p.val","p.val.adj")))
+
+
+for (i in 1:length(window50_rank_list_SCZ_Drugs)){
+  
+  OT_genetic_window <- as.numeric(SCZ_Drugs_structure_2[i,2])
+  perm.mat.window50.cluster2_bigger_window <- subset(perm.mat.window50.data,perm.mat.window50.data$cluster_2 >= OT_genetic_window)
+  
+  cluster2_w_p.val <- (nrow(perm.mat.window50.cluster2_bigger_window)+1)/(permutation.nr+1)
+  p.mat.cluster2_d[i,1] <- as.numeric(cluster2_w_p.val)
+  
+  cluster2_w_p.val.adj <- p.adjust(cluster2_w_p.val,method = c("bonferroni"), n=nr_of_tests)
+  p.mat.cluster2_d[i,2] <- as.numeric(cluster2_w_p.val.adj)
+}
+
+p.mat.cluster2_d[,1]
+```
+
+
+### ST.FeaturePlot
+```{r, fig.width=10, fig.height=6}
+
+spot_alpha = 0.5
+point.size = 1
+
+ST.FeaturePlot(se_2, 
+               features = c("SCZ_Drugs_Rank1_1","SCZ_Drugs_Rank2_1","SCZ_Drugs_Rank3_1","SCZ_Drugs_Rank4_1","SCZ_Drugs_Rank5_1","SCZ_Drugs_Rank6_1","SCZ_Drugs_Rank7_1","SCZ_Drugs_Rank8_1","SCZ_Drugs_Rank9_1","SCZ_Drugs_Rank10_1","SCZ_Drugs_Rank11_1"),
+               pt.alpha = spot_alpha,
+               pt.size = point.size,
+               grid.ncol = 4,
+               cols = c("black", "darkblue", "cyan", "yellow", "red", "darkred"),
+               value.scale = "all")
+
+```
+
+
+### P.val.adj structure
+```{r}
+# Median score of NULL gene set permutations
+median_score_NULL_permutations_cluster_2 <- as.data.frame(perm.mat.drugs.data$cluster_2)
+colnames(median_score_NULL_permutations_cluster_2) <- c("Median_scores")
+
+# permutation p-value
+perm.mat.drugs.cluster2_bigger <- subset(perm.mat.drugs.data,perm.mat.drugs.data$cluster_2 >= as.numeric(median(se_2$OpenTargets_SCZ_Drugs_1)))
+
+cluster2_p.val.d <- (nrow(perm.mat.drugs.cluster2_bigger)+1)/(permutation.nr+1)
+cluster2_p.val.d.adj <- p.adjust(cluster2_p.val.d,method = c("bonferroni"), n=nr_of_tests) # Bonferroni
+
+cluster2_p.val.d.adj_text <- as.character(round(cluster2_p.val.d.adj, digits = 4))
+cluster2_p.val.d.adj_text <- paste0(c("p.val.adj = "),cluster2_p.val.d.adj_text)
+
+p.val.mat.d[1,3] <- -log10(cluster2_p.val.d)
+p.val.mat.d[2,3] <- -log10(cluster2_p.val.d.adj)
+
+theme_set(theme_classic()) # Density plot
+median_score_NULL_permutations_cluster_2 %>%
+  ggplot( aes(x=Median_scores)) +
+    geom_density(fill="#69b3a2", alpha=0.8)+ 
+    geom_vline(xintercept = as.numeric(median(se_2$OpenTargets_SCZ_Drugs_1)), color = "purple", size=1)+
+  annotate("text", x=0, y=0, label= cluster2_p.val.d.adj_text)+
+  ggtitle("Structure 2")+
+  xlab("Median score NULL gene set")+
+  ylab("Density")
+
+```
+
+
+## SCZ_Drugs structure 3 {.tabset}
+
+
+Extract median: SCZ_Drugs structure 3
+```{r}
+meta_data_vector <- NULL
+SCZ_Drugs_structure_3 <- NULL
+
+for (i in 1:length(meta_data_se_3_SCZ_Drugs)){
+        meta_data_vector$Rank <- as.character(i)
+        meta_data_vector$Median <- median(meta_data_se_3_SCZ_Drugs[,i])
+        SCZ_Drugs_structure_3 <- rbind(SCZ_Drugs_structure_3,meta_data_vector)
+}
+rownames(SCZ_Drugs_structure_3) <- 1:length(meta_data_se_3_SCZ_Drugs)
+SCZ_Drugs_structure_3 <- as.data.frame(SCZ_Drugs_structure_3)
+```
+
+
+### SCZ_Drugs windows
+```{r, fig.width=10}
+plot(SCZ_Drugs_structure_3$Rank,SCZ_Drugs_structure_3$Median, main = "SCZ Drugs Structure 3", xlab = "Rank", ylab = "Score", type = "o", ylim=c(-0.3,0.3))
+axis(1, at = seq(1, 200, by = 1), cex.axis = 0.5)
+
+abline(h = max(perm.mat.window50[,4]), col="darkred", lwd = 2, lty = 2)
+abline(h = quantile(as.numeric(perm.mat.window50[,4]), probs = 0.95), col = "red", lwd = 2, lty = 2)
+abline(h = median(perm.mat.window50[,4]), col="blue", lwd = 2, lty = 2)
+abline(h = quantile(as.numeric(perm.mat.window50[,4]), probs = 0.05), col = "red", lwd = 2, lty = 2)
+abline(h = min(perm.mat.window50[,4]), col="darkred", lwd = 2, lty = 2)
+```
+
+
+Permutation p-value windows: SCZ Drugs Structure 3
+```{r}
+
+#P.value across window ranks
+Rank_names <- rep("Rank_nr", length(window50_rank_list_SCZ_Drugs))
+Rank_names <- paste0(Rank_names,sep=1:length(Rank_names))
+
+#P.value matrix
+p.mat.cluster3_d <- matrix(data = NA, nrow = length(window50_rank_list_SCZ_Drugs), ncol = 2, dimnames = list(Rank_names,c("p.val","p.val.adj")))
+
+
+for (i in 1:length(window50_rank_list_SCZ_Drugs)){
+  
+  OT_genetic_window <- as.numeric(SCZ_Drugs_structure_3[i,2])
+  perm.mat.window50.cluster3_bigger_window <- subset(perm.mat.window50.data,perm.mat.window50.data$cluster_3 >= OT_genetic_window)
+  
+  cluster3_w_p.val <- (nrow(perm.mat.window50.cluster3_bigger_window)+1)/(permutation.nr+1)
+  p.mat.cluster3_d[i,1] <- as.numeric(cluster3_w_p.val)
+  
+  cluster3_w_p.val.adj <- p.adjust(cluster3_w_p.val,method = c("bonferroni"), n=nr_of_tests)
+  p.mat.cluster3_d[i,2] <- as.numeric(cluster3_w_p.val.adj)
+}
+
+p.mat.cluster3_d[,1]
+```
+
+
+### ST.FeaturePlot
+```{r, fig.width=10, fig.height=6}
+
+spot_alpha = 0.5
+point.size = 1
+
+ST.FeaturePlot(se_3, 
+               features = c("SCZ_Drugs_Rank1_1","SCZ_Drugs_Rank2_1","SCZ_Drugs_Rank3_1","SCZ_Drugs_Rank4_1","SCZ_Drugs_Rank5_1","SCZ_Drugs_Rank6_1","SCZ_Drugs_Rank7_1","SCZ_Drugs_Rank8_1","SCZ_Drugs_Rank9_1","SCZ_Drugs_Rank10_1","SCZ_Drugs_Rank11_1"),
+               pt.alpha = spot_alpha,
+               pt.size = point.size,
+               grid.ncol = 4,
+               cols = c("black", "darkblue", "cyan", "yellow", "red", "darkred"),
+               value.scale = "all")
+
+```
+
+
+### P.val.adj structure
+```{r}
+# Median score of NULL gene set permutations
+median_score_NULL_permutations_cluster_3 <- as.data.frame(perm.mat.drugs.data$cluster_3)
+colnames(median_score_NULL_permutations_cluster_3) <- c("Median_scores")
+
+# permutation p-value
+perm.mat.drugs.cluster3_bigger <- subset(perm.mat.drugs.data,perm.mat.drugs.data$cluster_3 >= as.numeric(median(se_3$OpenTargets_SCZ_Drugs_1)))
+
+cluster3_p.val.d <- (nrow(perm.mat.drugs.cluster3_bigger)+1)/(permutation.nr+1)
+cluster3_p.val.d.adj <- p.adjust(cluster3_p.val.d,method = c("bonferroni"), n=nr_of_tests) # Bonferroni
+
+cluster3_p.val.d.adj_text <- as.character(round(cluster3_p.val.d.adj, digits = 4))
+cluster3_p.val.d.adj_text <- paste0(c("p.val.adj = "),cluster3_p.val.d.adj_text)
+
+p.val.mat.d[1,4] <- -log10(cluster3_p.val.d)
+p.val.mat.d[2,4] <- -log10(cluster3_p.val.d.adj)
+
+theme_set(theme_classic()) # Density plot
+median_score_NULL_permutations_cluster_3 %>%
+  ggplot( aes(x=Median_scores)) +
+    geom_density(fill="#69b3a2", alpha=0.8)+ 
+    geom_vline(xintercept = as.numeric(median(se_3$OpenTargets_SCZ_Drugs_1)), color = "purple", size=1)+
+  annotate("text", x=0, y=0, label= cluster3_p.val.d.adj_text)+
+  ggtitle("Structure 3")+
+  xlab("Median score NULL gene set")+
+  ylab("Density")
+
+```
+
+
+## SCZ_Drugs structure 4 {.tabset}
+
+
+Extract median: SCZ_Drugs structure 4
+```{r}
+meta_data_vector <- NULL
+SCZ_Drugs_structure_4 <- NULL
+
+for (i in 1:length(meta_data_se_4_SCZ_Drugs)){
+        meta_data_vector$Rank <- as.character(i)
+        meta_data_vector$Median <- median(meta_data_se_4_SCZ_Drugs[,i])
+        SCZ_Drugs_structure_4 <- rbind(SCZ_Drugs_structure_4,meta_data_vector)
+}
+rownames(SCZ_Drugs_structure_4) <- 1:length(meta_data_se_4_SCZ_Drugs)
+SCZ_Drugs_structure_4 <- as.data.frame(SCZ_Drugs_structure_4)
+```
+
+### SCZ_Drugs windows
+```{r, fig.width=10}
+plot(SCZ_Drugs_structure_4$Rank,SCZ_Drugs_structure_4$Median, main = "SCZ Drugs Structure 4", xlab = "Rank", ylab = "Score", type = "o", ylim=c(-0.3,0.3))
+axis(1, at = seq(1, 200, by = 1), cex.axis = 0.5)
+
+abline(h = max(perm.mat.window50[,5]), col="darkred", lwd = 2, lty = 2)
+abline(h = quantile(as.numeric(perm.mat.window50[,5]), probs = 0.95), col = "red", lwd = 2, lty = 2)
+abline(h = median(perm.mat.window50[,5]), col="blue", lwd = 2, lty = 2)
+abline(h = quantile(as.numeric(perm.mat.window50[,5]), probs = 0.05), col = "red", lwd = 2, lty = 2)
+abline(h = min(perm.mat.window50[,5]), col="darkred", lwd = 2, lty = 2)
+```
+
+
+Permutation p-value windows: SCZ Drugs Structure 4
+```{r}
+
+#P.value across window ranks
+Rank_names <- rep("Rank_nr", length(window50_rank_list_SCZ_Drugs))
+Rank_names <- paste0(Rank_names,sep=1:length(Rank_names))
+
+#P.value matrix
+p.mat.cluster4_d <- matrix(data = NA, nrow = length(window50_rank_list_SCZ_Drugs), ncol = 2, dimnames = list(Rank_names,c("p.val","p.val.adj")))
+
+
+for (i in 1:length(window50_rank_list_SCZ_Drugs)){
+  
+  OT_genetic_window <- as.numeric(SCZ_Drugs_structure_4[i,2])
+  perm.mat.window50.cluster4_bigger_window <- subset(perm.mat.window50.data,perm.mat.window50.data$cluster_4 >= OT_genetic_window)
+  
+  cluster4_w_p.val <- (nrow(perm.mat.window50.cluster4_bigger_window)+1)/(permutation.nr+1)
+  p.mat.cluster4_d[i,1] <- as.numeric(cluster4_w_p.val)
+  
+  cluster4_w_p.val.adj <- p.adjust(cluster4_w_p.val,method = c("bonferroni"), n=nr_of_tests)
+  p.mat.cluster4_d[i,2] <- as.numeric(cluster4_w_p.val.adj)
+}
+
+p.mat.cluster4_d[,1]
+```
+
+
+### ST.FeaturePlot
+```{r, fig.width=10, fig.height=6}
+
+spot_alpha = 0.5
+point.size = 1
+
+ST.FeaturePlot(se_4, 
+               features = c("SCZ_Drugs_Rank1_1","SCZ_Drugs_Rank2_1","SCZ_Drugs_Rank3_1","SCZ_Drugs_Rank4_1","SCZ_Drugs_Rank5_1","SCZ_Drugs_Rank6_1","SCZ_Drugs_Rank7_1","SCZ_Drugs_Rank8_1","SCZ_Drugs_Rank9_1","SCZ_Drugs_Rank10_1","SCZ_Drugs_Rank11_1"),
+               pt.alpha = spot_alpha,
+               pt.size = point.size,
+               grid.ncol = 4,
+               cols = c("black", "darkblue", "cyan", "yellow", "red", "darkred"),
+               value.scale = "all")
+
+```
+
+
+### P.val.adj structure
+```{r}
+# Median score of NULL gene set permutations
+median_score_NULL_permutations_cluster_4 <- as.data.frame(perm.mat.drugs.data$cluster_4)
+colnames(median_score_NULL_permutations_cluster_4) <- c("Median_scores")
+
+# permutation p-value
+perm.mat.drugs.cluster4_bigger <- subset(perm.mat.drugs.data,perm.mat.drugs.data$cluster_4 >= as.numeric(median(se_4$OpenTargets_SCZ_Drugs_1)))
+
+cluster4_p.val.d <- (nrow(perm.mat.drugs.cluster4_bigger)+1)/(permutation.nr+1)
+cluster4_p.val.d.adj <- p.adjust(cluster4_p.val.d,method = c("bonferroni"), n=nr_of_tests) # Bonferroni
+
+cluster4_p.val.d.adj_text <- as.character(round(cluster4_p.val.d.adj, digits = 4))
+cluster4_p.val.d.adj_text <- paste0(c("p.val.adj = "),cluster4_p.val.d.adj_text)
+
+p.val.mat.d[1,5] <- -log10(cluster4_p.val.d)
+p.val.mat.d[2,5] <- -log10(cluster4_p.val.d.adj)
+
+theme_set(theme_classic()) # Density plot
+median_score_NULL_permutations_cluster_4 %>%
+  ggplot( aes(x=Median_scores)) +
+    geom_density(fill="#69b3a2", alpha=0.8)+ 
+    geom_vline(xintercept = as.numeric(median(se_4$OpenTargets_SCZ_Drugs_1)), color = "purple", size=1)+
+  annotate("text", x=0, y=0, label= cluster4_p.val.d.adj_text)+
+  ggtitle("Structure 4")+
+  xlab("Median score NULL gene set")+
+  ylab("Density")
+
+```
+
+
+
+## SCZ_Drugs structure 5 {.tabset}
+
+
+Extract median: SCZ_Drugs structure 5
+```{r}
+meta_data_vector <- NULL
+SCZ_Drugs_structure_5 <- NULL
+
+for (i in 1:length(meta_data_se_5_SCZ_Drugs)){
+        meta_data_vector$Rank <- as.character(i)
+        meta_data_vector$Median <- median(meta_data_se_5_SCZ_Drugs[,i])
+        SCZ_Drugs_structure_5 <- rbind(SCZ_Drugs_structure_5,meta_data_vector)
+}
+rownames(SCZ_Drugs_structure_5) <- 1:length(meta_data_se_5_SCZ_Drugs)
+SCZ_Drugs_structure_5 <- as.data.frame(SCZ_Drugs_structure_5)
+```
+
+### SCZ_Drugs windows
+```{r, fig.width=10}
+plot(SCZ_Drugs_structure_5$Rank,SCZ_Drugs_structure_5$Median, main = "SCZ Drugs Structure 5", xlab = "Rank", ylab = "Score", type = "o", ylim=c(-0.3,0.3))
+axis(1, at = seq(1, 200, by = 1), cex.axis = 0.5)
+
+abline(h = max(perm.mat.window50[,6]), col="darkred", lwd = 2, lty = 2)
+abline(h = quantile(as.numeric(perm.mat.window50[,6]), probs = 0.95), col = "red", lwd = 2, lty = 2)
+abline(h = median(perm.mat.window50[,6]), col="blue", lwd = 2, lty = 2)
+abline(h = quantile(as.numeric(perm.mat.window50[,6]), probs = 0.05), col = "red", lwd = 2, lty = 2)
+abline(h = min(perm.mat.window50[,6]), col="darkred", lwd = 2, lty = 2)
+```
+
+
+Permutation p-value windows: SCZ Drugs Structure 5
+```{r}
+
+#P.value across window ranks
+Rank_names <- rep("Rank_nr", length(window50_rank_list_SCZ_Drugs))
+Rank_names <- paste0(Rank_names,sep=1:length(Rank_names))
+
+#P.value matrix
+p.mat.cluster5_d <- matrix(data = NA, nrow = length(window50_rank_list_SCZ_Drugs), ncol = 2, dimnames = list(Rank_names,c("p.val","p.val.adj")))
+
+
+for (i in 1:length(window50_rank_list_SCZ_Drugs)){
+  
+  OT_genetic_window <- as.numeric(SCZ_Drugs_structure_5[i,2])
+  perm.mat.window50.cluster5_bigger_window <- subset(perm.mat.window50.data,perm.mat.window50.data$cluster_5 >= OT_genetic_window)
+  
+  cluster5_w_p.val <- (nrow(perm.mat.window50.cluster5_bigger_window)+1)/(permutation.nr+1)
+  p.mat.cluster5_d[i,1] <- as.numeric(cluster5_w_p.val)
+  
+  cluster5_w_p.val.adj <- p.adjust(cluster5_w_p.val,method = c("bonferroni"), n=nr_of_tests)
+  p.mat.cluster5_d[i,2] <- as.numeric(cluster5_w_p.val.adj)
+}
+
+p.mat.cluster5_d[,1]
+```
+
+
+### ST.FeaturePlot
+```{r, fig.width=10, fig.height=6}
+
+spot_alpha = 0.5
+point.size = 1
+
+ST.FeaturePlot(se_5, 
+               features = c("SCZ_Drugs_Rank1_1","SCZ_Drugs_Rank2_1","SCZ_Drugs_Rank3_1","SCZ_Drugs_Rank4_1","SCZ_Drugs_Rank5_1","SCZ_Drugs_Rank6_1","SCZ_Drugs_Rank7_1","SCZ_Drugs_Rank8_1","SCZ_Drugs_Rank9_1","SCZ_Drugs_Rank10_1","SCZ_Drugs_Rank11_1"),
+               pt.alpha = spot_alpha,
+               pt.size = point.size,
+               grid.ncol = 4,
+               cols = c("black", "darkblue", "cyan", "yellow", "red", "darkred"),
+               value.scale = "all")
+
+```
+
+
+### P.val.adj structure
+```{r}
+# Median score of NULL gene set permutations
+median_score_NULL_permutations_cluster_5 <- as.data.frame(perm.mat.drugs.data$cluster_5)
+colnames(median_score_NULL_permutations_cluster_5) <- c("Median_scores")
+
+# permutation p-value
+perm.mat.drugs.cluster5_bigger <- subset(perm.mat.drugs.data,perm.mat.drugs.data$cluster_5 >= as.numeric(median(se_5$OpenTargets_SCZ_Drugs_1)))
+
+cluster5_p.val.d <- (nrow(perm.mat.drugs.cluster5_bigger)+1)/(permutation.nr+1)
+cluster5_p.val.d.adj <- p.adjust(cluster5_p.val.d,method = c("bonferroni"), n=nr_of_tests) # Bonferroni
+
+cluster5_p.val.d.adj_text <- as.character(round(cluster5_p.val.d.adj, digits = 4))
+cluster5_p.val.d.adj_text <- paste0(c("p.val.adj = "),cluster5_p.val.d.adj_text)
+
+p.val.mat.d[1,6] <- -log10(cluster5_p.val.d)
+p.val.mat.d[2,6] <- -log10(cluster5_p.val.d.adj)
+
+theme_set(theme_classic()) # Density plot
+median_score_NULL_permutations_cluster_5 %>%
+  ggplot( aes(x=Median_scores)) +
+    geom_density(fill="#69b3a2", alpha=0.8)+ 
+    geom_vline(xintercept = as.numeric(median(se_5$OpenTargets_SCZ_Drugs_1)), color = "purple", size=1)+
+  annotate("text", x=0, y=0, label= cluster5_p.val.d.adj_text)+
+  ggtitle("Structure 5")+
+  xlab("Median score NULL gene set")+
+  ylab("Density")
+
+```
+
+
+
+
+# Spatial p-value plot Genetic {.tabset}
+
+Adding p.val genetic to metadata
+```{r}
+se$p.val.g <- se$seurat_clusters
+
+se$p.val.g[se$p.val.g == '0'] <- p.val.mat.g[1,1]
+se$p.val.g[se$p.val.g == '1'] <- p.val.mat.g[1,2]
+se$p.val.g[se$p.val.g == '2'] <- p.val.mat.g[1,3]
+se$p.val.g[se$p.val.g == '3'] <- p.val.mat.g[1,4]
+se$p.val.g[se$p.val.g == '4'] <- p.val.mat.g[1,5]
+se$p.val.g[se$p.val.g == '5'] <- p.val.mat.g[1,6]
+```
+
+
+## ST.FeaturePlot viridis
+```{r, fig.width=5, fig.height=4}
+ST.FeaturePlot(object = se, features = "p.val.g", pt.size = 1.5, cols = viridis(nr_of_tests))
+```
+
+## FeatureOverlay viridis
+```{r, fig.width=5, fig.height=4}
+spot_alpha = 0.5
+point.size = 1
+
+FeatureOverlay(se, 
+               features = c("p.val.g"),
+               pt.alpha = spot_alpha,
+               pt.size = point.size,
+               add.alpha=T,
+               ncols = 1,
+               cols = viridis(nr_of_tests))
+```
+
+
+
+# Spatial p-value plot Genetic (bonferroni) {.tabset}
+
+Adding p.val.adj genetic to metadata
+```{r}
+se$p.val.adj.g <- se$seurat_clusters
+
+se$p.val.adj.g[se$p.val.adj.g == '0'] <- p.val.mat.g[2,1]
+se$p.val.adj.g[se$p.val.adj.g == '1'] <- p.val.mat.g[2,2]
+se$p.val.adj.g[se$p.val.adj.g == '2'] <- p.val.mat.g[2,3]
+se$p.val.adj.g[se$p.val.adj.g == '3'] <- p.val.mat.g[2,4]
+se$p.val.adj.g[se$p.val.adj.g == '4'] <- p.val.mat.g[2,5]
+se$p.val.adj.g[se$p.val.adj.g == '5'] <- p.val.mat.g[2,6]
+```
+
+
+## ST.FeaturePlot viridis
+```{r, fig.width=5, fig.height=4}
+ST.FeaturePlot(object = se, features = "p.val.adj.g", pt.size = 1.5, cols = viridis(nr_of_tests))
+
+p.val.mat.g
+```
+
+## FeatureOverlay viridis
+```{r, fig.width=5, fig.height=4}
+spot_alpha = 0.5
+point.size = 1
+
+FeatureOverlay(se, 
+               features = c("p.val.adj.g"),
+               pt.alpha = spot_alpha,
+               pt.size = point.size,
+               add.alpha=T,
+               ncols = 1,
+               cols = viridis(nr_of_tests))
+```
+
+
+# Spatial p-value plot Drugs {.tabset}
+
+Adding p.val drugs to metadata
+```{r}
+se$p.val.d <- se$seurat_clusters
+
+se$p.val.d[se$p.val.d == '0'] <- p.val.mat.d[1,1]
+se$p.val.d[se$p.val.d == '1'] <- p.val.mat.d[1,2]
+se$p.val.d[se$p.val.d == '2'] <- p.val.mat.d[1,3]
+se$p.val.d[se$p.val.d == '3'] <- p.val.mat.d[1,4]
+se$p.val.d[se$p.val.d == '4'] <- p.val.mat.d[1,5]
+se$p.val.d[se$p.val.d == '5'] <- p.val.mat.d[1,6]
+```
+
+
+## ST.FeaturePlot viridis
+```{r, fig.width=5, fig.height=4}
+ST.FeaturePlot(object = se, features = "p.val.d", pt.size = 1.5, cols = viridis(nr_of_tests)) 
+```
+
+## FeatureOverlay viridis
+```{r, fig.width=5, fig.height=4}
+spot_alpha = 0.5
+point.size = 1
+
+FeatureOverlay(se, 
+               features = c("p.val.d"),
+               pt.alpha = spot_alpha,
+               pt.size = point.size,
+               add.alpha=T,
+               ncols = 1,
+               cols = viridis(nr_of_tests))
+```
+
+
+# Spatial p-value plot Drugs (bonferroni) {.tabset}
+
+Adding p.val.adj drugs to metadata
+```{r}
+se$p.val.adj.d <- se$seurat_clusters
+
+se$p.val.adj.d[se$p.val.adj.d == '0'] <- p.val.mat.d[2,1]
+se$p.val.adj.d[se$p.val.adj.d == '1'] <- p.val.mat.d[2,2]
+se$p.val.adj.d[se$p.val.adj.d == '2'] <- p.val.mat.d[2,3]
+se$p.val.adj.d[se$p.val.adj.d == '3'] <- p.val.mat.d[2,4]
+se$p.val.adj.d[se$p.val.adj.d == '4'] <- p.val.mat.d[2,5]
+se$p.val.adj.d[se$p.val.adj.d == '5'] <- p.val.mat.d[2,6]
+```
+
+
+## ST.FeaturePlot viridis
+```{r, fig.width=5, fig.height=4}
+ST.FeaturePlot(object = se, features = "p.val.adj.d", pt.size = 1.5, cols = viridis(nr_of_tests)) 
+
+p.val.mat.d
+```
+
+## FeatureOverlay viridis
+```{r, fig.width=5, fig.height=4}
+spot_alpha = 0.5
+point.size = 1
+
+FeatureOverlay(se, 
+               features = c("p.val.adj.d"),
+               pt.alpha = spot_alpha,
+               pt.size = point.size,
+               add.alpha=T,
+               ncols = 1,
+               cols = viridis(nr_of_tests))
+```
+
+
+# Save p-val files
+
+```{r}
+meta.data_all <- se@meta.data
+meta.data_all$CellID <- rownames(meta.data_all)
+
+meta.data <- data.frame(matrix(nrow = nrow(meta.data_all), ncol = 1))
+
+meta.data$CellID <- meta.data_all$CellID
+
+meta.data$neg.log10.p.val.g <- meta.data_all$p.val.g
+meta.data$neg.log10.p.val.g <- as.numeric(meta.data$neg.log10.p.val.g)
+
+meta.data$neg.log10.p.val.adj.g <- meta.data_all$p.val.adj.g
+meta.data$neg.log10.p.val.adj.g <- as.numeric(meta.data$neg.log10.p.val.adj.g)
+
+
+meta.data$neg.log10.p.val.d <- meta.data_all$p.val.d
+meta.data$neg.log10.p.val.d <- as.numeric(meta.data$neg.log10.p.val.d)
+
+meta.data$neg.log10.p.val.adj.d <- meta.data_all$p.val.adj.d
+meta.data$neg.log10.p.val.adj.d <- as.numeric(meta.data$neg.log10.p.val.adj.d)
+
+meta.data$matrix.nrow...nrow.meta.data_all...ncol...1. <- NULL
+```
+
+
+```{r, eval=F}
+saveRDS(meta.data,file = "Meta_data_pval/meta.data.pval_SCZ_all_genes.RDS")
+
+write.matrix(meta.data,file="Meta_data_pval/meta.data.pval_SCZ_all_genes.csv",sep = ";")
+```
+
+
+
+Create matrix
+```{r}
+p.val.distribution <- matrix(data = NA, nrow = 8, ncol = length(cluster_names), dimnames = list(c("median(genes)","median(umi)","median(score_genetic)","-log10(p.val_genetic)","-log10(p.val.adj_genetic)","median(score_drugs)","-log10(p.val_drugs)","-log10(p.val.adj_drugs)"),cluster_names))
+```
+
+
+Add data to matrix
+```{r}
+p.val.distribution[4,] <- p.val.mat.g[1,]
+p.val.distribution[5,] <- p.val.mat.g[2,]
+
+p.val.distribution[7,] <- p.val.mat.d[1,]
+p.val.distribution[8,] <- p.val.mat.d[2,]
+```
+
+
+Collect and add data to matrix
+```{r}
+# Calculate structure specific median number of genes
+p.val.distribution[1,1] <- as.numeric(median(se_0$nFeature_RNA))
+p.val.distribution[1,2] <- as.numeric(median(se_1$nFeature_RNA))
+p.val.distribution[1,3] <- as.numeric(median(se_2$nFeature_RNA))
+p.val.distribution[1,4] <- as.numeric(median(se_3$nFeature_RNA))
+p.val.distribution[1,5] <- as.numeric(median(se_4$nFeature_RNA))
+p.val.distribution[1,6] <- as.numeric(median(se_5$nFeature_RNA))
+
+# Calculate structure specific median number of umis
+p.val.distribution[2,1] <- as.numeric(median(se_0$nCount_RNA))
+p.val.distribution[2,2] <- as.numeric(median(se_1$nCount_RNA))
+p.val.distribution[2,3] <- as.numeric(median(se_2$nCount_RNA))
+p.val.distribution[2,4] <- as.numeric(median(se_3$nCount_RNA))
+p.val.distribution[2,5] <- as.numeric(median(se_4$nCount_RNA))
+p.val.distribution[2,6] <- as.numeric(median(se_5$nCount_RNA))
+
+# Calculate structure specific median number of genetic score
+p.val.distribution[3,1] <- as.numeric(median(se_0$OpenTargets_SCZ_Genetic_1))
+p.val.distribution[3,2] <- as.numeric(median(se_1$OpenTargets_SCZ_Genetic_1))
+p.val.distribution[3,3] <- as.numeric(median(se_2$OpenTargets_SCZ_Genetic_1))
+p.val.distribution[3,4] <- as.numeric(median(se_3$OpenTargets_SCZ_Genetic_1))
+p.val.distribution[3,5] <- as.numeric(median(se_4$OpenTargets_SCZ_Genetic_1))
+p.val.distribution[3,6] <- as.numeric(median(se_5$OpenTargets_SCZ_Genetic_1))
+
+# Calculate structure specific median number of drugs score
+p.val.distribution[6,1] <- as.numeric(median(se_0$OpenTargets_SCZ_Drugs_1))
+p.val.distribution[6,2] <- as.numeric(median(se_1$OpenTargets_SCZ_Drugs_1))
+p.val.distribution[6,3] <- as.numeric(median(se_2$OpenTargets_SCZ_Drugs_1))
+p.val.distribution[6,4] <- as.numeric(median(se_3$OpenTargets_SCZ_Drugs_1))
+p.val.distribution[6,5] <- as.numeric(median(se_4$OpenTargets_SCZ_Drugs_1))
+p.val.distribution[6,6] <- as.numeric(median(se_5$OpenTargets_SCZ_Drugs_1))
+
+p.val.distribution <- as.data.frame(p.val.distribution)
+p.val.distribution_plot <- as.data.frame(t(p.val.distribution))
+
+p.val.distribution_plot$cluster <- rownames(p.val.distribution_plot)
+```
+
+
+# Plot p.value.adj cluster Genetic
+```{r}
+parameter <- par(mfrow=c(2,2))
+
+parameter <- plot(p.val.distribution_plot$`median(genes)`,p.val.distribution_plot$`-log10(p.val.adj_genetic)`,pch = 19, ylab = "-log10(p.val.adj_genetic)", xlab = "median(genes)",ylim=c(0,4))
+abline(h=-log10(0.05),col = "red")
+
+parameter <- plot(p.val.distribution_plot$`median(umi)`,p.val.distribution_plot$`-log10(p.val.adj_genetic)`,pch = 19, ylab = "-log10(p.val.adj_genetic)", xlab = "median(umi)",ylim=c(0,4))
+abline(h=-log10(0.05),col = "red")
+
+parameter <- plot(p.val.distribution_plot$`median(score_genetic)`,p.val.distribution_plot$`-log10(p.val.adj_genetic)`,pch = 19, ylab = "-log10(p.val.adj_genetic)", xlab = "median(score_genetic)",ylim=c(0,4))
+abline(h=-log10(0.05),col = "red")
+
+parameter <- plot(p.val.distribution_plot$`median(score_drugs)`,p.val.distribution_plot$`-log10(p.val.adj_genetic)`,pch = 19, ylab = "-log10(p.val.adj_genetic)", xlab = "median(score_drugs)",ylim=c(0,4))
+abline(h=-log10(0.05),col = "red")
+```
+
+
+# Plot p.value.adj cluster Drugs
+```{r}
+parameter <- par(mfrow=c(2,2))
+
+parameter <- plot(p.val.distribution_plot$`median(genes)`,p.val.distribution_plot$`-log10(p.val.adj_drugs)`,pch = 19, ylab = "-log10(p.val.adj_drugs)", xlab = "median(genes)",ylim=c(0,4))
+abline(h=-log10(0.05),col = "red")
+
+parameter <- plot(p.val.distribution_plot$`median(umi)`,p.val.distribution_plot$`-log10(p.val.adj_drugs)`,pch = 19, ylab = "-log10(p.val.adj_drugs)", xlab = "median(umi)",ylim=c(0,4))
+abline(h=-log10(0.05),col = "red")
+
+parameter <- plot(p.val.distribution_plot$`median(score_genetic)`,p.val.distribution_plot$`-log10(p.val.adj_drugs)`,pch = 19, ylab = "-log10(p.val.adj_drugs)", xlab = "median(score_genetic)",ylim=c(0,4))
+abline(h=-log10(0.05),col = "red")
+
+parameter <- plot(p.val.distribution_plot$`median(score_drugs)`,p.val.distribution_plot$`-log10(p.val.adj_drugs)`,pch = 19, ylab = "-log10(p.val.adj_drugs)", xlab = "median(score_drugs)",ylim=c(0,4))
+abline(h=-log10(0.05),col = "red")
+```
+
+
+
+```{r, eval=F}
+saveRDS(p.val.distribution_plot,file = "p_value_distribution/pval.distribution_SCZ_all_genes.RDS")
+
+write.matrix(p.val.distribution_plot,file="p_value_distribution/pval.distribution_SCZ_all_genes.csv",sep = ";")
+```
+
+
+# Jaccard index
+
+Jaccard function:
+```{r}
+jaccard <- function(a, b) {
+  intersection = length(intersect(a, b))
+  union = length(a) + length(b) - intersection
+  return (intersection/union)
+}
+```
+
+
+Print all genes shared combinations:
+```{r}
+# två for-loopar
+# Börja med att skapa en tom matrix med lika många kolumner som rader
+# kolumn- och rad-namn ska vara samma som namnen på hallmark gene sets
+length.mat <- matrix(data = NA, 
+                  nrow = length(all_gene_sets), 
+                  ncol = length(all_gene_sets), 
+                  dimnames = list(names(all_gene_sets), 
+                                  names(all_gene_sets)))
+
+
+# Iterera över två for-loopar, en för rader och en för kolumner
+for (i in 1:length(all_gene_sets)) {
+  for (j in 1:length(all_gene_sets)) {
+    # Spara jaccard mellan par av gene sets
+    length.mat[i, j] <- jaccard(all_gene_sets[[i]],all_gene_sets[[j]])
+  }
+}
+
+
+```
+
+
+```{r, fig.height=12, fig.width=14}
+length.mat.df <- as.data.frame(length.mat)
+
+library(tidyverse)
+
+df2 <- length.mat.df %>%
+  rownames_to_column() %>%
+  gather(colname, value, -rowname)
+head(df2)
+
+df2$value <- ifelse(df2$rowname == df2$colname, NA, df2$value)
+
+```
+
+
+Re-format plot
+```{r, fig.height=28, fig.width=35}
+
+
+# Create a ggheatmap
+ggheatmap <- ggplot(df2, aes(colname, rowname, fill = value))+
+ geom_tile(color = "white")+
+ scale_fill_gradient2(low = "blue", high = "red", mid = "white", 
+   midpoint = 0, space = "Lab", 
+    name="Jaccard\nindex", limits=c(0,1)) +
+  theme_minimal()+ # minimal theme
+ theme(axis.text.x = element_text(angle = 45, vjust = 1, 
+    size = 12, hjust = 1))+
+ coord_fixed()
+
+# Print the heatmap
+ggheatmap + ggtitle("All gene sets")
+
+
+```
+
+# Notes
+
+Session info
+```{r}
+sessionInfo()
+```
+

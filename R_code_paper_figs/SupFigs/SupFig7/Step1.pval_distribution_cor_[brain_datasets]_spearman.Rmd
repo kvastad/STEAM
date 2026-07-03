@@ -1,0 +1,876 @@
+---
+title: "pval_distribution_all_cor_[brain_datasets]_spearman"
+author: "Linda Kvastad"
+date: '`r format(Sys.Date(), "%B %d, %Y")`'
+output:
+ html_document:
+    toc: true
+    toc_depth: 3
+    toc_float: true
+    code_folding: hide
+---
+
+NOTE: Script for calculating Spearman correlations across spatial structures for selected tissue-trait pairs from all genetically associated genes. Comparing p-values and a) genes or b) UMIs. This was done for data generated for each organ and the output summarized in organ specific files. See folder named 'pval_data_cor_organs_all_traits_spearman' for all such files.
+
+# Load libraries
+```{r}
+library(scales)
+library(ggplot2)
+library(tidyverse)
+library(hrbrthemes)
+library(viridis)
+library(MASS)
+```
+
+
+
+# Load data
+Load distribution data:
+```{r}
+
+# BRAIN
+
+##_Human_brain_DLPFC_151673
+meta.data.ADHD_Human_brain_DLPFC_151673 <- readRDS(file = "Brain/Human_brain_DLPFC_151673/p_value_distribution/pval.distribution_ADHD_all_genes.RDS")
+
+meta.data.AHD_Human_brain_DLPFC_151673 <- readRDS(file = "Brain/Human_brain_DLPFC_151673/p_value_distribution/pval.distribution_AHD_all_genes.RDS")
+
+meta.data.ALS_Human_brain_DLPFC_151673 <- readRDS(file = "Brain/Human_brain_DLPFC_151673/p_value_distribution/pval.distribution_ALS_all_genes.RDS")
+
+meta.data.ALZ_Human_brain_DLPFC_151673 <- readRDS(file = "Brain/Human_brain_DLPFC_151673/p_value_distribution/pval.distribution_ALZ_all_genes.RDS")
+
+meta.data.ASD_Human_brain_DLPFC_151673 <- readRDS(file = "Brain/Human_brain_DLPFC_151673/p_value_distribution/pval.distribution_ASD_all_genes.RDS")
+
+meta.data.BIP_Human_brain_DLPFC_151673 <- readRDS(file = "Brain/Human_brain_DLPFC_151673/p_value_distribution/pval.distribution_BIP_all_genes.RDS")
+
+meta.data.EPI_Human_brain_DLPFC_151673 <- readRDS(file = "Brain/Human_brain_DLPFC_151673/p_value_distribution/pval.distribution_EPI_all_genes.RDS")
+
+meta.data.INS_Human_brain_DLPFC_151673 <- readRDS(file = "Brain/Human_brain_DLPFC_151673/p_value_distribution/pval.distribution_INS_all_genes.RDS")
+
+meta.data.MDD_Human_brain_DLPFC_151673 <- readRDS(file = "Brain/Human_brain_DLPFC_151673/p_value_distribution/pval.distribution_MDD_all_genes.RDS")
+
+meta.data.MS_Human_brain_DLPFC_151673 <- readRDS(file = "Brain/Human_brain_DLPFC_151673/p_value_distribution/pval.distribution_MS_all_genes.RDS")
+
+meta.data.PAR_Human_brain_DLPFC_151673 <- readRDS(file = "Brain/Human_brain_DLPFC_151673/p_value_distribution/pval.distribution_PAR_all_genes.RDS")
+
+meta.data.SCZ_Human_brain_DLPFC_151673 <- readRDS(file = "Brain/Human_brain_DLPFC_151673/p_value_distribution/pval.distribution_SCZ_all_genes.RDS")
+
+
+##_Human_brain_DLPFC_151509
+meta.data.ADHD_Human_brain_DLPFC_151509 <- readRDS(file = "Brain/Human_brain_DLPFC_151509/p_value_distribution/pval.distribution_ADHD_all_genes.RDS")
+
+meta.data.AHD_Human_brain_DLPFC_151509 <- readRDS(file = "Brain/Human_brain_DLPFC_151509/p_value_distribution/pval.distribution_AHD_all_genes.RDS")
+
+meta.data.ALS_Human_brain_DLPFC_151509 <- readRDS(file = "Brain/Human_brain_DLPFC_151509/p_value_distribution/pval.distribution_ALS_all_genes.RDS")
+
+meta.data.ALZ_Human_brain_DLPFC_151509 <- readRDS(file = "Brain/Human_brain_DLPFC_151509/p_value_distribution/pval.distribution_ALZ_all_genes.RDS")
+
+meta.data.ASD_Human_brain_DLPFC_151509 <- readRDS(file = "Brain/Human_brain_DLPFC_151509/p_value_distribution/pval.distribution_ASD_all_genes.RDS")
+
+meta.data.BIP_Human_brain_DLPFC_151509 <- readRDS(file = "Brain/Human_brain_DLPFC_151509/p_value_distribution/pval.distribution_BIP_all_genes.RDS")
+
+meta.data.EPI_Human_brain_DLPFC_151509 <- readRDS(file = "Brain/Human_brain_DLPFC_151509/p_value_distribution/pval.distribution_EPI_all_genes.RDS")
+
+meta.data.INS_Human_brain_DLPFC_151509 <- readRDS(file = "Brain/Human_brain_DLPFC_151509/p_value_distribution/pval.distribution_INS_all_genes.RDS")
+
+meta.data.MDD_Human_brain_DLPFC_151509 <- readRDS(file = "Brain/Human_brain_DLPFC_151509/p_value_distribution/pval.distribution_MDD_all_genes.RDS")
+
+meta.data.MS_Human_brain_DLPFC_151509 <- readRDS(file = "Brain/Human_brain_DLPFC_151509/p_value_distribution/pval.distribution_MS_all_genes.RDS")
+
+meta.data.PAR_Human_brain_DLPFC_151509 <- readRDS(file = "Brain/Human_brain_DLPFC_151509/p_value_distribution/pval.distribution_PAR_all_genes.RDS")
+
+meta.data.SCZ_Human_brain_DLPFC_151509 <- readRDS(file = "Brain/Human_brain_DLPFC_151509/p_value_distribution/pval.distribution_SCZ_all_genes.RDS")
+
+
+##_Cell2location_Visium_mouse_brain_coronal_1
+meta.data.ADHD_Cell2location_Visium_mouse_brain_coronal_1 <- readRDS(file = "Brain/Cell2location_Visium_mouse_brain_coronal_1/p_value_distribution/pval.distribution_ADHD_all_genes.RDS")
+
+meta.data.AHD_Cell2location_Visium_mouse_brain_coronal_1 <- readRDS(file = "Brain/Cell2location_Visium_mouse_brain_coronal_1/p_value_distribution/pval.distribution_AHD_all_genes.RDS")
+
+meta.data.ALS_Cell2location_Visium_mouse_brain_coronal_1 <- readRDS(file = "Brain/Cell2location_Visium_mouse_brain_coronal_1/p_value_distribution/pval.distribution_ALS_all_genes.RDS")
+
+meta.data.ALZ_Cell2location_Visium_mouse_brain_coronal_1 <- readRDS(file = "Brain/Cell2location_Visium_mouse_brain_coronal_1/p_value_distribution/pval.distribution_ALZ_all_genes.RDS")
+
+meta.data.ASD_Cell2location_Visium_mouse_brain_coronal_1 <- readRDS(file = "Brain/Cell2location_Visium_mouse_brain_coronal_1/p_value_distribution/pval.distribution_ASD_all_genes.RDS")
+
+meta.data.BIP_Cell2location_Visium_mouse_brain_coronal_1 <- readRDS(file = "Brain/Cell2location_Visium_mouse_brain_coronal_1/p_value_distribution/pval.distribution_BIP_all_genes.RDS")
+
+meta.data.EPI_Cell2location_Visium_mouse_brain_coronal_1 <- readRDS(file = "Brain/Cell2location_Visium_mouse_brain_coronal_1/p_value_distribution/pval.distribution_EPI_all_genes.RDS")
+
+meta.data.INS_Cell2location_Visium_mouse_brain_coronal_1 <- readRDS(file = "Brain/Cell2location_Visium_mouse_brain_coronal_1/p_value_distribution/pval.distribution_INS_all_genes.RDS")
+
+meta.data.MDD_Cell2location_Visium_mouse_brain_coronal_1 <- readRDS(file = "Brain/Cell2location_Visium_mouse_brain_coronal_1/p_value_distribution/pval.distribution_MDD_all_genes.RDS")
+
+meta.data.MS_Cell2location_Visium_mouse_brain_coronal_1 <- readRDS(file = "Brain/Cell2location_Visium_mouse_brain_coronal_1/p_value_distribution/pval.distribution_MS_all_genes.RDS")
+
+meta.data.PAR_Cell2location_Visium_mouse_brain_coronal_1 <- readRDS(file = "Brain/Cell2location_Visium_mouse_brain_coronal_1/p_value_distribution/pval.distribution_PAR_all_genes.RDS")
+
+meta.data.SCZ_Cell2location_Visium_mouse_brain_coronal_1 <- readRDS(file = "Brain/Cell2location_Visium_mouse_brain_coronal_1/p_value_distribution/pval.distribution_SCZ_all_genes.RDS")
+
+
+##_10X_Visium_mouse_brain_coronal
+meta.data.ADHD_10X_Visium_mouse_brain_coronal <- readRDS(file = "Brain/10X_Visium_mouse_brain_coronal/p_value_distribution/pval.distribution_ADHD_all_genes.RDS")
+
+meta.data.AHD_10X_Visium_mouse_brain_coronal <- readRDS(file = "Brain/10X_Visium_mouse_brain_coronal/p_value_distribution/pval.distribution_AHD_all_genes.RDS")
+
+meta.data.ALS_10X_Visium_mouse_brain_coronal <- readRDS(file = "Brain/10X_Visium_mouse_brain_coronal/p_value_distribution/pval.distribution_ALS_all_genes.RDS")
+
+meta.data.ALZ_10X_Visium_mouse_brain_coronal <- readRDS(file = "Brain/10X_Visium_mouse_brain_coronal/p_value_distribution/pval.distribution_ALZ_all_genes.RDS")
+
+meta.data.ASD_10X_Visium_mouse_brain_coronal <- readRDS(file = "Brain/10X_Visium_mouse_brain_coronal/p_value_distribution/pval.distribution_ASD_all_genes.RDS")
+
+meta.data.BIP_10X_Visium_mouse_brain_coronal <- readRDS(file = "Brain/10X_Visium_mouse_brain_coronal/p_value_distribution/pval.distribution_BIP_all_genes.RDS")
+
+meta.data.EPI_10X_Visium_mouse_brain_coronal <- readRDS(file = "Brain/10X_Visium_mouse_brain_coronal/p_value_distribution/pval.distribution_EPI_all_genes.RDS")
+
+meta.data.INS_10X_Visium_mouse_brain_coronal <- readRDS(file = "Brain/10X_Visium_mouse_brain_coronal/p_value_distribution/pval.distribution_INS_all_genes.RDS")
+
+meta.data.MDD_10X_Visium_mouse_brain_coronal <- readRDS(file = "Brain/10X_Visium_mouse_brain_coronal/p_value_distribution/pval.distribution_MDD_all_genes.RDS")
+
+meta.data.MS_10X_Visium_mouse_brain_coronal <- readRDS(file = "Brain/10X_Visium_mouse_brain_coronal/p_value_distribution/pval.distribution_MS_all_genes.RDS")
+
+meta.data.PAR_10X_Visium_mouse_brain_coronal <- readRDS(file = "Brain/10X_Visium_mouse_brain_coronal/p_value_distribution/pval.distribution_PAR_all_genes.RDS")
+
+meta.data.SCZ_10X_Visium_mouse_brain_coronal <- readRDS(file = "Brain/10X_Visium_mouse_brain_coronal/p_value_distribution/pval.distribution_SCZ_all_genes.RDS")
+
+
+```
+
+
+
+# Human_brain_DLPFC_151673
+```{r}
+# Human_brain_DLPFC_151673
+
+# spearman: between -log10(p.val_genetic) & median(genes), median(umi), median(score_genetic)
+data_cor_Human_brain_DLPFC_151673_ADHD = data.frame(median.genes = (cor(x=meta.data.ADHD_Human_brain_DLPFC_151673$`-log10(p.val_genetic)`,y=meta.data.ADHD_Human_brain_DLPFC_151673$`median(genes)`,method = "spearman")))
+data_cor_Human_brain_DLPFC_151673_ADHD = cbind(data_cor_Human_brain_DLPFC_151673_ADHD,data.frame(median.umi = (cor(x=meta.data.ADHD_Human_brain_DLPFC_151673$`-log10(p.val_genetic)`,y=meta.data.ADHD_Human_brain_DLPFC_151673$`median(umi)`,method = "spearman"))))
+data_cor_Human_brain_DLPFC_151673_ADHD = cbind(data_cor_Human_brain_DLPFC_151673_ADHD,data.frame(median.score_genetic = (cor(x=meta.data.ADHD_Human_brain_DLPFC_151673$`-log10(p.val_genetic)`,y=meta.data.ADHD_Human_brain_DLPFC_151673$`median(score_genetic)`,method = "spearman"))))
+data_cor_Human_brain_DLPFC_151673_ADHD$trait <- "ADHD"
+
+# spearman: between -log10(p.val_genetic) & median(genes), median(umi), median(score_genetic)
+data_cor_Human_brain_DLPFC_151673_AHD = data.frame(median.genes = (cor(x=meta.data.AHD_Human_brain_DLPFC_151673$`-log10(p.val_genetic)`,y=meta.data.AHD_Human_brain_DLPFC_151673$`median(genes)`,method = "spearman")))
+data_cor_Human_brain_DLPFC_151673_AHD = cbind(data_cor_Human_brain_DLPFC_151673_AHD,data.frame(median.umi = (cor(x=meta.data.AHD_Human_brain_DLPFC_151673$`-log10(p.val_genetic)`,y=meta.data.AHD_Human_brain_DLPFC_151673$`median(umi)`,method = "spearman"))))
+data_cor_Human_brain_DLPFC_151673_AHD = cbind(data_cor_Human_brain_DLPFC_151673_AHD,data.frame(median.score_genetic = (cor(x=meta.data.AHD_Human_brain_DLPFC_151673$`-log10(p.val_genetic)`,y=meta.data.AHD_Human_brain_DLPFC_151673$`median(score_genetic)`,method = "spearman"))))
+data_cor_Human_brain_DLPFC_151673_AHD$trait <- "AHD"
+
+# spearman: between -log10(p.val_genetic) & median(genes), median(umi), median(score_genetic)
+data_cor_Human_brain_DLPFC_151673_ALS = data.frame(median.genes = (cor(x=meta.data.ALS_Human_brain_DLPFC_151673$`-log10(p.val_genetic)`,y=meta.data.ALS_Human_brain_DLPFC_151673$`median(genes)`,method = "spearman")))
+data_cor_Human_brain_DLPFC_151673_ALS = cbind(data_cor_Human_brain_DLPFC_151673_ALS,data.frame(median.umi = (cor(x=meta.data.ALS_Human_brain_DLPFC_151673$`-log10(p.val_genetic)`,y=meta.data.ALS_Human_brain_DLPFC_151673$`median(umi)`,method = "spearman"))))
+data_cor_Human_brain_DLPFC_151673_ALS = cbind(data_cor_Human_brain_DLPFC_151673_ALS,data.frame(median.score_genetic = (cor(x=meta.data.ALS_Human_brain_DLPFC_151673$`-log10(p.val_genetic)`,y=meta.data.ALS_Human_brain_DLPFC_151673$`median(score_genetic)`,method = "spearman"))))
+data_cor_Human_brain_DLPFC_151673_ALS$trait <- "ALS"
+
+
+# spearman: between -log10(p.val_genetic) & median(genes), median(umi), median(score_genetic)
+data_cor_Human_brain_DLPFC_151673_ALZ = data.frame(median.genes = (cor(x=meta.data.ALZ_Human_brain_DLPFC_151673$`-log10(p.val_genetic)`,y=meta.data.ALZ_Human_brain_DLPFC_151673$`median(genes)`,method = "spearman")))
+data_cor_Human_brain_DLPFC_151673_ALZ = cbind(data_cor_Human_brain_DLPFC_151673_ALZ,data.frame(median.umi = (cor(x=meta.data.ALZ_Human_brain_DLPFC_151673$`-log10(p.val_genetic)`,y=meta.data.ALZ_Human_brain_DLPFC_151673$`median(umi)`,method = "spearman"))))
+data_cor_Human_brain_DLPFC_151673_ALZ = cbind(data_cor_Human_brain_DLPFC_151673_ALZ,data.frame(median.score_genetic = (cor(x=meta.data.ALZ_Human_brain_DLPFC_151673$`-log10(p.val_genetic)`,y=meta.data.ALZ_Human_brain_DLPFC_151673$`median(score_genetic)`,method = "spearman"))))
+data_cor_Human_brain_DLPFC_151673_ALZ$trait <- "ALZ"
+
+
+# spearman: between -log10(p.val_genetic) & median(genes), median(umi), median(score_genetic)
+data_cor_Human_brain_DLPFC_151673_ASD = data.frame(median.genes = (cor(x=meta.data.ASD_Human_brain_DLPFC_151673$`-log10(p.val_genetic)`,y=meta.data.ASD_Human_brain_DLPFC_151673$`median(genes)`,method = "spearman")))
+data_cor_Human_brain_DLPFC_151673_ASD = cbind(data_cor_Human_brain_DLPFC_151673_ASD,data.frame(median.umi = (cor(x=meta.data.ASD_Human_brain_DLPFC_151673$`-log10(p.val_genetic)`,y=meta.data.ASD_Human_brain_DLPFC_151673$`median(umi)`,method = "spearman"))))
+data_cor_Human_brain_DLPFC_151673_ASD = cbind(data_cor_Human_brain_DLPFC_151673_ASD,data.frame(median.score_genetic = (cor(x=meta.data.ASD_Human_brain_DLPFC_151673$`-log10(p.val_genetic)`,y=meta.data.ASD_Human_brain_DLPFC_151673$`median(score_genetic)`,method = "spearman"))))
+data_cor_Human_brain_DLPFC_151673_ASD$trait <- "ASD"
+
+
+# spearman: between -log10(p.val_genetic) & median(genes), median(umi), median(score_genetic)
+data_cor_Human_brain_DLPFC_151673_BIP = data.frame(median.genes = (cor(x=meta.data.BIP_Human_brain_DLPFC_151673$`-log10(p.val_genetic)`,y=meta.data.BIP_Human_brain_DLPFC_151673$`median(genes)`,method = "spearman")))
+data_cor_Human_brain_DLPFC_151673_BIP = cbind(data_cor_Human_brain_DLPFC_151673_BIP,data.frame(median.umi = (cor(x=meta.data.BIP_Human_brain_DLPFC_151673$`-log10(p.val_genetic)`,y=meta.data.BIP_Human_brain_DLPFC_151673$`median(umi)`,method = "spearman"))))
+data_cor_Human_brain_DLPFC_151673_BIP = cbind(data_cor_Human_brain_DLPFC_151673_BIP,data.frame(median.score_genetic = (cor(x=meta.data.BIP_Human_brain_DLPFC_151673$`-log10(p.val_genetic)`,y=meta.data.BIP_Human_brain_DLPFC_151673$`median(score_genetic)`,method = "spearman"))))
+data_cor_Human_brain_DLPFC_151673_BIP$trait <- "BIP"
+
+
+# spearman: between -log10(p.val_genetic) & median(genes), median(umi), median(score_genetic)
+data_cor_Human_brain_DLPFC_151673_EPI = data.frame(median.genes = (cor(x=meta.data.EPI_Human_brain_DLPFC_151673$`-log10(p.val_genetic)`,y=meta.data.EPI_Human_brain_DLPFC_151673$`median(genes)`,method = "spearman")))
+data_cor_Human_brain_DLPFC_151673_EPI = cbind(data_cor_Human_brain_DLPFC_151673_EPI,data.frame(median.umi = (cor(x=meta.data.EPI_Human_brain_DLPFC_151673$`-log10(p.val_genetic)`,y=meta.data.EPI_Human_brain_DLPFC_151673$`median(umi)`,method = "spearman"))))
+data_cor_Human_brain_DLPFC_151673_EPI = cbind(data_cor_Human_brain_DLPFC_151673_EPI,data.frame(median.score_genetic = (cor(x=meta.data.EPI_Human_brain_DLPFC_151673$`-log10(p.val_genetic)`,y=meta.data.EPI_Human_brain_DLPFC_151673$`median(score_genetic)`,method = "spearman"))))
+data_cor_Human_brain_DLPFC_151673_EPI$trait <- "EPI"
+
+
+# spearman: between -log10(p.val_genetic) & median(genes), median(umi), median(score_genetic)
+data_cor_Human_brain_DLPFC_151673_INS = data.frame(median.genes = (cor(x=meta.data.INS_Human_brain_DLPFC_151673$`-log10(p.val_genetic)`,y=meta.data.INS_Human_brain_DLPFC_151673$`median(genes)`,method = "spearman")))
+data_cor_Human_brain_DLPFC_151673_INS = cbind(data_cor_Human_brain_DLPFC_151673_INS,data.frame(median.umi = (cor(x=meta.data.INS_Human_brain_DLPFC_151673$`-log10(p.val_genetic)`,y=meta.data.INS_Human_brain_DLPFC_151673$`median(umi)`,method = "spearman"))))
+data_cor_Human_brain_DLPFC_151673_INS = cbind(data_cor_Human_brain_DLPFC_151673_INS,data.frame(median.score_genetic = (cor(x=meta.data.INS_Human_brain_DLPFC_151673$`-log10(p.val_genetic)`,y=meta.data.INS_Human_brain_DLPFC_151673$`median(score_genetic)`,method = "spearman"))))
+data_cor_Human_brain_DLPFC_151673_INS$trait <- "INS"
+
+
+# spearman: between -log10(p.val_genetic) & median(genes), median(umi), median(score_genetic)
+data_cor_Human_brain_DLPFC_151673_MDD = data.frame(median.genes = (cor(x=meta.data.MDD_Human_brain_DLPFC_151673$`-log10(p.val_genetic)`,y=meta.data.MDD_Human_brain_DLPFC_151673$`median(genes)`,method = "spearman")))
+data_cor_Human_brain_DLPFC_151673_MDD = cbind(data_cor_Human_brain_DLPFC_151673_MDD,data.frame(median.umi = (cor(x=meta.data.MDD_Human_brain_DLPFC_151673$`-log10(p.val_genetic)`,y=meta.data.MDD_Human_brain_DLPFC_151673$`median(umi)`,method = "spearman"))))
+data_cor_Human_brain_DLPFC_151673_MDD = cbind(data_cor_Human_brain_DLPFC_151673_MDD,data.frame(median.score_genetic = (cor(x=meta.data.MDD_Human_brain_DLPFC_151673$`-log10(p.val_genetic)`,y=meta.data.MDD_Human_brain_DLPFC_151673$`median(score_genetic)`,method = "spearman"))))
+data_cor_Human_brain_DLPFC_151673_MDD$trait <- "MDD"
+
+
+# spearman: between -log10(p.val_genetic) & median(genes), median(umi), median(score_genetic)
+data_cor_Human_brain_DLPFC_151673_MS = data.frame(median.genes = (cor(x=meta.data.MS_Human_brain_DLPFC_151673$`-log10(p.val_genetic)`,y=meta.data.MS_Human_brain_DLPFC_151673$`median(genes)`,method = "spearman")))
+data_cor_Human_brain_DLPFC_151673_MS = cbind(data_cor_Human_brain_DLPFC_151673_MS,data.frame(median.umi = (cor(x=meta.data.MS_Human_brain_DLPFC_151673$`-log10(p.val_genetic)`,y=meta.data.MS_Human_brain_DLPFC_151673$`median(umi)`,method = "spearman"))))
+data_cor_Human_brain_DLPFC_151673_MS = cbind(data_cor_Human_brain_DLPFC_151673_MS,data.frame(median.score_genetic = (cor(x=meta.data.MS_Human_brain_DLPFC_151673$`-log10(p.val_genetic)`,y=meta.data.MS_Human_brain_DLPFC_151673$`median(score_genetic)`,method = "spearman"))))
+data_cor_Human_brain_DLPFC_151673_MS$trait <- "MS"
+
+
+# spearman: between -log10(p.val_genetic) & median(genes), median(umi), median(score_genetic)
+data_cor_Human_brain_DLPFC_151673_PAR = data.frame(median.genes = (cor(x=meta.data.PAR_Human_brain_DLPFC_151673$`-log10(p.val_genetic)`,y=meta.data.PAR_Human_brain_DLPFC_151673$`median(genes)`,method = "spearman")))
+data_cor_Human_brain_DLPFC_151673_PAR = cbind(data_cor_Human_brain_DLPFC_151673_PAR,data.frame(median.umi = (cor(x=meta.data.PAR_Human_brain_DLPFC_151673$`-log10(p.val_genetic)`,y=meta.data.PAR_Human_brain_DLPFC_151673$`median(umi)`,method = "spearman"))))
+data_cor_Human_brain_DLPFC_151673_PAR = cbind(data_cor_Human_brain_DLPFC_151673_PAR,data.frame(median.score_genetic = (cor(x=meta.data.PAR_Human_brain_DLPFC_151673$`-log10(p.val_genetic)`,y=meta.data.PAR_Human_brain_DLPFC_151673$`median(score_genetic)`,method = "spearman"))))
+data_cor_Human_brain_DLPFC_151673_PAR$trait <- "PAR"
+
+
+# spearman: between -log10(p.val_genetic) & median(genes), median(umi), median(score_genetic)
+data_cor_Human_brain_DLPFC_151673_SCZ = data.frame(median.genes = (cor(x=meta.data.SCZ_Human_brain_DLPFC_151673$`-log10(p.val_genetic)`,y=meta.data.SCZ_Human_brain_DLPFC_151673$`median(genes)`,method = "spearman")))
+data_cor_Human_brain_DLPFC_151673_SCZ = cbind(data_cor_Human_brain_DLPFC_151673_SCZ,data.frame(median.umi = (cor(x=meta.data.SCZ_Human_brain_DLPFC_151673$`-log10(p.val_genetic)`,y=meta.data.SCZ_Human_brain_DLPFC_151673$`median(umi)`,method = "spearman"))))
+data_cor_Human_brain_DLPFC_151673_SCZ = cbind(data_cor_Human_brain_DLPFC_151673_SCZ,data.frame(median.score_genetic = (cor(x=meta.data.SCZ_Human_brain_DLPFC_151673$`-log10(p.val_genetic)`,y=meta.data.SCZ_Human_brain_DLPFC_151673$`median(score_genetic)`,method = "spearman"))))
+data_cor_Human_brain_DLPFC_151673_SCZ$trait <- "SCZ"
+
+
+
+data_cor_Human_brain_DLPFC_151673_all <- rbind(data_cor_Human_brain_DLPFC_151673_ADHD,data_cor_Human_brain_DLPFC_151673_AHD)
+data_cor_Human_brain_DLPFC_151673_all <- rbind(data_cor_Human_brain_DLPFC_151673_all,data_cor_Human_brain_DLPFC_151673_ALS)
+data_cor_Human_brain_DLPFC_151673_all <- rbind(data_cor_Human_brain_DLPFC_151673_all,data_cor_Human_brain_DLPFC_151673_ALZ)
+data_cor_Human_brain_DLPFC_151673_all <- rbind(data_cor_Human_brain_DLPFC_151673_all,data_cor_Human_brain_DLPFC_151673_ASD)
+data_cor_Human_brain_DLPFC_151673_all <- rbind(data_cor_Human_brain_DLPFC_151673_all,data_cor_Human_brain_DLPFC_151673_BIP)
+data_cor_Human_brain_DLPFC_151673_all <- rbind(data_cor_Human_brain_DLPFC_151673_all,data_cor_Human_brain_DLPFC_151673_EPI)
+data_cor_Human_brain_DLPFC_151673_all <- rbind(data_cor_Human_brain_DLPFC_151673_all,data_cor_Human_brain_DLPFC_151673_INS)
+data_cor_Human_brain_DLPFC_151673_all <- rbind(data_cor_Human_brain_DLPFC_151673_all,data_cor_Human_brain_DLPFC_151673_MDD)
+data_cor_Human_brain_DLPFC_151673_all <- rbind(data_cor_Human_brain_DLPFC_151673_all,data_cor_Human_brain_DLPFC_151673_MS)
+data_cor_Human_brain_DLPFC_151673_all <- rbind(data_cor_Human_brain_DLPFC_151673_all,data_cor_Human_brain_DLPFC_151673_PAR)
+data_cor_Human_brain_DLPFC_151673_all <- rbind(data_cor_Human_brain_DLPFC_151673_all,data_cor_Human_brain_DLPFC_151673_SCZ)
+```
+
+## median.genes
+```{r}
+
+# basic histogram
+p <- ggplot(data_cor_Human_brain_DLPFC_151673_all, aes(x=median.genes)) + 
+  geom_histogram(binwidth=0.05,color="black", fill="grey") + 
+  xlim(-2,2) +
+  theme_minimal()
+
+p
+```
+
+
+## median.umi
+```{r}
+
+# basic histogram
+p <- ggplot(data_cor_Human_brain_DLPFC_151673_all, aes(x=median.umi)) + 
+  geom_histogram(binwidth=0.05,color="black", fill="grey") + 
+  xlim(-2,2) +
+  theme_minimal()
+
+p
+```
+
+## median.score_genetic
+```{r}
+
+# basic histogram
+p <- ggplot(data_cor_Human_brain_DLPFC_151673_all, aes(x=median.score_genetic)) + 
+  geom_histogram(binwidth=0.05,color="black", fill="grey") + 
+  xlim(-2,2) +
+  theme_minimal()
+
+p
+```
+
+
+
+
+# Human_brain_DLPFC_151509
+```{r}
+# Human_brain_DLPFC_151509
+
+# spearman: between -log10(p.val_genetic) & median(genes), median(umi), median(score_genetic)
+data_cor_Human_brain_DLPFC_151509_ADHD = data.frame(median.genes = (cor(x=meta.data.ADHD_Human_brain_DLPFC_151509$`-log10(p.val_genetic)`,y=meta.data.ADHD_Human_brain_DLPFC_151509$`median(genes)`,method = "spearman")))
+data_cor_Human_brain_DLPFC_151509_ADHD = cbind(data_cor_Human_brain_DLPFC_151509_ADHD,data.frame(median.umi = (cor(x=meta.data.ADHD_Human_brain_DLPFC_151509$`-log10(p.val_genetic)`,y=meta.data.ADHD_Human_brain_DLPFC_151509$`median(umi)`,method = "spearman"))))
+data_cor_Human_brain_DLPFC_151509_ADHD = cbind(data_cor_Human_brain_DLPFC_151509_ADHD,data.frame(median.score_genetic = (cor(x=meta.data.ADHD_Human_brain_DLPFC_151509$`-log10(p.val_genetic)`,y=meta.data.ADHD_Human_brain_DLPFC_151509$`median(score_genetic)`,method = "spearman"))))
+data_cor_Human_brain_DLPFC_151509_ADHD$trait <- "ADHD"
+
+# spearman: between -log10(p.val_genetic) & median(genes), median(umi), median(score_genetic)
+data_cor_Human_brain_DLPFC_151509_AHD = data.frame(median.genes = (cor(x=meta.data.AHD_Human_brain_DLPFC_151509$`-log10(p.val_genetic)`,y=meta.data.AHD_Human_brain_DLPFC_151509$`median(genes)`,method = "spearman")))
+data_cor_Human_brain_DLPFC_151509_AHD = cbind(data_cor_Human_brain_DLPFC_151509_AHD,data.frame(median.umi = (cor(x=meta.data.AHD_Human_brain_DLPFC_151509$`-log10(p.val_genetic)`,y=meta.data.AHD_Human_brain_DLPFC_151509$`median(umi)`,method = "spearman"))))
+data_cor_Human_brain_DLPFC_151509_AHD = cbind(data_cor_Human_brain_DLPFC_151509_AHD,data.frame(median.score_genetic = (cor(x=meta.data.AHD_Human_brain_DLPFC_151509$`-log10(p.val_genetic)`,y=meta.data.AHD_Human_brain_DLPFC_151509$`median(score_genetic)`,method = "spearman"))))
+data_cor_Human_brain_DLPFC_151509_AHD$trait <- "AHD"
+
+# spearman: between -log10(p.val_genetic) & median(genes), median(umi), median(score_genetic)
+data_cor_Human_brain_DLPFC_151509_ALS = data.frame(median.genes = (cor(x=meta.data.ALS_Human_brain_DLPFC_151509$`-log10(p.val_genetic)`,y=meta.data.ALS_Human_brain_DLPFC_151509$`median(genes)`,method = "spearman")))
+data_cor_Human_brain_DLPFC_151509_ALS = cbind(data_cor_Human_brain_DLPFC_151509_ALS,data.frame(median.umi = (cor(x=meta.data.ALS_Human_brain_DLPFC_151509$`-log10(p.val_genetic)`,y=meta.data.ALS_Human_brain_DLPFC_151509$`median(umi)`,method = "spearman"))))
+data_cor_Human_brain_DLPFC_151509_ALS = cbind(data_cor_Human_brain_DLPFC_151509_ALS,data.frame(median.score_genetic = (cor(x=meta.data.ALS_Human_brain_DLPFC_151509$`-log10(p.val_genetic)`,y=meta.data.ALS_Human_brain_DLPFC_151509$`median(score_genetic)`,method = "spearman"))))
+data_cor_Human_brain_DLPFC_151509_ALS$trait <- "ALS"
+
+
+# spearman: between -log10(p.val_genetic) & median(genes), median(umi), median(score_genetic)
+data_cor_Human_brain_DLPFC_151509_ALZ = data.frame(median.genes = (cor(x=meta.data.ALZ_Human_brain_DLPFC_151509$`-log10(p.val_genetic)`,y=meta.data.ALZ_Human_brain_DLPFC_151509$`median(genes)`,method = "spearman")))
+data_cor_Human_brain_DLPFC_151509_ALZ = cbind(data_cor_Human_brain_DLPFC_151509_ALZ,data.frame(median.umi = (cor(x=meta.data.ALZ_Human_brain_DLPFC_151509$`-log10(p.val_genetic)`,y=meta.data.ALZ_Human_brain_DLPFC_151509$`median(umi)`,method = "spearman"))))
+data_cor_Human_brain_DLPFC_151509_ALZ = cbind(data_cor_Human_brain_DLPFC_151509_ALZ,data.frame(median.score_genetic = (cor(x=meta.data.ALZ_Human_brain_DLPFC_151509$`-log10(p.val_genetic)`,y=meta.data.ALZ_Human_brain_DLPFC_151509$`median(score_genetic)`,method = "spearman"))))
+data_cor_Human_brain_DLPFC_151509_ALZ$trait <- "ALZ"
+
+
+# spearman: between -log10(p.val_genetic) & median(genes), median(umi), median(score_genetic)
+data_cor_Human_brain_DLPFC_151509_ASD = data.frame(median.genes = (cor(x=meta.data.ASD_Human_brain_DLPFC_151509$`-log10(p.val_genetic)`,y=meta.data.ASD_Human_brain_DLPFC_151509$`median(genes)`,method = "spearman")))
+data_cor_Human_brain_DLPFC_151509_ASD = cbind(data_cor_Human_brain_DLPFC_151509_ASD,data.frame(median.umi = (cor(x=meta.data.ASD_Human_brain_DLPFC_151509$`-log10(p.val_genetic)`,y=meta.data.ASD_Human_brain_DLPFC_151509$`median(umi)`,method = "spearman"))))
+data_cor_Human_brain_DLPFC_151509_ASD = cbind(data_cor_Human_brain_DLPFC_151509_ASD,data.frame(median.score_genetic = (cor(x=meta.data.ASD_Human_brain_DLPFC_151509$`-log10(p.val_genetic)`,y=meta.data.ASD_Human_brain_DLPFC_151509$`median(score_genetic)`,method = "spearman"))))
+data_cor_Human_brain_DLPFC_151509_ASD$trait <- "ASD"
+
+
+# spearman: between -log10(p.val_genetic) & median(genes), median(umi), median(score_genetic)
+data_cor_Human_brain_DLPFC_151509_BIP = data.frame(median.genes = (cor(x=meta.data.BIP_Human_brain_DLPFC_151509$`-log10(p.val_genetic)`,y=meta.data.BIP_Human_brain_DLPFC_151509$`median(genes)`,method = "spearman")))
+data_cor_Human_brain_DLPFC_151509_BIP = cbind(data_cor_Human_brain_DLPFC_151509_BIP,data.frame(median.umi = (cor(x=meta.data.BIP_Human_brain_DLPFC_151509$`-log10(p.val_genetic)`,y=meta.data.BIP_Human_brain_DLPFC_151509$`median(umi)`,method = "spearman"))))
+data_cor_Human_brain_DLPFC_151509_BIP = cbind(data_cor_Human_brain_DLPFC_151509_BIP,data.frame(median.score_genetic = (cor(x=meta.data.BIP_Human_brain_DLPFC_151509$`-log10(p.val_genetic)`,y=meta.data.BIP_Human_brain_DLPFC_151509$`median(score_genetic)`,method = "spearman"))))
+data_cor_Human_brain_DLPFC_151509_BIP$trait <- "BIP"
+
+
+# spearman: between -log10(p.val_genetic) & median(genes), median(umi), median(score_genetic)
+data_cor_Human_brain_DLPFC_151509_EPI = data.frame(median.genes = (cor(x=meta.data.EPI_Human_brain_DLPFC_151509$`-log10(p.val_genetic)`,y=meta.data.EPI_Human_brain_DLPFC_151509$`median(genes)`,method = "spearman")))
+data_cor_Human_brain_DLPFC_151509_EPI = cbind(data_cor_Human_brain_DLPFC_151509_EPI,data.frame(median.umi = (cor(x=meta.data.EPI_Human_brain_DLPFC_151509$`-log10(p.val_genetic)`,y=meta.data.EPI_Human_brain_DLPFC_151509$`median(umi)`,method = "spearman"))))
+data_cor_Human_brain_DLPFC_151509_EPI = cbind(data_cor_Human_brain_DLPFC_151509_EPI,data.frame(median.score_genetic = (cor(x=meta.data.EPI_Human_brain_DLPFC_151509$`-log10(p.val_genetic)`,y=meta.data.EPI_Human_brain_DLPFC_151509$`median(score_genetic)`,method = "spearman"))))
+data_cor_Human_brain_DLPFC_151509_EPI$trait <- "EPI"
+
+
+# spearman: between -log10(p.val_genetic) & median(genes), median(umi), median(score_genetic)
+data_cor_Human_brain_DLPFC_151509_INS = data.frame(median.genes = (cor(x=meta.data.INS_Human_brain_DLPFC_151509$`-log10(p.val_genetic)`,y=meta.data.INS_Human_brain_DLPFC_151509$`median(genes)`,method = "spearman")))
+data_cor_Human_brain_DLPFC_151509_INS = cbind(data_cor_Human_brain_DLPFC_151509_INS,data.frame(median.umi = (cor(x=meta.data.INS_Human_brain_DLPFC_151509$`-log10(p.val_genetic)`,y=meta.data.INS_Human_brain_DLPFC_151509$`median(umi)`,method = "spearman"))))
+data_cor_Human_brain_DLPFC_151509_INS = cbind(data_cor_Human_brain_DLPFC_151509_INS,data.frame(median.score_genetic = (cor(x=meta.data.INS_Human_brain_DLPFC_151509$`-log10(p.val_genetic)`,y=meta.data.INS_Human_brain_DLPFC_151509$`median(score_genetic)`,method = "spearman"))))
+data_cor_Human_brain_DLPFC_151509_INS$trait <- "INS"
+
+
+# spearman: between -log10(p.val_genetic) & median(genes), median(umi), median(score_genetic)
+data_cor_Human_brain_DLPFC_151509_MDD = data.frame(median.genes = (cor(x=meta.data.MDD_Human_brain_DLPFC_151509$`-log10(p.val_genetic)`,y=meta.data.MDD_Human_brain_DLPFC_151509$`median(genes)`,method = "spearman")))
+data_cor_Human_brain_DLPFC_151509_MDD = cbind(data_cor_Human_brain_DLPFC_151509_MDD,data.frame(median.umi = (cor(x=meta.data.MDD_Human_brain_DLPFC_151509$`-log10(p.val_genetic)`,y=meta.data.MDD_Human_brain_DLPFC_151509$`median(umi)`,method = "spearman"))))
+data_cor_Human_brain_DLPFC_151509_MDD = cbind(data_cor_Human_brain_DLPFC_151509_MDD,data.frame(median.score_genetic = (cor(x=meta.data.MDD_Human_brain_DLPFC_151509$`-log10(p.val_genetic)`,y=meta.data.MDD_Human_brain_DLPFC_151509$`median(score_genetic)`,method = "spearman"))))
+data_cor_Human_brain_DLPFC_151509_MDD$trait <- "MDD"
+
+
+# spearman: between -log10(p.val_genetic) & median(genes), median(umi), median(score_genetic)
+data_cor_Human_brain_DLPFC_151509_MS = data.frame(median.genes = (cor(x=meta.data.MS_Human_brain_DLPFC_151509$`-log10(p.val_genetic)`,y=meta.data.MS_Human_brain_DLPFC_151509$`median(genes)`,method = "spearman")))
+data_cor_Human_brain_DLPFC_151509_MS = cbind(data_cor_Human_brain_DLPFC_151509_MS,data.frame(median.umi = (cor(x=meta.data.MS_Human_brain_DLPFC_151509$`-log10(p.val_genetic)`,y=meta.data.MS_Human_brain_DLPFC_151509$`median(umi)`,method = "spearman"))))
+data_cor_Human_brain_DLPFC_151509_MS = cbind(data_cor_Human_brain_DLPFC_151509_MS,data.frame(median.score_genetic = (cor(x=meta.data.MS_Human_brain_DLPFC_151509$`-log10(p.val_genetic)`,y=meta.data.MS_Human_brain_DLPFC_151509$`median(score_genetic)`,method = "spearman"))))
+data_cor_Human_brain_DLPFC_151509_MS$trait <- "MS"
+
+
+# spearman: between -log10(p.val_genetic) & median(genes), median(umi), median(score_genetic)
+data_cor_Human_brain_DLPFC_151509_PAR = data.frame(median.genes = (cor(x=meta.data.PAR_Human_brain_DLPFC_151509$`-log10(p.val_genetic)`,y=meta.data.PAR_Human_brain_DLPFC_151509$`median(genes)`,method = "spearman")))
+data_cor_Human_brain_DLPFC_151509_PAR = cbind(data_cor_Human_brain_DLPFC_151509_PAR,data.frame(median.umi = (cor(x=meta.data.PAR_Human_brain_DLPFC_151509$`-log10(p.val_genetic)`,y=meta.data.PAR_Human_brain_DLPFC_151509$`median(umi)`,method = "spearman"))))
+data_cor_Human_brain_DLPFC_151509_PAR = cbind(data_cor_Human_brain_DLPFC_151509_PAR,data.frame(median.score_genetic = (cor(x=meta.data.PAR_Human_brain_DLPFC_151509$`-log10(p.val_genetic)`,y=meta.data.PAR_Human_brain_DLPFC_151509$`median(score_genetic)`,method = "spearman"))))
+data_cor_Human_brain_DLPFC_151509_PAR$trait <- "PAR"
+
+
+# spearman: between -log10(p.val_genetic) & median(genes), median(umi), median(score_genetic)
+data_cor_Human_brain_DLPFC_151509_SCZ = data.frame(median.genes = (cor(x=meta.data.SCZ_Human_brain_DLPFC_151509$`-log10(p.val_genetic)`,y=meta.data.SCZ_Human_brain_DLPFC_151509$`median(genes)`,method = "spearman")))
+data_cor_Human_brain_DLPFC_151509_SCZ = cbind(data_cor_Human_brain_DLPFC_151509_SCZ,data.frame(median.umi = (cor(x=meta.data.SCZ_Human_brain_DLPFC_151509$`-log10(p.val_genetic)`,y=meta.data.SCZ_Human_brain_DLPFC_151509$`median(umi)`,method = "spearman"))))
+data_cor_Human_brain_DLPFC_151509_SCZ = cbind(data_cor_Human_brain_DLPFC_151509_SCZ,data.frame(median.score_genetic = (cor(x=meta.data.SCZ_Human_brain_DLPFC_151509$`-log10(p.val_genetic)`,y=meta.data.SCZ_Human_brain_DLPFC_151509$`median(score_genetic)`,method = "spearman"))))
+data_cor_Human_brain_DLPFC_151509_SCZ$trait <- "SCZ"
+
+
+
+data_cor_Human_brain_DLPFC_151509_all <- rbind(data_cor_Human_brain_DLPFC_151509_ADHD,data_cor_Human_brain_DLPFC_151509_AHD)
+data_cor_Human_brain_DLPFC_151509_all <- rbind(data_cor_Human_brain_DLPFC_151509_all,data_cor_Human_brain_DLPFC_151509_ALS)
+data_cor_Human_brain_DLPFC_151509_all <- rbind(data_cor_Human_brain_DLPFC_151509_all,data_cor_Human_brain_DLPFC_151509_ALZ)
+data_cor_Human_brain_DLPFC_151509_all <- rbind(data_cor_Human_brain_DLPFC_151509_all,data_cor_Human_brain_DLPFC_151509_ASD)
+data_cor_Human_brain_DLPFC_151509_all <- rbind(data_cor_Human_brain_DLPFC_151509_all,data_cor_Human_brain_DLPFC_151509_BIP)
+data_cor_Human_brain_DLPFC_151509_all <- rbind(data_cor_Human_brain_DLPFC_151509_all,data_cor_Human_brain_DLPFC_151509_EPI)
+data_cor_Human_brain_DLPFC_151509_all <- rbind(data_cor_Human_brain_DLPFC_151509_all,data_cor_Human_brain_DLPFC_151509_INS)
+data_cor_Human_brain_DLPFC_151509_all <- rbind(data_cor_Human_brain_DLPFC_151509_all,data_cor_Human_brain_DLPFC_151509_MDD)
+data_cor_Human_brain_DLPFC_151509_all <- rbind(data_cor_Human_brain_DLPFC_151509_all,data_cor_Human_brain_DLPFC_151509_MS)
+data_cor_Human_brain_DLPFC_151509_all <- rbind(data_cor_Human_brain_DLPFC_151509_all,data_cor_Human_brain_DLPFC_151509_PAR)
+data_cor_Human_brain_DLPFC_151509_all <- rbind(data_cor_Human_brain_DLPFC_151509_all,data_cor_Human_brain_DLPFC_151509_SCZ)
+```
+
+## median.genes
+```{r}
+
+# basic histogram
+p <- ggplot(data_cor_Human_brain_DLPFC_151509_all, aes(x=median.genes)) + 
+  geom_histogram(binwidth=0.05,color="black", fill="grey") + 
+  xlim(-2,2) +
+  theme_minimal()
+
+p
+```
+
+
+## median.umi
+```{r}
+
+# basic histogram
+p <- ggplot(data_cor_Human_brain_DLPFC_151509_all, aes(x=median.umi)) + 
+  geom_histogram(binwidth=0.05,color="black", fill="grey") + 
+  xlim(-2,2) +
+  theme_minimal()
+
+p
+```
+
+## median.score_genetic
+```{r}
+
+# basic histogram
+p <- ggplot(data_cor_Human_brain_DLPFC_151509_all, aes(x=median.score_genetic)) + 
+  geom_histogram(binwidth=0.05,color="black", fill="grey") + 
+  xlim(-2,2) +
+  theme_minimal()
+
+p
+```
+
+
+
+
+
+# Cell2location_Visium_mouse_brain_coronal_1
+```{r}
+# Cell2location_Visium_mouse_brain_coronal_1
+
+# spearman: between -log10(p.val_genetic) & median(genes), median(umi), median(score_genetic)
+data_cor_Cell2location_Visium_mouse_brain_coronal_1_ADHD = data.frame(median.genes = (cor(x=meta.data.ADHD_Cell2location_Visium_mouse_brain_coronal_1$`-log10(p.val_genetic)`,y=meta.data.ADHD_Cell2location_Visium_mouse_brain_coronal_1$`median(genes)`,method = "spearman")))
+data_cor_Cell2location_Visium_mouse_brain_coronal_1_ADHD = cbind(data_cor_Cell2location_Visium_mouse_brain_coronal_1_ADHD,data.frame(median.umi = (cor(x=meta.data.ADHD_Cell2location_Visium_mouse_brain_coronal_1$`-log10(p.val_genetic)`,y=meta.data.ADHD_Cell2location_Visium_mouse_brain_coronal_1$`median(umi)`,method = "spearman"))))
+data_cor_Cell2location_Visium_mouse_brain_coronal_1_ADHD = cbind(data_cor_Cell2location_Visium_mouse_brain_coronal_1_ADHD,data.frame(median.score_genetic = (cor(x=meta.data.ADHD_Cell2location_Visium_mouse_brain_coronal_1$`-log10(p.val_genetic)`,y=meta.data.ADHD_Cell2location_Visium_mouse_brain_coronal_1$`median(score_genetic)`,method = "spearman"))))
+data_cor_Cell2location_Visium_mouse_brain_coronal_1_ADHD$trait <- "ADHD"
+
+# spearman: between -log10(p.val_genetic) & median(genes), median(umi), median(score_genetic)
+data_cor_Cell2location_Visium_mouse_brain_coronal_1_AHD = data.frame(median.genes = (cor(x=meta.data.AHD_Cell2location_Visium_mouse_brain_coronal_1$`-log10(p.val_genetic)`,y=meta.data.AHD_Cell2location_Visium_mouse_brain_coronal_1$`median(genes)`,method = "spearman")))
+data_cor_Cell2location_Visium_mouse_brain_coronal_1_AHD = cbind(data_cor_Cell2location_Visium_mouse_brain_coronal_1_AHD,data.frame(median.umi = (cor(x=meta.data.AHD_Cell2location_Visium_mouse_brain_coronal_1$`-log10(p.val_genetic)`,y=meta.data.AHD_Cell2location_Visium_mouse_brain_coronal_1$`median(umi)`,method = "spearman"))))
+data_cor_Cell2location_Visium_mouse_brain_coronal_1_AHD = cbind(data_cor_Cell2location_Visium_mouse_brain_coronal_1_AHD,data.frame(median.score_genetic = (cor(x=meta.data.AHD_Cell2location_Visium_mouse_brain_coronal_1$`-log10(p.val_genetic)`,y=meta.data.AHD_Cell2location_Visium_mouse_brain_coronal_1$`median(score_genetic)`,method = "spearman"))))
+data_cor_Cell2location_Visium_mouse_brain_coronal_1_AHD$trait <- "AHD"
+
+# spearman: between -log10(p.val_genetic) & median(genes), median(umi), median(score_genetic)
+data_cor_Cell2location_Visium_mouse_brain_coronal_1_ALS = data.frame(median.genes = (cor(x=meta.data.ALS_Cell2location_Visium_mouse_brain_coronal_1$`-log10(p.val_genetic)`,y=meta.data.ALS_Cell2location_Visium_mouse_brain_coronal_1$`median(genes)`,method = "spearman")))
+data_cor_Cell2location_Visium_mouse_brain_coronal_1_ALS = cbind(data_cor_Cell2location_Visium_mouse_brain_coronal_1_ALS,data.frame(median.umi = (cor(x=meta.data.ALS_Cell2location_Visium_mouse_brain_coronal_1$`-log10(p.val_genetic)`,y=meta.data.ALS_Cell2location_Visium_mouse_brain_coronal_1$`median(umi)`,method = "spearman"))))
+data_cor_Cell2location_Visium_mouse_brain_coronal_1_ALS = cbind(data_cor_Cell2location_Visium_mouse_brain_coronal_1_ALS,data.frame(median.score_genetic = (cor(x=meta.data.ALS_Cell2location_Visium_mouse_brain_coronal_1$`-log10(p.val_genetic)`,y=meta.data.ALS_Cell2location_Visium_mouse_brain_coronal_1$`median(score_genetic)`,method = "spearman"))))
+data_cor_Cell2location_Visium_mouse_brain_coronal_1_ALS$trait <- "ALS"
+
+
+# spearman: between -log10(p.val_genetic) & median(genes), median(umi), median(score_genetic)
+data_cor_Cell2location_Visium_mouse_brain_coronal_1_ALZ = data.frame(median.genes = (cor(x=meta.data.ALZ_Cell2location_Visium_mouse_brain_coronal_1$`-log10(p.val_genetic)`,y=meta.data.ALZ_Cell2location_Visium_mouse_brain_coronal_1$`median(genes)`,method = "spearman")))
+data_cor_Cell2location_Visium_mouse_brain_coronal_1_ALZ = cbind(data_cor_Cell2location_Visium_mouse_brain_coronal_1_ALZ,data.frame(median.umi = (cor(x=meta.data.ALZ_Cell2location_Visium_mouse_brain_coronal_1$`-log10(p.val_genetic)`,y=meta.data.ALZ_Cell2location_Visium_mouse_brain_coronal_1$`median(umi)`,method = "spearman"))))
+data_cor_Cell2location_Visium_mouse_brain_coronal_1_ALZ = cbind(data_cor_Cell2location_Visium_mouse_brain_coronal_1_ALZ,data.frame(median.score_genetic = (cor(x=meta.data.ALZ_Cell2location_Visium_mouse_brain_coronal_1$`-log10(p.val_genetic)`,y=meta.data.ALZ_Cell2location_Visium_mouse_brain_coronal_1$`median(score_genetic)`,method = "spearman"))))
+data_cor_Cell2location_Visium_mouse_brain_coronal_1_ALZ$trait <- "ALZ"
+
+
+# spearman: between -log10(p.val_genetic) & median(genes), median(umi), median(score_genetic)
+data_cor_Cell2location_Visium_mouse_brain_coronal_1_ASD = data.frame(median.genes = (cor(x=meta.data.ASD_Cell2location_Visium_mouse_brain_coronal_1$`-log10(p.val_genetic)`,y=meta.data.ASD_Cell2location_Visium_mouse_brain_coronal_1$`median(genes)`,method = "spearman")))
+data_cor_Cell2location_Visium_mouse_brain_coronal_1_ASD = cbind(data_cor_Cell2location_Visium_mouse_brain_coronal_1_ASD,data.frame(median.umi = (cor(x=meta.data.ASD_Cell2location_Visium_mouse_brain_coronal_1$`-log10(p.val_genetic)`,y=meta.data.ASD_Cell2location_Visium_mouse_brain_coronal_1$`median(umi)`,method = "spearman"))))
+data_cor_Cell2location_Visium_mouse_brain_coronal_1_ASD = cbind(data_cor_Cell2location_Visium_mouse_brain_coronal_1_ASD,data.frame(median.score_genetic = (cor(x=meta.data.ASD_Cell2location_Visium_mouse_brain_coronal_1$`-log10(p.val_genetic)`,y=meta.data.ASD_Cell2location_Visium_mouse_brain_coronal_1$`median(score_genetic)`,method = "spearman"))))
+data_cor_Cell2location_Visium_mouse_brain_coronal_1_ASD$trait <- "ASD"
+
+
+# spearman: between -log10(p.val_genetic) & median(genes), median(umi), median(score_genetic)
+data_cor_Cell2location_Visium_mouse_brain_coronal_1_BIP = data.frame(median.genes = (cor(x=meta.data.BIP_Cell2location_Visium_mouse_brain_coronal_1$`-log10(p.val_genetic)`,y=meta.data.BIP_Cell2location_Visium_mouse_brain_coronal_1$`median(genes)`,method = "spearman")))
+data_cor_Cell2location_Visium_mouse_brain_coronal_1_BIP = cbind(data_cor_Cell2location_Visium_mouse_brain_coronal_1_BIP,data.frame(median.umi = (cor(x=meta.data.BIP_Cell2location_Visium_mouse_brain_coronal_1$`-log10(p.val_genetic)`,y=meta.data.BIP_Cell2location_Visium_mouse_brain_coronal_1$`median(umi)`,method = "spearman"))))
+data_cor_Cell2location_Visium_mouse_brain_coronal_1_BIP = cbind(data_cor_Cell2location_Visium_mouse_brain_coronal_1_BIP,data.frame(median.score_genetic = (cor(x=meta.data.BIP_Cell2location_Visium_mouse_brain_coronal_1$`-log10(p.val_genetic)`,y=meta.data.BIP_Cell2location_Visium_mouse_brain_coronal_1$`median(score_genetic)`,method = "spearman"))))
+data_cor_Cell2location_Visium_mouse_brain_coronal_1_BIP$trait <- "BIP"
+
+
+# spearman: between -log10(p.val_genetic) & median(genes), median(umi), median(score_genetic)
+data_cor_Cell2location_Visium_mouse_brain_coronal_1_EPI = data.frame(median.genes = (cor(x=meta.data.EPI_Cell2location_Visium_mouse_brain_coronal_1$`-log10(p.val_genetic)`,y=meta.data.EPI_Cell2location_Visium_mouse_brain_coronal_1$`median(genes)`,method = "spearman")))
+data_cor_Cell2location_Visium_mouse_brain_coronal_1_EPI = cbind(data_cor_Cell2location_Visium_mouse_brain_coronal_1_EPI,data.frame(median.umi = (cor(x=meta.data.EPI_Cell2location_Visium_mouse_brain_coronal_1$`-log10(p.val_genetic)`,y=meta.data.EPI_Cell2location_Visium_mouse_brain_coronal_1$`median(umi)`,method = "spearman"))))
+data_cor_Cell2location_Visium_mouse_brain_coronal_1_EPI = cbind(data_cor_Cell2location_Visium_mouse_brain_coronal_1_EPI,data.frame(median.score_genetic = (cor(x=meta.data.EPI_Cell2location_Visium_mouse_brain_coronal_1$`-log10(p.val_genetic)`,y=meta.data.EPI_Cell2location_Visium_mouse_brain_coronal_1$`median(score_genetic)`,method = "spearman"))))
+data_cor_Cell2location_Visium_mouse_brain_coronal_1_EPI$trait <- "EPI"
+
+
+# spearman: between -log10(p.val_genetic) & median(genes), median(umi), median(score_genetic)
+data_cor_Cell2location_Visium_mouse_brain_coronal_1_INS = data.frame(median.genes = (cor(x=meta.data.INS_Cell2location_Visium_mouse_brain_coronal_1$`-log10(p.val_genetic)`,y=meta.data.INS_Cell2location_Visium_mouse_brain_coronal_1$`median(genes)`,method = "spearman")))
+data_cor_Cell2location_Visium_mouse_brain_coronal_1_INS = cbind(data_cor_Cell2location_Visium_mouse_brain_coronal_1_INS,data.frame(median.umi = (cor(x=meta.data.INS_Cell2location_Visium_mouse_brain_coronal_1$`-log10(p.val_genetic)`,y=meta.data.INS_Cell2location_Visium_mouse_brain_coronal_1$`median(umi)`,method = "spearman"))))
+data_cor_Cell2location_Visium_mouse_brain_coronal_1_INS = cbind(data_cor_Cell2location_Visium_mouse_brain_coronal_1_INS,data.frame(median.score_genetic = (cor(x=meta.data.INS_Cell2location_Visium_mouse_brain_coronal_1$`-log10(p.val_genetic)`,y=meta.data.INS_Cell2location_Visium_mouse_brain_coronal_1$`median(score_genetic)`,method = "spearman"))))
+data_cor_Cell2location_Visium_mouse_brain_coronal_1_INS$trait <- "INS"
+
+
+# spearman: between -log10(p.val_genetic) & median(genes), median(umi), median(score_genetic)
+data_cor_Cell2location_Visium_mouse_brain_coronal_1_MDD = data.frame(median.genes = (cor(x=meta.data.MDD_Cell2location_Visium_mouse_brain_coronal_1$`-log10(p.val_genetic)`,y=meta.data.MDD_Cell2location_Visium_mouse_brain_coronal_1$`median(genes)`,method = "spearman")))
+data_cor_Cell2location_Visium_mouse_brain_coronal_1_MDD = cbind(data_cor_Cell2location_Visium_mouse_brain_coronal_1_MDD,data.frame(median.umi = (cor(x=meta.data.MDD_Cell2location_Visium_mouse_brain_coronal_1$`-log10(p.val_genetic)`,y=meta.data.MDD_Cell2location_Visium_mouse_brain_coronal_1$`median(umi)`,method = "spearman"))))
+data_cor_Cell2location_Visium_mouse_brain_coronal_1_MDD = cbind(data_cor_Cell2location_Visium_mouse_brain_coronal_1_MDD,data.frame(median.score_genetic = (cor(x=meta.data.MDD_Cell2location_Visium_mouse_brain_coronal_1$`-log10(p.val_genetic)`,y=meta.data.MDD_Cell2location_Visium_mouse_brain_coronal_1$`median(score_genetic)`,method = "spearman"))))
+data_cor_Cell2location_Visium_mouse_brain_coronal_1_MDD$trait <- "MDD"
+
+
+# spearman: between -log10(p.val_genetic) & median(genes), median(umi), median(score_genetic)
+data_cor_Cell2location_Visium_mouse_brain_coronal_1_MS = data.frame(median.genes = (cor(x=meta.data.MS_Cell2location_Visium_mouse_brain_coronal_1$`-log10(p.val_genetic)`,y=meta.data.MS_Cell2location_Visium_mouse_brain_coronal_1$`median(genes)`,method = "spearman")))
+data_cor_Cell2location_Visium_mouse_brain_coronal_1_MS = cbind(data_cor_Cell2location_Visium_mouse_brain_coronal_1_MS,data.frame(median.umi = (cor(x=meta.data.MS_Cell2location_Visium_mouse_brain_coronal_1$`-log10(p.val_genetic)`,y=meta.data.MS_Cell2location_Visium_mouse_brain_coronal_1$`median(umi)`,method = "spearman"))))
+data_cor_Cell2location_Visium_mouse_brain_coronal_1_MS = cbind(data_cor_Cell2location_Visium_mouse_brain_coronal_1_MS,data.frame(median.score_genetic = (cor(x=meta.data.MS_Cell2location_Visium_mouse_brain_coronal_1$`-log10(p.val_genetic)`,y=meta.data.MS_Cell2location_Visium_mouse_brain_coronal_1$`median(score_genetic)`,method = "spearman"))))
+data_cor_Cell2location_Visium_mouse_brain_coronal_1_MS$trait <- "MS"
+
+
+# spearman: between -log10(p.val_genetic) & median(genes), median(umi), median(score_genetic)
+data_cor_Cell2location_Visium_mouse_brain_coronal_1_PAR = data.frame(median.genes = (cor(x=meta.data.PAR_Cell2location_Visium_mouse_brain_coronal_1$`-log10(p.val_genetic)`,y=meta.data.PAR_Cell2location_Visium_mouse_brain_coronal_1$`median(genes)`,method = "spearman")))
+data_cor_Cell2location_Visium_mouse_brain_coronal_1_PAR = cbind(data_cor_Cell2location_Visium_mouse_brain_coronal_1_PAR,data.frame(median.umi = (cor(x=meta.data.PAR_Cell2location_Visium_mouse_brain_coronal_1$`-log10(p.val_genetic)`,y=meta.data.PAR_Cell2location_Visium_mouse_brain_coronal_1$`median(umi)`,method = "spearman"))))
+data_cor_Cell2location_Visium_mouse_brain_coronal_1_PAR = cbind(data_cor_Cell2location_Visium_mouse_brain_coronal_1_PAR,data.frame(median.score_genetic = (cor(x=meta.data.PAR_Cell2location_Visium_mouse_brain_coronal_1$`-log10(p.val_genetic)`,y=meta.data.PAR_Cell2location_Visium_mouse_brain_coronal_1$`median(score_genetic)`,method = "spearman"))))
+data_cor_Cell2location_Visium_mouse_brain_coronal_1_PAR$trait <- "PAR"
+
+
+# spearman: between -log10(p.val_genetic) & median(genes), median(umi), median(score_genetic)
+data_cor_Cell2location_Visium_mouse_brain_coronal_1_SCZ = data.frame(median.genes = (cor(x=meta.data.SCZ_Cell2location_Visium_mouse_brain_coronal_1$`-log10(p.val_genetic)`,y=meta.data.SCZ_Cell2location_Visium_mouse_brain_coronal_1$`median(genes)`,method = "spearman")))
+data_cor_Cell2location_Visium_mouse_brain_coronal_1_SCZ = cbind(data_cor_Cell2location_Visium_mouse_brain_coronal_1_SCZ,data.frame(median.umi = (cor(x=meta.data.SCZ_Cell2location_Visium_mouse_brain_coronal_1$`-log10(p.val_genetic)`,y=meta.data.SCZ_Cell2location_Visium_mouse_brain_coronal_1$`median(umi)`,method = "spearman"))))
+data_cor_Cell2location_Visium_mouse_brain_coronal_1_SCZ = cbind(data_cor_Cell2location_Visium_mouse_brain_coronal_1_SCZ,data.frame(median.score_genetic = (cor(x=meta.data.SCZ_Cell2location_Visium_mouse_brain_coronal_1$`-log10(p.val_genetic)`,y=meta.data.SCZ_Cell2location_Visium_mouse_brain_coronal_1$`median(score_genetic)`,method = "spearman"))))
+data_cor_Cell2location_Visium_mouse_brain_coronal_1_SCZ$trait <- "SCZ"
+
+
+
+data_cor_Cell2location_Visium_mouse_brain_coronal_1_all <- rbind(data_cor_Cell2location_Visium_mouse_brain_coronal_1_ADHD,data_cor_Cell2location_Visium_mouse_brain_coronal_1_AHD)
+data_cor_Cell2location_Visium_mouse_brain_coronal_1_all <- rbind(data_cor_Cell2location_Visium_mouse_brain_coronal_1_all,data_cor_Cell2location_Visium_mouse_brain_coronal_1_ALS)
+data_cor_Cell2location_Visium_mouse_brain_coronal_1_all <- rbind(data_cor_Cell2location_Visium_mouse_brain_coronal_1_all,data_cor_Cell2location_Visium_mouse_brain_coronal_1_ALZ)
+data_cor_Cell2location_Visium_mouse_brain_coronal_1_all <- rbind(data_cor_Cell2location_Visium_mouse_brain_coronal_1_all,data_cor_Cell2location_Visium_mouse_brain_coronal_1_ASD)
+data_cor_Cell2location_Visium_mouse_brain_coronal_1_all <- rbind(data_cor_Cell2location_Visium_mouse_brain_coronal_1_all,data_cor_Cell2location_Visium_mouse_brain_coronal_1_BIP)
+data_cor_Cell2location_Visium_mouse_brain_coronal_1_all <- rbind(data_cor_Cell2location_Visium_mouse_brain_coronal_1_all,data_cor_Cell2location_Visium_mouse_brain_coronal_1_EPI)
+data_cor_Cell2location_Visium_mouse_brain_coronal_1_all <- rbind(data_cor_Cell2location_Visium_mouse_brain_coronal_1_all,data_cor_Cell2location_Visium_mouse_brain_coronal_1_INS)
+data_cor_Cell2location_Visium_mouse_brain_coronal_1_all <- rbind(data_cor_Cell2location_Visium_mouse_brain_coronal_1_all,data_cor_Cell2location_Visium_mouse_brain_coronal_1_MDD)
+data_cor_Cell2location_Visium_mouse_brain_coronal_1_all <- rbind(data_cor_Cell2location_Visium_mouse_brain_coronal_1_all,data_cor_Cell2location_Visium_mouse_brain_coronal_1_MS)
+data_cor_Cell2location_Visium_mouse_brain_coronal_1_all <- rbind(data_cor_Cell2location_Visium_mouse_brain_coronal_1_all,data_cor_Cell2location_Visium_mouse_brain_coronal_1_PAR)
+data_cor_Cell2location_Visium_mouse_brain_coronal_1_all <- rbind(data_cor_Cell2location_Visium_mouse_brain_coronal_1_all,data_cor_Cell2location_Visium_mouse_brain_coronal_1_SCZ)
+```
+
+## median.genes
+```{r}
+
+# basic histogram
+p <- ggplot(data_cor_Cell2location_Visium_mouse_brain_coronal_1_all, aes(x=median.genes)) + 
+  geom_histogram(binwidth=0.05,color="black", fill="grey") + 
+  xlim(-2,2) +
+  theme_minimal()
+
+p
+```
+
+
+## median.umi
+```{r}
+
+# basic histogram
+p <- ggplot(data_cor_Cell2location_Visium_mouse_brain_coronal_1_all, aes(x=median.umi)) + 
+  geom_histogram(binwidth=0.05,color="black", fill="grey") + 
+  xlim(-2,2) +
+  theme_minimal()
+
+p
+```
+
+## median.score_genetic
+```{r}
+
+# basic histogram
+p <- ggplot(data_cor_Cell2location_Visium_mouse_brain_coronal_1_all, aes(x=median.score_genetic)) + 
+  geom_histogram(binwidth=0.05,color="black", fill="grey") + 
+  xlim(-2,2) +
+  theme_minimal()
+
+p
+```
+
+
+
+
+
+# 10X_Visium_mouse_brain_coronal
+```{r}
+# 10X_Visium_mouse_brain_coronal
+
+# spearman: between -log10(p.val_genetic) & median(genes), median(umi), median(score_genetic)
+data_cor_10X_Visium_mouse_brain_coronal_ADHD = data.frame(median.genes = (cor(x=meta.data.ADHD_10X_Visium_mouse_brain_coronal$`-log10(p.val_genetic)`,y=meta.data.ADHD_10X_Visium_mouse_brain_coronal$`median(genes)`,method = "spearman")))
+data_cor_10X_Visium_mouse_brain_coronal_ADHD = cbind(data_cor_10X_Visium_mouse_brain_coronal_ADHD,data.frame(median.umi = (cor(x=meta.data.ADHD_10X_Visium_mouse_brain_coronal$`-log10(p.val_genetic)`,y=meta.data.ADHD_10X_Visium_mouse_brain_coronal$`median(umi)`,method = "spearman"))))
+data_cor_10X_Visium_mouse_brain_coronal_ADHD = cbind(data_cor_10X_Visium_mouse_brain_coronal_ADHD,data.frame(median.score_genetic = (cor(x=meta.data.ADHD_10X_Visium_mouse_brain_coronal$`-log10(p.val_genetic)`,y=meta.data.ADHD_10X_Visium_mouse_brain_coronal$`median(score_genetic)`,method = "spearman"))))
+data_cor_10X_Visium_mouse_brain_coronal_ADHD$trait <- "ADHD"
+
+# spearman: between -log10(p.val_genetic) & median(genes), median(umi), median(score_genetic)
+data_cor_10X_Visium_mouse_brain_coronal_AHD = data.frame(median.genes = (cor(x=meta.data.AHD_10X_Visium_mouse_brain_coronal$`-log10(p.val_genetic)`,y=meta.data.AHD_10X_Visium_mouse_brain_coronal$`median(genes)`,method = "spearman")))
+data_cor_10X_Visium_mouse_brain_coronal_AHD = cbind(data_cor_10X_Visium_mouse_brain_coronal_AHD,data.frame(median.umi = (cor(x=meta.data.AHD_10X_Visium_mouse_brain_coronal$`-log10(p.val_genetic)`,y=meta.data.AHD_10X_Visium_mouse_brain_coronal$`median(umi)`,method = "spearman"))))
+data_cor_10X_Visium_mouse_brain_coronal_AHD = cbind(data_cor_10X_Visium_mouse_brain_coronal_AHD,data.frame(median.score_genetic = (cor(x=meta.data.AHD_10X_Visium_mouse_brain_coronal$`-log10(p.val_genetic)`,y=meta.data.AHD_10X_Visium_mouse_brain_coronal$`median(score_genetic)`,method = "spearman"))))
+data_cor_10X_Visium_mouse_brain_coronal_AHD$trait <- "AHD"
+
+# spearman: between -log10(p.val_genetic) & median(genes), median(umi), median(score_genetic)
+data_cor_10X_Visium_mouse_brain_coronal_ALS = data.frame(median.genes = (cor(x=meta.data.ALS_10X_Visium_mouse_brain_coronal$`-log10(p.val_genetic)`,y=meta.data.ALS_10X_Visium_mouse_brain_coronal$`median(genes)`,method = "spearman")))
+data_cor_10X_Visium_mouse_brain_coronal_ALS = cbind(data_cor_10X_Visium_mouse_brain_coronal_ALS,data.frame(median.umi = (cor(x=meta.data.ALS_10X_Visium_mouse_brain_coronal$`-log10(p.val_genetic)`,y=meta.data.ALS_10X_Visium_mouse_brain_coronal$`median(umi)`,method = "spearman"))))
+data_cor_10X_Visium_mouse_brain_coronal_ALS = cbind(data_cor_10X_Visium_mouse_brain_coronal_ALS,data.frame(median.score_genetic = (cor(x=meta.data.ALS_10X_Visium_mouse_brain_coronal$`-log10(p.val_genetic)`,y=meta.data.ALS_10X_Visium_mouse_brain_coronal$`median(score_genetic)`,method = "spearman"))))
+data_cor_10X_Visium_mouse_brain_coronal_ALS$trait <- "ALS"
+
+# spearman: between -log10(p.val_genetic) & median(genes), median(umi), median(score_genetic)
+data_cor_10X_Visium_mouse_brain_coronal_ALZ = data.frame(median.genes = (cor(x=meta.data.ALZ_10X_Visium_mouse_brain_coronal$`-log10(p.val_genetic)`,y=meta.data.ALZ_10X_Visium_mouse_brain_coronal$`median(genes)`,method = "spearman")))
+data_cor_10X_Visium_mouse_brain_coronal_ALZ = cbind(data_cor_10X_Visium_mouse_brain_coronal_ALZ,data.frame(median.umi = (cor(x=meta.data.ALZ_10X_Visium_mouse_brain_coronal$`-log10(p.val_genetic)`,y=meta.data.ALZ_10X_Visium_mouse_brain_coronal$`median(umi)`,method = "spearman"))))
+data_cor_10X_Visium_mouse_brain_coronal_ALZ = cbind(data_cor_10X_Visium_mouse_brain_coronal_ALZ,data.frame(median.score_genetic = (cor(x=meta.data.ALZ_10X_Visium_mouse_brain_coronal$`-log10(p.val_genetic)`,y=meta.data.ALZ_10X_Visium_mouse_brain_coronal$`median(score_genetic)`,method = "spearman"))))
+data_cor_10X_Visium_mouse_brain_coronal_ALZ$trait <- "ALZ"
+
+
+# spearman: between -log10(p.val_genetic) & median(genes), median(umi), median(score_genetic)
+data_cor_10X_Visium_mouse_brain_coronal_ASD = data.frame(median.genes = (cor(x=meta.data.ASD_10X_Visium_mouse_brain_coronal$`-log10(p.val_genetic)`,y=meta.data.ASD_10X_Visium_mouse_brain_coronal$`median(genes)`,method = "spearman")))
+data_cor_10X_Visium_mouse_brain_coronal_ASD = cbind(data_cor_10X_Visium_mouse_brain_coronal_ASD,data.frame(median.umi = (cor(x=meta.data.ASD_10X_Visium_mouse_brain_coronal$`-log10(p.val_genetic)`,y=meta.data.ASD_10X_Visium_mouse_brain_coronal$`median(umi)`,method = "spearman"))))
+data_cor_10X_Visium_mouse_brain_coronal_ASD = cbind(data_cor_10X_Visium_mouse_brain_coronal_ASD,data.frame(median.score_genetic = (cor(x=meta.data.ASD_10X_Visium_mouse_brain_coronal$`-log10(p.val_genetic)`,y=meta.data.ASD_10X_Visium_mouse_brain_coronal$`median(score_genetic)`,method = "spearman"))))
+data_cor_10X_Visium_mouse_brain_coronal_ASD$trait <- "ASD"
+
+
+# spearman: between -log10(p.val_genetic) & median(genes), median(umi), median(score_genetic)
+data_cor_10X_Visium_mouse_brain_coronal_BIP = data.frame(median.genes = (cor(x=meta.data.BIP_10X_Visium_mouse_brain_coronal$`-log10(p.val_genetic)`,y=meta.data.BIP_10X_Visium_mouse_brain_coronal$`median(genes)`,method = "spearman")))
+data_cor_10X_Visium_mouse_brain_coronal_BIP = cbind(data_cor_10X_Visium_mouse_brain_coronal_BIP,data.frame(median.umi = (cor(x=meta.data.BIP_10X_Visium_mouse_brain_coronal$`-log10(p.val_genetic)`,y=meta.data.BIP_10X_Visium_mouse_brain_coronal$`median(umi)`,method = "spearman"))))
+data_cor_10X_Visium_mouse_brain_coronal_BIP = cbind(data_cor_10X_Visium_mouse_brain_coronal_BIP,data.frame(median.score_genetic = (cor(x=meta.data.BIP_10X_Visium_mouse_brain_coronal$`-log10(p.val_genetic)`,y=meta.data.BIP_10X_Visium_mouse_brain_coronal$`median(score_genetic)`,method = "spearman"))))
+data_cor_10X_Visium_mouse_brain_coronal_BIP$trait <- "BIP"
+
+
+# spearman: between -log10(p.val_genetic) & median(genes), median(umi), median(score_genetic)
+data_cor_10X_Visium_mouse_brain_coronal_EPI = data.frame(median.genes = (cor(x=meta.data.EPI_10X_Visium_mouse_brain_coronal$`-log10(p.val_genetic)`,y=meta.data.EPI_10X_Visium_mouse_brain_coronal$`median(genes)`,method = "spearman")))
+data_cor_10X_Visium_mouse_brain_coronal_EPI = cbind(data_cor_10X_Visium_mouse_brain_coronal_EPI,data.frame(median.umi = (cor(x=meta.data.EPI_10X_Visium_mouse_brain_coronal$`-log10(p.val_genetic)`,y=meta.data.EPI_10X_Visium_mouse_brain_coronal$`median(umi)`,method = "spearman"))))
+data_cor_10X_Visium_mouse_brain_coronal_EPI = cbind(data_cor_10X_Visium_mouse_brain_coronal_EPI,data.frame(median.score_genetic = (cor(x=meta.data.EPI_10X_Visium_mouse_brain_coronal$`-log10(p.val_genetic)`,y=meta.data.EPI_10X_Visium_mouse_brain_coronal$`median(score_genetic)`,method = "spearman"))))
+data_cor_10X_Visium_mouse_brain_coronal_EPI$trait <- "EPI"
+
+
+# spearman: between -log10(p.val_genetic) & median(genes), median(umi), median(score_genetic)
+data_cor_10X_Visium_mouse_brain_coronal_INS = data.frame(median.genes = (cor(x=meta.data.INS_10X_Visium_mouse_brain_coronal$`-log10(p.val_genetic)`,y=meta.data.INS_10X_Visium_mouse_brain_coronal$`median(genes)`,method = "spearman")))
+data_cor_10X_Visium_mouse_brain_coronal_INS = cbind(data_cor_10X_Visium_mouse_brain_coronal_INS,data.frame(median.umi = (cor(x=meta.data.INS_10X_Visium_mouse_brain_coronal$`-log10(p.val_genetic)`,y=meta.data.INS_10X_Visium_mouse_brain_coronal$`median(umi)`,method = "spearman"))))
+data_cor_10X_Visium_mouse_brain_coronal_INS = cbind(data_cor_10X_Visium_mouse_brain_coronal_INS,data.frame(median.score_genetic = (cor(x=meta.data.INS_10X_Visium_mouse_brain_coronal$`-log10(p.val_genetic)`,y=meta.data.INS_10X_Visium_mouse_brain_coronal$`median(score_genetic)`,method = "spearman"))))
+data_cor_10X_Visium_mouse_brain_coronal_INS$trait <- "INS"
+
+
+# spearman: between -log10(p.val_genetic) & median(genes), median(umi), median(score_genetic)
+data_cor_10X_Visium_mouse_brain_coronal_MDD = data.frame(median.genes = (cor(x=meta.data.MDD_10X_Visium_mouse_brain_coronal$`-log10(p.val_genetic)`,y=meta.data.MDD_10X_Visium_mouse_brain_coronal$`median(genes)`,method = "spearman")))
+data_cor_10X_Visium_mouse_brain_coronal_MDD = cbind(data_cor_10X_Visium_mouse_brain_coronal_MDD,data.frame(median.umi = (cor(x=meta.data.MDD_10X_Visium_mouse_brain_coronal$`-log10(p.val_genetic)`,y=meta.data.MDD_10X_Visium_mouse_brain_coronal$`median(umi)`,method = "spearman"))))
+data_cor_10X_Visium_mouse_brain_coronal_MDD = cbind(data_cor_10X_Visium_mouse_brain_coronal_MDD,data.frame(median.score_genetic = (cor(x=meta.data.MDD_10X_Visium_mouse_brain_coronal$`-log10(p.val_genetic)`,y=meta.data.MDD_10X_Visium_mouse_brain_coronal$`median(score_genetic)`,method = "spearman"))))
+data_cor_10X_Visium_mouse_brain_coronal_MDD$trait <- "MDD"
+
+
+# spearman: between -log10(p.val_genetic) & median(genes), median(umi), median(score_genetic)
+data_cor_10X_Visium_mouse_brain_coronal_MS = data.frame(median.genes = (cor(x=meta.data.MS_10X_Visium_mouse_brain_coronal$`-log10(p.val_genetic)`,y=meta.data.MS_10X_Visium_mouse_brain_coronal$`median(genes)`,method = "spearman")))
+data_cor_10X_Visium_mouse_brain_coronal_MS = cbind(data_cor_10X_Visium_mouse_brain_coronal_MS,data.frame(median.umi = (cor(x=meta.data.MS_10X_Visium_mouse_brain_coronal$`-log10(p.val_genetic)`,y=meta.data.MS_10X_Visium_mouse_brain_coronal$`median(umi)`,method = "spearman"))))
+data_cor_10X_Visium_mouse_brain_coronal_MS = cbind(data_cor_10X_Visium_mouse_brain_coronal_MS,data.frame(median.score_genetic = (cor(x=meta.data.MS_10X_Visium_mouse_brain_coronal$`-log10(p.val_genetic)`,y=meta.data.MS_10X_Visium_mouse_brain_coronal$`median(score_genetic)`,method = "spearman"))))
+data_cor_10X_Visium_mouse_brain_coronal_MS$trait <- "MS"
+
+
+# spearman: between -log10(p.val_genetic) & median(genes), median(umi), median(score_genetic)
+data_cor_10X_Visium_mouse_brain_coronal_PAR = data.frame(median.genes = (cor(x=meta.data.PAR_10X_Visium_mouse_brain_coronal$`-log10(p.val_genetic)`,y=meta.data.PAR_10X_Visium_mouse_brain_coronal$`median(genes)`,method = "spearman")))
+data_cor_10X_Visium_mouse_brain_coronal_PAR = cbind(data_cor_10X_Visium_mouse_brain_coronal_PAR,data.frame(median.umi = (cor(x=meta.data.PAR_10X_Visium_mouse_brain_coronal$`-log10(p.val_genetic)`,y=meta.data.PAR_10X_Visium_mouse_brain_coronal$`median(umi)`,method = "spearman"))))
+data_cor_10X_Visium_mouse_brain_coronal_PAR = cbind(data_cor_10X_Visium_mouse_brain_coronal_PAR,data.frame(median.score_genetic = (cor(x=meta.data.PAR_10X_Visium_mouse_brain_coronal$`-log10(p.val_genetic)`,y=meta.data.PAR_10X_Visium_mouse_brain_coronal$`median(score_genetic)`,method = "spearman"))))
+data_cor_10X_Visium_mouse_brain_coronal_PAR$trait <- "PAR"
+
+
+# spearman: between -log10(p.val_genetic) & median(genes), median(umi), median(score_genetic)
+data_cor_10X_Visium_mouse_brain_coronal_SCZ = data.frame(median.genes = (cor(x=meta.data.SCZ_10X_Visium_mouse_brain_coronal$`-log10(p.val_genetic)`,y=meta.data.SCZ_10X_Visium_mouse_brain_coronal$`median(genes)`,method = "spearman")))
+data_cor_10X_Visium_mouse_brain_coronal_SCZ = cbind(data_cor_10X_Visium_mouse_brain_coronal_SCZ,data.frame(median.umi = (cor(x=meta.data.SCZ_10X_Visium_mouse_brain_coronal$`-log10(p.val_genetic)`,y=meta.data.SCZ_10X_Visium_mouse_brain_coronal$`median(umi)`,method = "spearman"))))
+data_cor_10X_Visium_mouse_brain_coronal_SCZ = cbind(data_cor_10X_Visium_mouse_brain_coronal_SCZ,data.frame(median.score_genetic = (cor(x=meta.data.SCZ_10X_Visium_mouse_brain_coronal$`-log10(p.val_genetic)`,y=meta.data.SCZ_10X_Visium_mouse_brain_coronal$`median(score_genetic)`,method = "spearman"))))
+data_cor_10X_Visium_mouse_brain_coronal_SCZ$trait <- "SCZ"
+
+
+
+data_cor_10X_Visium_mouse_brain_coronal_all <- rbind(data_cor_10X_Visium_mouse_brain_coronal_ADHD,data_cor_10X_Visium_mouse_brain_coronal_AHD)
+data_cor_10X_Visium_mouse_brain_coronal_all <- rbind(data_cor_10X_Visium_mouse_brain_coronal_all,data_cor_10X_Visium_mouse_brain_coronal_ALS)
+data_cor_10X_Visium_mouse_brain_coronal_all <- rbind(data_cor_10X_Visium_mouse_brain_coronal_all,data_cor_10X_Visium_mouse_brain_coronal_ALZ)
+data_cor_10X_Visium_mouse_brain_coronal_all <- rbind(data_cor_10X_Visium_mouse_brain_coronal_all,data_cor_10X_Visium_mouse_brain_coronal_ASD)
+data_cor_10X_Visium_mouse_brain_coronal_all <- rbind(data_cor_10X_Visium_mouse_brain_coronal_all,data_cor_10X_Visium_mouse_brain_coronal_BIP)
+data_cor_10X_Visium_mouse_brain_coronal_all <- rbind(data_cor_10X_Visium_mouse_brain_coronal_all,data_cor_10X_Visium_mouse_brain_coronal_EPI)
+data_cor_10X_Visium_mouse_brain_coronal_all <- rbind(data_cor_10X_Visium_mouse_brain_coronal_all,data_cor_10X_Visium_mouse_brain_coronal_INS)
+data_cor_10X_Visium_mouse_brain_coronal_all <- rbind(data_cor_10X_Visium_mouse_brain_coronal_all,data_cor_10X_Visium_mouse_brain_coronal_MDD)
+data_cor_10X_Visium_mouse_brain_coronal_all <- rbind(data_cor_10X_Visium_mouse_brain_coronal_all,data_cor_10X_Visium_mouse_brain_coronal_MS)
+data_cor_10X_Visium_mouse_brain_coronal_all <- rbind(data_cor_10X_Visium_mouse_brain_coronal_all,data_cor_10X_Visium_mouse_brain_coronal_PAR)
+data_cor_10X_Visium_mouse_brain_coronal_all <- rbind(data_cor_10X_Visium_mouse_brain_coronal_all,data_cor_10X_Visium_mouse_brain_coronal_SCZ)
+```
+
+## median.genes
+```{r}
+
+# basic histogram
+p <- ggplot(data_cor_10X_Visium_mouse_brain_coronal_all, aes(x=median.genes)) + 
+  geom_histogram(binwidth=0.05,color="black", fill="grey") + 
+  xlim(-2,2) +
+  theme_minimal()
+
+p
+```
+
+
+## median.umi
+```{r}
+
+# basic histogram
+p <- ggplot(data_cor_10X_Visium_mouse_brain_coronal_all, aes(x=median.umi)) + 
+  geom_histogram(binwidth=0.05,color="black", fill="grey") + 
+  xlim(-2,2) +
+  theme_minimal()
+
+p
+```
+
+## median.score_genetic
+```{r}
+
+# basic histogram
+p <- ggplot(data_cor_10X_Visium_mouse_brain_coronal_all, aes(x=median.score_genetic)) + 
+  geom_histogram(binwidth=0.05,color="black", fill="grey") + 
+  xlim(-2,2) +
+  theme_minimal()
+
+p
+```
+
+
+
+
+# Merge all histogram
+```{r}
+
+data_cor_Human_brain_DLPFC_151673_all$dataset <- "Human_brain_DLPFC_151673"
+data_cor_Human_brain_DLPFC_151673_all
+data_cor_Human_brain_DLPFC_151509_all$dataset <- "Human_brain_DLPFC_151509"
+data_cor_Human_brain_DLPFC_151509_all
+data_cor_Cell2location_Visium_mouse_brain_coronal_1_all$dataset <- "Cell2location_Visium_mouse_brain_coronal_1"
+data_cor_Cell2location_Visium_mouse_brain_coronal_1_all
+data_cor_10X_Visium_mouse_brain_coronal_all$dataset <- "10X_Visium_mouse_brain_coronal"
+data_cor_10X_Visium_mouse_brain_coronal_all
+
+
+#Merge
+data_cor_brain_all_traits <- rbind(data_cor_Human_brain_DLPFC_151673_all,data_cor_Human_brain_DLPFC_151509_all)
+data_cor_brain_all_traits <- rbind(data_cor_brain_all_traits,data_cor_Cell2location_Visium_mouse_brain_coronal_1_all)
+data_cor_brain_all_traits <- rbind(data_cor_brain_all_traits,data_cor_10X_Visium_mouse_brain_coronal_all)
+
+#Save data
+#saveRDS(data_cor_brain_all_traits, file = "pval_data_cor_organs_all_traits_spearman/data_cor_brain_all_traits_spearman.rds")
+#write.matrix(data_cor_brain_all_traits,file="pval_data_cor_organs_all_traits_spearman/data_cor_brain_all_traits_spearman.csv",sep = ";")
+
+```
+
+
+## median.genes
+```{r}
+
+# basic histogram
+p <- ggplot(data_cor_brain_all_traits, aes(x=median.genes)) + 
+  geom_histogram(binwidth=0.05,color="black", fill="grey") + 
+  xlim(-2,2) +
+  theme_minimal()
+
+p
+```
+Median Genes
+```{r}
+# basic histogram
+data_cor_brain_all_traits_no_na <- na.exclude(data_cor_brain_all_traits)
+
+p <- ggplot(data_cor_brain_all_traits_no_na, aes(x=median.genes)) + 
+  geom_histogram(bins = (length(data_cor_brain_all_traits_no_na$median.genes))*2,color="black", fill="grey") + 
+  xlim(-2,2) +
+  theme_minimal()+
+  geom_vline(aes(xintercept=median(median.genes)),color="blue", linetype="dashed", size=1)
+
+p
+
+print("median")
+median(data_cor_brain_all_traits_no_na$median.genes)
+print("mean")
+mean(data_cor_brain_all_traits_no_na$median.genes)
+print("standard deviation")
+sd(data_cor_brain_all_traits_no_na$median.genes)
+```
+
+
+## median.umi
+```{r}
+
+# basic histogram
+p <- ggplot(data_cor_brain_all_traits, aes(x=median.umi)) + 
+  geom_histogram(binwidth=0.05,color="black", fill="grey") + 
+  xlim(-2,2) +
+  theme_minimal()
+
+p
+```
+
+Median UMI
+```{r}
+# basic histogram
+data_cor_brain_all_traits_no_na <- na.exclude(data_cor_brain_all_traits)
+
+p <- ggplot(data_cor_brain_all_traits_no_na, aes(x=median.umi)) + 
+  geom_histogram(bins = (length(data_cor_brain_all_traits_no_na$median.umi))*2,color="black", fill="grey") + 
+  xlim(-2,2) +
+  theme_minimal()+
+  geom_vline(aes(xintercept=median(median.umi)),color="blue", linetype="dashed", size=1)
+
+p
+
+print("median")
+median(data_cor_brain_all_traits_no_na$median.umi)
+print("mean")
+mean(data_cor_brain_all_traits_no_na$median.umi)
+print("standard deviation")
+sd(data_cor_brain_all_traits_no_na$median.umi)
+```
+
+
+## median.score_genetic
+```{r}
+
+# basic histogram
+p <- ggplot(data_cor_brain_all_traits, aes(x=median.score_genetic)) + 
+  geom_histogram(binwidth=0.05,color="black", fill="grey") + 
+  xlim(-2,2) +
+  theme_minimal()
+
+p
+```
+
+Median score genetic
+```{r}
+# basic histogram
+data_cor_brain_all_traits_no_na <- na.exclude(data_cor_brain_all_traits)
+
+p <- ggplot(data_cor_brain_all_traits_no_na, aes(x=median.score_genetic)) + 
+  geom_histogram(bins = (length(data_cor_brain_all_traits_no_na$median.score_genetic))*2,color="black", fill="grey") + 
+  xlim(-2,2) +
+  theme_minimal()+
+  geom_vline(aes(xintercept=median(median.score_genetic)),color="blue", linetype="dashed", size=1)
+
+p
+
+print("median")
+median(data_cor_brain_all_traits_no_na$median.score_genetic)
+print("mean")
+mean(data_cor_brain_all_traits_no_na$median.score_genetic)
+print("standard deviation")
+sd(data_cor_brain_all_traits_no_na$median.score_genetic)
+```
+
+
+# Merge all Boxplot
+
+## median.genes
+```{r}
+# Boxplot
+
+data_cor_brain_all_traits %>%
+  ggplot( aes(x=trait, y=median.genes, fill=trait)) +
+    geom_boxplot() +
+    scale_fill_viridis(discrete = TRUE, alpha=0.6) +
+    geom_point(color="black", size=2, alpha=0.9) +
+    theme_classic() +
+    ggtitle("Spearman cor. with -log10(p-value)")
+
+```
+
+
+## median.umi
+```{r}
+# Boxplot
+
+data_cor_brain_all_traits %>%
+  ggplot( aes(x=trait, y=median.umi, fill=trait)) +
+    geom_boxplot() +
+    scale_fill_viridis(discrete = TRUE, alpha=0.6) +
+    geom_point(color="black", size=2, alpha=0.9) +
+    theme_classic() +
+    ggtitle("Spearman cor. with -log10(p-value)")
+```
+
+
+## median.score_genetic
+```{r}
+# Boxplot
+
+data_cor_brain_all_traits %>%
+  ggplot( aes(x=trait, y=median.score_genetic, fill=trait)) +
+    geom_boxplot() +
+    scale_fill_viridis(discrete = TRUE, alpha=0.6) +
+    geom_point(color="black", size=2, alpha=0.9) +
+    theme_classic() +
+    ggtitle("Spearman cor. with -log10(p-value)")
+```
+
+# Notes
+```{r}
+sessionInfo()
+```
+

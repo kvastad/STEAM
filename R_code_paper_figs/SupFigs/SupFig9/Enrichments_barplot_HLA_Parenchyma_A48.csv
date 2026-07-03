@@ -1,0 +1,22 @@
+﻿Enrichment;Trait;Structures;Gene set;Comment
+n.s. genetic all;AST;6;Genetic_all;HLA_Parenchyma_A48
+significant genetic all;AST;0;Genetic_all;HLA_Parenchyma_A48
+N/A;AST;6;Genetic_top;HLA_Parenchyma_A48
+n.s. drugs all;AST;6;Drugs_all;HLA_Parenchyma_A48
+significant drugs all;AST;0;Drugs_all;HLA_Parenchyma_A48
+n.s. genetic all;BRD;6;Genetic_all;HLA_Parenchyma_A48
+significant genetic all;BRD;0;Genetic_all;HLA_Parenchyma_A48
+N/A;BRD;6;Genetic_top;HLA_Parenchyma_A48
+n.s. drugs all;BRD;6;Drugs_all;HLA_Parenchyma_A48
+significant drugs all;BRD;0;Drugs_all;HLA_Parenchyma_A48
+n.s. genetic all;COPD;6;Genetic_all;HLA_Parenchyma_A48
+significant genetic all;COPD;0;Genetic_all;HLA_Parenchyma_A48
+N/A;COPD;6;Genetic_top;HLA_Parenchyma_A48
+n.s. drugs all;COPD;0;Drugs_all;HLA_Parenchyma_A48
+significant drugs all;COPD;6;Drugs_all;HLA_Parenchyma_A48
+n.s. genetic all;LUD;0;Genetic_all;HLA_Parenchyma_A48
+significant genetic all;LUD;6;Genetic_all;HLA_Parenchyma_A48
+n.s. genetic top;LUD;0;Genetic_top;HLA_Parenchyma_A48
+significant genetic top;LUD;6;Genetic_top;HLA_Parenchyma_A48
+n.s. drugs all;LUD;6;Drugs_all;HLA_Parenchyma_A48
+significant drugs all;LUD;0;Drugs_all;HLA_Parenchyma_A48

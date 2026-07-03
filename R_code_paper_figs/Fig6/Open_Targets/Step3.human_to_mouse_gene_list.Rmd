@@ -1,0 +1,98 @@
+---
+title: "Step3. Human-to-Mouse genes"
+output: 
+  rmarkdown::html_document:
+    toc: true
+    toc_float: true
+    number_sections: true
+    theme: readable
+vignette: >
+  %\VignetteIndexEntry{My Standalone Vignette}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+In this vignette we convert the Open Targets gene list from human to mouse genes.
+
+# Load data
+
+Load libraries.
+```{r, message=FALSE, warning=FALSE}
+library(dplyr)
+library(tidyverse)
+```
+
+
+Load data.
+```{r}
+human_mouse_convert <- read.delim("mouse_human_genes_20250826.tsv", header = TRUE, sep = "\t")
+OTdata <- read.csv("data/ranked_gene_sets/OT-MONDO_0005090-associated-targets-5_15_2026-v26_03_SCZ_genetic.csv", header = F)
+```
+
+
+Preprocess data.frame file.
+```{r}
+human_mouse_convert <- subset(human_mouse_convert, select = c("hgnc_symbol","mgi_symbol"))
+colnames(OTdata) <- "hgnc_symbol"
+```
+
+
+# Human to Mouse
+
+Join files and keep order in OTdata.
+```{r}
+OTdata <- OTdata %>%
+  left_join(
+    human_mouse_convert %>% dplyr::select(hgnc_symbol, mgi_symbol),
+    by = "hgnc_symbol"
+  )
+```
+
+
+Check for and remove duplicate rows.
+```{r}
+# Number of duplicate rows
+sum(duplicated(OTdata))
+
+# Check duplicate genes
+sum(duplicated(OTdata$hgnc_symbol))
+
+# Check NA
+sum(is.na(OTdata))
+
+# Keep only the first occurrence of each hgnc_symbol
+OTdata <- OTdata[!duplicated(OTdata$hgnc_symbol), ]
+
+# Remove all rows containing NA in mgi_symbol
+OTdata <- OTdata[!is.na(OTdata$mgi_symbol), ]
+
+# Number of duplicate rows
+sum(duplicated(OTdata))
+
+# Check duplicate genes
+sum(duplicated(OTdata$hgnc_symbol))
+
+# Check NA
+sum(is.na(OTdata))
+```
+
+
+Save
+```{r, eval=FALSE}
+write.table(OTdata$mgi_symbol, file = "data/ranked_gene_sets/OT-MONDO_0005090-associated-targets-5_15_2026-v26_03_SCZ_genetic_mouse.csv", row.names = FALSE, col.names = FALSE, quote = FALSE, sep = ",")
+
+write.table(OTdata, file = "data/Human_to_mouse_genes/OTdata_SCZ_genetic.csv", row.names = FALSE, col.names = T, quote = FALSE, sep = ",")
+
+```
+
+
+
+<details>
+  <summary>Click to show Session Info</summary>
+
+```{r}
+sessionInfo()
+```
+
+</details>
+

@@ -1,0 +1,625 @@
+---
+title: "pval_distribution_all_cor_[intestine_datasets]_spearman"
+author: "Linda Kvastad"
+date: '`r format(Sys.Date(), "%B %d, %Y")`'
+output:
+ html_document:
+    toc: true
+    toc_depth: 3
+    toc_float: true
+    code_folding: hide
+---
+
+NOTE: Script for calculating Spearman correlations across spatial structures for selected tissue-trait pairs from all genetically associated genes. Comparing p-values and a) genes or b) UMIs. This was done for data generated for each organ and the output summarized in organ specific files. See folder named 'pval_data_cor_organs_all_traits_spearman' for all such files.
+
+# Load libraries
+```{r}
+library(scales)
+library(ggplot2)
+library(tidyverse)
+library(hrbrthemes)
+library(viridis)
+library(MASS)
+```
+
+
+
+# Load data
+Load distribution data:
+```{r}
+
+# INTESTINE
+
+##adult_HFGA_A1
+meta.data.CD_adult_HFGA_A1 <- readRDS(file = "Intestine/adult_HFGA_A1/p_value_distribution/pval.distribution_CD_all_genes.RDS")
+
+meta.data.UC_adult_HFGA_A1 <- readRDS(file = "Intestine/adult_HFGA_A1/p_value_distribution/pval.distribution_UC_all_genes.RDS")
+
+meta.data.IBD_adult_HFGA_A1 <- readRDS(file = "Intestine/adult_HFGA_A1/p_value_distribution/pval.distribution_IBD_all_genes.RDS")
+
+meta.data.LID_adult_HFGA_A1 <- readRDS(file = "Intestine/adult_HFGA_A1/p_value_distribution/pval.distribution_LID_all_genes.RDS")
+
+##adult_RRST_349_B1
+meta.data.CD_adult_RRST_349_B1 <- readRDS(file = "Intestine/adult_RRST_349_B1/p_value_distribution/pval.distribution_CD_all_genes.RDS")
+
+meta.data.UC_adult_RRST_349_B1 <- readRDS(file = "Intestine/adult_RRST_349_B1/p_value_distribution/pval.distribution_UC_all_genes.RDS")
+
+meta.data.IBD_adult_RRST_349_B1 <- readRDS(file = "Intestine/adult_RRST_349_B1/p_value_distribution/pval.distribution_IBD_all_genes.RDS")
+
+meta.data.LID_adult_RRST_349_B1 <- readRDS(file = "Intestine/adult_RRST_349_B1/p_value_distribution/pval.distribution_LID_all_genes.RDS")
+
+
+##mouse_healing_ctrl
+meta.data.CD_mouse_healing_ctrl <- readRDS(file = "Intestine/mouse_healing_ctrl/p_value_distribution/pval.distribution_CD_all_genes.RDS")
+
+meta.data.UC_mouse_healing_ctrl <- readRDS(file = "Intestine/mouse_healing_ctrl/p_value_distribution/pval.distribution_UC_all_genes.RDS")
+
+meta.data.IBD_mouse_healing_ctrl <- readRDS(file = "Intestine/mouse_healing_ctrl/p_value_distribution/pval.distribution_IBD_all_genes.RDS")
+
+meta.data.LID_mouse_healing_ctrl <- readRDS(file = "Intestine/mouse_healing_ctrl/p_value_distribution/pval.distribution_LID_all_genes.RDS")
+
+##pcw12_HFGA_A8
+meta.data.CD_pcw12_HFGA_A8 <- readRDS(file = "Intestine/pcw12_HFGA_A8/p_value_distribution/pval.distribution_CD_all_genes.RDS")
+
+meta.data.UC_pcw12_HFGA_A8 <- readRDS(file = "Intestine/pcw12_HFGA_A8/p_value_distribution/pval.distribution_UC_all_genes.RDS")
+
+meta.data.IBD_pcw12_HFGA_A8 <- readRDS(file = "Intestine/pcw12_HFGA_A8/p_value_distribution/pval.distribution_IBD_all_genes.RDS")
+
+meta.data.LID_pcw12_HFGA_A8 <- readRDS(file = "Intestine/pcw12_HFGA_A8/p_value_distribution/pval.distribution_LID_all_genes.RDS")
+
+
+##pcw19_HFGA_A4
+meta.data.CD_pcw19_HFGA_A4 <- readRDS(file = "Intestine/pcw19_HFGA_A4/p_value_distribution/pval.distribution_CD_all_genes.RDS")
+
+meta.data.UC_pcw19_HFGA_A4 <- readRDS(file = "Intestine/pcw19_HFGA_A4/p_value_distribution/pval.distribution_UC_all_genes.RDS")
+
+meta.data.IBD_pcw19_HFGA_A4 <- readRDS(file = "Intestine/pcw19_HFGA_A4/p_value_distribution/pval.distribution_IBD_all_genes.RDS")
+
+meta.data.LID_pcw19_HFGA_A4 <- readRDS(file = "Intestine/pcw19_HFGA_A4/p_value_distribution/pval.distribution_LID_all_genes.RDS")
+
+
+```
+
+
+
+# adult_HFGA_A1
+```{r}
+# adult_HFGA_A1
+# spearman: between -log10(p.val_genetic) & median(genes), median(umi), median(score_genetic)
+data_cor_adult_HFGA_A1_CD = data.frame(median.genes = (cor(x=meta.data.CD_adult_HFGA_A1$`-log10(p.val_genetic)`,y=meta.data.CD_adult_HFGA_A1$`median(genes)`,method = "spearman")))
+data_cor_adult_HFGA_A1_CD = cbind(data_cor_adult_HFGA_A1_CD,data.frame(median.umi = (cor(x=meta.data.CD_adult_HFGA_A1$`-log10(p.val_genetic)`,y=meta.data.CD_adult_HFGA_A1$`median(umi)`,method = "spearman"))))
+data_cor_adult_HFGA_A1_CD = cbind(data_cor_adult_HFGA_A1_CD,data.frame(median.score_genetic = (cor(x=meta.data.CD_adult_HFGA_A1$`-log10(p.val_genetic)`,y=meta.data.CD_adult_HFGA_A1$`median(score_genetic)`,method = "spearman"))))
+data_cor_adult_HFGA_A1_CD$trait <- "CD"
+
+# spearman: between -log10(p.val_genetic) & median(genes), median(umi), median(score_genetic)
+data_cor_adult_HFGA_A1_UC = data.frame(median.genes = (cor(x=meta.data.UC_adult_HFGA_A1$`-log10(p.val_genetic)`,y=meta.data.UC_adult_HFGA_A1$`median(genes)`,method = "spearman")))
+data_cor_adult_HFGA_A1_UC = cbind(data_cor_adult_HFGA_A1_UC,data.frame(median.umi = (cor(x=meta.data.UC_adult_HFGA_A1$`-log10(p.val_genetic)`,y=meta.data.UC_adult_HFGA_A1$`median(umi)`,method = "spearman"))))
+data_cor_adult_HFGA_A1_UC = cbind(data_cor_adult_HFGA_A1_UC,data.frame(median.score_genetic = (cor(x=meta.data.UC_adult_HFGA_A1$`-log10(p.val_genetic)`,y=meta.data.UC_adult_HFGA_A1$`median(score_genetic)`,method = "spearman"))))
+data_cor_adult_HFGA_A1_UC$trait <- "UC"
+
+# spearman: between -log10(p.val_genetic) & median(genes), median(umi), median(score_genetic)
+data_cor_adult_HFGA_A1_IBD = data.frame(median.genes = (cor(x=meta.data.IBD_adult_HFGA_A1$`-log10(p.val_genetic)`,y=meta.data.IBD_adult_HFGA_A1$`median(genes)`,method = "spearman")))
+data_cor_adult_HFGA_A1_IBD = cbind(data_cor_adult_HFGA_A1_IBD,data.frame(median.umi = (cor(x=meta.data.IBD_adult_HFGA_A1$`-log10(p.val_genetic)`,y=meta.data.IBD_adult_HFGA_A1$`median(umi)`,method = "spearman"))))
+data_cor_adult_HFGA_A1_IBD = cbind(data_cor_adult_HFGA_A1_IBD,data.frame(median.score_genetic = (cor(x=meta.data.IBD_adult_HFGA_A1$`-log10(p.val_genetic)`,y=meta.data.IBD_adult_HFGA_A1$`median(score_genetic)`,method = "spearman"))))
+data_cor_adult_HFGA_A1_IBD$trait <- "IBD"
+
+
+# spearman: between -log10(p.val_genetic) & median(genes), median(umi), median(score_genetic)
+data_cor_adult_HFGA_A1_LID = data.frame(median.genes = (cor(x=meta.data.LID_adult_HFGA_A1$`-log10(p.val_genetic)`,y=meta.data.LID_adult_HFGA_A1$`median(genes)`,method = "spearman")))
+data_cor_adult_HFGA_A1_LID = cbind(data_cor_adult_HFGA_A1_LID,data.frame(median.umi = (cor(x=meta.data.LID_adult_HFGA_A1$`-log10(p.val_genetic)`,y=meta.data.LID_adult_HFGA_A1$`median(umi)`,method = "spearman"))))
+data_cor_adult_HFGA_A1_LID = cbind(data_cor_adult_HFGA_A1_LID,data.frame(median.score_genetic = (cor(x=meta.data.LID_adult_HFGA_A1$`-log10(p.val_genetic)`,y=meta.data.LID_adult_HFGA_A1$`median(score_genetic)`,method = "spearman"))))
+data_cor_adult_HFGA_A1_LID$trait <- "LID"
+
+data_cor_adult_HFGA_A1_all <- rbind(data_cor_adult_HFGA_A1_CD,data_cor_adult_HFGA_A1_IBD)
+data_cor_adult_HFGA_A1_all <- rbind(data_cor_adult_HFGA_A1_all,data_cor_adult_HFGA_A1_LID)
+data_cor_adult_HFGA_A1_all <- rbind(data_cor_adult_HFGA_A1_all,data_cor_adult_HFGA_A1_UC)
+```
+
+## median.genes
+```{r}
+
+# basic histogram
+p <- ggplot(data_cor_adult_HFGA_A1_all, aes(x=median.genes)) + 
+  geom_histogram(binwidth=0.05,color="black", fill="grey") + 
+  xlim(-2,2) +
+  theme_minimal()
+
+p
+```
+
+
+## median.umi
+```{r}
+
+# basic histogram
+p <- ggplot(data_cor_adult_HFGA_A1_all, aes(x=median.umi)) + 
+  geom_histogram(binwidth=0.05,color="black", fill="grey") + 
+  xlim(-2,2) +
+  theme_minimal()
+
+p
+```
+
+## median.score_genetic
+```{r}
+
+# basic histogram
+p <- ggplot(data_cor_adult_HFGA_A1_all, aes(x=median.score_genetic)) + 
+  geom_histogram(binwidth=0.05,color="black", fill="grey") + 
+  xlim(-2,2) +
+  theme_minimal()
+
+p
+```
+
+
+
+
+
+# adult_RRST_349_B1
+```{r}
+# adult_RRST_349_B1
+# spearman: between -log10(p.val_genetic) & median(genes), median(umi), median(score_genetic)
+data_cor_adult_RRST_349_B1_CD = data.frame(median.genes = (cor(x=meta.data.CD_adult_RRST_349_B1$`-log10(p.val_genetic)`,y=meta.data.CD_adult_RRST_349_B1$`median(genes)`,method = "spearman")))
+data_cor_adult_RRST_349_B1_CD = cbind(data_cor_adult_RRST_349_B1_CD,data.frame(median.umi = (cor(x=meta.data.CD_adult_RRST_349_B1$`-log10(p.val_genetic)`,y=meta.data.CD_adult_RRST_349_B1$`median(umi)`,method = "spearman"))))
+data_cor_adult_RRST_349_B1_CD = cbind(data_cor_adult_RRST_349_B1_CD,data.frame(median.score_genetic = (cor(x=meta.data.CD_adult_RRST_349_B1$`-log10(p.val_genetic)`,y=meta.data.CD_adult_RRST_349_B1$`median(score_genetic)`,method = "spearman"))))
+data_cor_adult_RRST_349_B1_CD$trait <- "CD"
+
+# spearman: between -log10(p.val_genetic) & median(genes), median(umi), median(score_genetic)
+data_cor_adult_RRST_349_B1_UC = data.frame(median.genes = (cor(x=meta.data.UC_adult_RRST_349_B1$`-log10(p.val_genetic)`,y=meta.data.UC_adult_RRST_349_B1$`median(genes)`,method = "spearman")))
+data_cor_adult_RRST_349_B1_UC = cbind(data_cor_adult_RRST_349_B1_UC,data.frame(median.umi = (cor(x=meta.data.UC_adult_RRST_349_B1$`-log10(p.val_genetic)`,y=meta.data.UC_adult_RRST_349_B1$`median(umi)`,method = "spearman"))))
+data_cor_adult_RRST_349_B1_UC = cbind(data_cor_adult_RRST_349_B1_UC,data.frame(median.score_genetic = (cor(x=meta.data.UC_adult_RRST_349_B1$`-log10(p.val_genetic)`,y=meta.data.UC_adult_RRST_349_B1$`median(score_genetic)`,method = "spearman"))))
+data_cor_adult_RRST_349_B1_UC$trait <- "UC"
+
+# spearman: between -log10(p.val_genetic) & median(genes), median(umi), median(score_genetic)
+data_cor_adult_RRST_349_B1_IBD = data.frame(median.genes = (cor(x=meta.data.IBD_adult_RRST_349_B1$`-log10(p.val_genetic)`,y=meta.data.IBD_adult_RRST_349_B1$`median(genes)`,method = "spearman")))
+data_cor_adult_RRST_349_B1_IBD = cbind(data_cor_adult_RRST_349_B1_IBD,data.frame(median.umi = (cor(x=meta.data.IBD_adult_RRST_349_B1$`-log10(p.val_genetic)`,y=meta.data.IBD_adult_RRST_349_B1$`median(umi)`,method = "spearman"))))
+data_cor_adult_RRST_349_B1_IBD = cbind(data_cor_adult_RRST_349_B1_IBD,data.frame(median.score_genetic = (cor(x=meta.data.IBD_adult_RRST_349_B1$`-log10(p.val_genetic)`,y=meta.data.IBD_adult_RRST_349_B1$`median(score_genetic)`,method = "spearman"))))
+data_cor_adult_RRST_349_B1_IBD$trait <- "IBD"
+
+
+# spearman: between -log10(p.val_genetic) & median(genes), median(umi), median(score_genetic)
+data_cor_adult_RRST_349_B1_LID = data.frame(median.genes = (cor(x=meta.data.LID_adult_RRST_349_B1$`-log10(p.val_genetic)`,y=meta.data.LID_adult_RRST_349_B1$`median(genes)`,method = "spearman")))
+data_cor_adult_RRST_349_B1_LID = cbind(data_cor_adult_RRST_349_B1_LID,data.frame(median.umi = (cor(x=meta.data.LID_adult_RRST_349_B1$`-log10(p.val_genetic)`,y=meta.data.LID_adult_RRST_349_B1$`median(umi)`,method = "spearman"))))
+data_cor_adult_RRST_349_B1_LID = cbind(data_cor_adult_RRST_349_B1_LID,data.frame(median.score_genetic = (cor(x=meta.data.LID_adult_RRST_349_B1$`-log10(p.val_genetic)`,y=meta.data.LID_adult_RRST_349_B1$`median(score_genetic)`,method = "spearman"))))
+data_cor_adult_RRST_349_B1_LID$trait <- "LID"
+
+data_cor_adult_RRST_349_B1_all <- rbind(data_cor_adult_RRST_349_B1_CD,data_cor_adult_RRST_349_B1_IBD)
+data_cor_adult_RRST_349_B1_all <- rbind(data_cor_adult_RRST_349_B1_all,data_cor_adult_RRST_349_B1_LID)
+data_cor_adult_RRST_349_B1_all <- rbind(data_cor_adult_RRST_349_B1_all,data_cor_adult_RRST_349_B1_UC)
+```
+
+## median.genes
+```{r}
+
+# basic histogram
+p <- ggplot(data_cor_adult_RRST_349_B1_all, aes(x=median.genes)) + 
+  geom_histogram(binwidth=0.05,color="black", fill="grey") + 
+  xlim(-2,2) +
+  theme_minimal()
+
+p
+```
+
+
+## median.umi
+```{r}
+
+# basic histogram
+p <- ggplot(data_cor_adult_RRST_349_B1_all, aes(x=median.umi)) + 
+  geom_histogram(binwidth=0.05,color="black", fill="grey") + 
+  xlim(-2,2) +
+  theme_minimal()
+
+p
+```
+
+## median.score_genetic
+```{r}
+
+# basic histogram
+p <- ggplot(data_cor_adult_RRST_349_B1_all, aes(x=median.score_genetic)) + 
+  geom_histogram(binwidth=0.05,color="black", fill="grey") + 
+  xlim(-2,2) +
+  theme_minimal()
+
+p
+```
+
+
+
+# mouse_healing_ctrl
+```{r}
+# mouse_healing_ctrl
+# spearman: between -log10(p.val_genetic) & median(genes), median(umi), median(score_genetic)
+data_cor_mouse_healing_ctrl_CD = data.frame(median.genes = (cor(x=meta.data.CD_mouse_healing_ctrl$`-log10(p.val_genetic)`,y=meta.data.CD_mouse_healing_ctrl$`median(genes)`,method = "spearman")))
+data_cor_mouse_healing_ctrl_CD = cbind(data_cor_mouse_healing_ctrl_CD,data.frame(median.umi = (cor(x=meta.data.CD_mouse_healing_ctrl$`-log10(p.val_genetic)`,y=meta.data.CD_mouse_healing_ctrl$`median(umi)`,method = "spearman"))))
+data_cor_mouse_healing_ctrl_CD = cbind(data_cor_mouse_healing_ctrl_CD,data.frame(median.score_genetic = (cor(x=meta.data.CD_mouse_healing_ctrl$`-log10(p.val_genetic)`,y=meta.data.CD_mouse_healing_ctrl$`median(score_genetic)`,method = "spearman"))))
+data_cor_mouse_healing_ctrl_CD$trait <- "CD"
+
+# spearman: between -log10(p.val_genetic) & median(genes), median(umi), median(score_genetic)
+data_cor_mouse_healing_ctrl_UC = data.frame(median.genes = (cor(x=meta.data.UC_mouse_healing_ctrl$`-log10(p.val_genetic)`,y=meta.data.UC_mouse_healing_ctrl$`median(genes)`,method = "spearman")))
+data_cor_mouse_healing_ctrl_UC = cbind(data_cor_mouse_healing_ctrl_UC,data.frame(median.umi = (cor(x=meta.data.UC_mouse_healing_ctrl$`-log10(p.val_genetic)`,y=meta.data.UC_mouse_healing_ctrl$`median(umi)`,method = "spearman"))))
+data_cor_mouse_healing_ctrl_UC = cbind(data_cor_mouse_healing_ctrl_UC,data.frame(median.score_genetic = (cor(x=meta.data.UC_mouse_healing_ctrl$`-log10(p.val_genetic)`,y=meta.data.UC_mouse_healing_ctrl$`median(score_genetic)`,method = "spearman"))))
+data_cor_mouse_healing_ctrl_UC$trait <- "UC"
+
+# spearman: between -log10(p.val_genetic) & median(genes), median(umi), median(score_genetic)
+data_cor_mouse_healing_ctrl_IBD = data.frame(median.genes = (cor(x=meta.data.IBD_mouse_healing_ctrl$`-log10(p.val_genetic)`,y=meta.data.IBD_mouse_healing_ctrl$`median(genes)`,method = "spearman")))
+data_cor_mouse_healing_ctrl_IBD = cbind(data_cor_mouse_healing_ctrl_IBD,data.frame(median.umi = (cor(x=meta.data.IBD_mouse_healing_ctrl$`-log10(p.val_genetic)`,y=meta.data.IBD_mouse_healing_ctrl$`median(umi)`,method = "spearman"))))
+data_cor_mouse_healing_ctrl_IBD = cbind(data_cor_mouse_healing_ctrl_IBD,data.frame(median.score_genetic = (cor(x=meta.data.IBD_mouse_healing_ctrl$`-log10(p.val_genetic)`,y=meta.data.IBD_mouse_healing_ctrl$`median(score_genetic)`,method = "spearman"))))
+data_cor_mouse_healing_ctrl_IBD$trait <- "IBD"
+
+
+# spearman: between -log10(p.val_genetic) & median(genes), median(umi), median(score_genetic)
+data_cor_mouse_healing_ctrl_LID = data.frame(median.genes = (cor(x=meta.data.LID_mouse_healing_ctrl$`-log10(p.val_genetic)`,y=meta.data.LID_mouse_healing_ctrl$`median(genes)`,method = "spearman")))
+data_cor_mouse_healing_ctrl_LID = cbind(data_cor_mouse_healing_ctrl_LID,data.frame(median.umi = (cor(x=meta.data.LID_mouse_healing_ctrl$`-log10(p.val_genetic)`,y=meta.data.LID_mouse_healing_ctrl$`median(umi)`,method = "spearman"))))
+data_cor_mouse_healing_ctrl_LID = cbind(data_cor_mouse_healing_ctrl_LID,data.frame(median.score_genetic = (cor(x=meta.data.LID_mouse_healing_ctrl$`-log10(p.val_genetic)`,y=meta.data.LID_mouse_healing_ctrl$`median(score_genetic)`,method = "spearman"))))
+data_cor_mouse_healing_ctrl_LID$trait <- "LID"
+
+data_cor_mouse_healing_ctrl_all <- rbind(data_cor_mouse_healing_ctrl_CD,data_cor_mouse_healing_ctrl_IBD)
+data_cor_mouse_healing_ctrl_all <- rbind(data_cor_mouse_healing_ctrl_all,data_cor_mouse_healing_ctrl_LID)
+data_cor_mouse_healing_ctrl_all <- rbind(data_cor_mouse_healing_ctrl_all,data_cor_mouse_healing_ctrl_UC)
+```
+
+## median.genes
+```{r}
+
+# basic histogram
+p <- ggplot(data_cor_mouse_healing_ctrl_all, aes(x=median.genes)) + 
+  geom_histogram(binwidth=0.05,color="black", fill="grey") + 
+  xlim(-2,2) +
+  theme_minimal()
+
+p
+```
+
+
+## median.umi
+```{r}
+
+# basic histogram
+p <- ggplot(data_cor_mouse_healing_ctrl_all, aes(x=median.umi)) + 
+  geom_histogram(binwidth=0.05,color="black", fill="grey") + 
+  xlim(-2,2) +
+  theme_minimal()
+
+p
+```
+
+## median.score_genetic
+```{r}
+
+# basic histogram
+p <- ggplot(data_cor_mouse_healing_ctrl_all, aes(x=median.score_genetic)) + 
+  geom_histogram(binwidth=0.05,color="black", fill="grey") + 
+  xlim(-2,2) +
+  theme_minimal()
+
+p
+```
+
+
+
+# pcw12_HFGA_A8
+```{r}
+# pcw12_HFGA_A8
+# spearman: between -log10(p.val_genetic) & median(genes), median(umi), median(score_genetic)
+data_cor_pcw12_HFGA_A8_CD = data.frame(median.genes = (cor(x=meta.data.CD_pcw12_HFGA_A8$`-log10(p.val_genetic)`,y=meta.data.CD_pcw12_HFGA_A8$`median(genes)`,method = "spearman")))
+data_cor_pcw12_HFGA_A8_CD = cbind(data_cor_pcw12_HFGA_A8_CD,data.frame(median.umi = (cor(x=meta.data.CD_pcw12_HFGA_A8$`-log10(p.val_genetic)`,y=meta.data.CD_pcw12_HFGA_A8$`median(umi)`,method = "spearman"))))
+data_cor_pcw12_HFGA_A8_CD = cbind(data_cor_pcw12_HFGA_A8_CD,data.frame(median.score_genetic = (cor(x=meta.data.CD_pcw12_HFGA_A8$`-log10(p.val_genetic)`,y=meta.data.CD_pcw12_HFGA_A8$`median(score_genetic)`,method = "spearman"))))
+data_cor_pcw12_HFGA_A8_CD$trait <- "CD"
+
+# spearman: between -log10(p.val_genetic) & median(genes), median(umi), median(score_genetic)
+data_cor_pcw12_HFGA_A8_UC = data.frame(median.genes = (cor(x=meta.data.UC_pcw12_HFGA_A8$`-log10(p.val_genetic)`,y=meta.data.UC_pcw12_HFGA_A8$`median(genes)`,method = "spearman")))
+data_cor_pcw12_HFGA_A8_UC = cbind(data_cor_pcw12_HFGA_A8_UC,data.frame(median.umi = (cor(x=meta.data.UC_pcw12_HFGA_A8$`-log10(p.val_genetic)`,y=meta.data.UC_pcw12_HFGA_A8$`median(umi)`,method = "spearman"))))
+data_cor_pcw12_HFGA_A8_UC = cbind(data_cor_pcw12_HFGA_A8_UC,data.frame(median.score_genetic = (cor(x=meta.data.UC_pcw12_HFGA_A8$`-log10(p.val_genetic)`,y=meta.data.UC_pcw12_HFGA_A8$`median(score_genetic)`,method = "spearman"))))
+data_cor_pcw12_HFGA_A8_UC$trait <- "UC"
+
+# spearman: between -log10(p.val_genetic) & median(genes), median(umi), median(score_genetic)
+data_cor_pcw12_HFGA_A8_IBD = data.frame(median.genes = (cor(x=meta.data.IBD_pcw12_HFGA_A8$`-log10(p.val_genetic)`,y=meta.data.IBD_pcw12_HFGA_A8$`median(genes)`,method = "spearman")))
+data_cor_pcw12_HFGA_A8_IBD = cbind(data_cor_pcw12_HFGA_A8_IBD,data.frame(median.umi = (cor(x=meta.data.IBD_pcw12_HFGA_A8$`-log10(p.val_genetic)`,y=meta.data.IBD_pcw12_HFGA_A8$`median(umi)`,method = "spearman"))))
+data_cor_pcw12_HFGA_A8_IBD = cbind(data_cor_pcw12_HFGA_A8_IBD,data.frame(median.score_genetic = (cor(x=meta.data.IBD_pcw12_HFGA_A8$`-log10(p.val_genetic)`,y=meta.data.IBD_pcw12_HFGA_A8$`median(score_genetic)`,method = "spearman"))))
+data_cor_pcw12_HFGA_A8_IBD$trait <- "IBD"
+
+
+# spearman: between -log10(p.val_genetic) & median(genes), median(umi), median(score_genetic)
+data_cor_pcw12_HFGA_A8_LID = data.frame(median.genes = (cor(x=meta.data.LID_pcw12_HFGA_A8$`-log10(p.val_genetic)`,y=meta.data.LID_pcw12_HFGA_A8$`median(genes)`,method = "spearman")))
+data_cor_pcw12_HFGA_A8_LID = cbind(data_cor_pcw12_HFGA_A8_LID,data.frame(median.umi = (cor(x=meta.data.LID_pcw12_HFGA_A8$`-log10(p.val_genetic)`,y=meta.data.LID_pcw12_HFGA_A8$`median(umi)`,method = "spearman"))))
+data_cor_pcw12_HFGA_A8_LID = cbind(data_cor_pcw12_HFGA_A8_LID,data.frame(median.score_genetic = (cor(x=meta.data.LID_pcw12_HFGA_A8$`-log10(p.val_genetic)`,y=meta.data.LID_pcw12_HFGA_A8$`median(score_genetic)`,method = "spearman"))))
+data_cor_pcw12_HFGA_A8_LID$trait <- "LID"
+
+data_cor_pcw12_HFGA_A8_all <- rbind(data_cor_pcw12_HFGA_A8_CD,data_cor_pcw12_HFGA_A8_IBD)
+data_cor_pcw12_HFGA_A8_all <- rbind(data_cor_pcw12_HFGA_A8_all,data_cor_pcw12_HFGA_A8_LID)
+data_cor_pcw12_HFGA_A8_all <- rbind(data_cor_pcw12_HFGA_A8_all,data_cor_pcw12_HFGA_A8_UC)
+```
+
+## median.genes
+```{r}
+
+# basic histogram
+p <- ggplot(data_cor_pcw12_HFGA_A8_all, aes(x=median.genes)) + 
+  geom_histogram(binwidth=0.05,color="black", fill="grey") + 
+  xlim(-2,2) +
+  theme_minimal()
+
+p
+```
+
+
+## median.umi
+```{r}
+
+# basic histogram
+p <- ggplot(data_cor_pcw12_HFGA_A8_all, aes(x=median.umi)) + 
+  geom_histogram(binwidth=0.05,color="black", fill="grey") + 
+  xlim(-2,2) +
+  theme_minimal()
+
+p
+```
+
+## median.score_genetic
+```{r}
+
+# basic histogram
+p <- ggplot(data_cor_pcw12_HFGA_A8_all, aes(x=median.score_genetic)) + 
+  geom_histogram(binwidth=0.05,color="black", fill="grey") + 
+  xlim(-2,2) +
+  theme_minimal()
+
+p
+```
+
+
+
+
+# pcw19_HFGA_A4
+```{r}
+# pcw19_HFGA_A4
+# spearman: between -log10(p.val_genetic) & median(genes), median(umi), median(score_genetic)
+data_cor_pcw19_HFGA_A4_CD = data.frame(median.genes = (cor(x=meta.data.CD_pcw19_HFGA_A4$`-log10(p.val_genetic)`,y=meta.data.CD_pcw19_HFGA_A4$`median(genes)`,method = "spearman")))
+data_cor_pcw19_HFGA_A4_CD = cbind(data_cor_pcw19_HFGA_A4_CD,data.frame(median.umi = (cor(x=meta.data.CD_pcw19_HFGA_A4$`-log10(p.val_genetic)`,y=meta.data.CD_pcw19_HFGA_A4$`median(umi)`,method = "spearman"))))
+data_cor_pcw19_HFGA_A4_CD = cbind(data_cor_pcw19_HFGA_A4_CD,data.frame(median.score_genetic = (cor(x=meta.data.CD_pcw19_HFGA_A4$`-log10(p.val_genetic)`,y=meta.data.CD_pcw19_HFGA_A4$`median(score_genetic)`,method = "spearman"))))
+data_cor_pcw19_HFGA_A4_CD$trait <- "CD"
+
+# spearman: between -log10(p.val_genetic) & median(genes), median(umi), median(score_genetic)
+data_cor_pcw19_HFGA_A4_UC = data.frame(median.genes = (cor(x=meta.data.UC_pcw19_HFGA_A4$`-log10(p.val_genetic)`,y=meta.data.UC_pcw19_HFGA_A4$`median(genes)`,method = "spearman")))
+data_cor_pcw19_HFGA_A4_UC = cbind(data_cor_pcw19_HFGA_A4_UC,data.frame(median.umi = (cor(x=meta.data.UC_pcw19_HFGA_A4$`-log10(p.val_genetic)`,y=meta.data.UC_pcw19_HFGA_A4$`median(umi)`,method = "spearman"))))
+data_cor_pcw19_HFGA_A4_UC = cbind(data_cor_pcw19_HFGA_A4_UC,data.frame(median.score_genetic = (cor(x=meta.data.UC_pcw19_HFGA_A4$`-log10(p.val_genetic)`,y=meta.data.UC_pcw19_HFGA_A4$`median(score_genetic)`,method = "spearman"))))
+data_cor_pcw19_HFGA_A4_UC$trait <- "UC"
+
+# spearman: between -log10(p.val_genetic) & median(genes), median(umi), median(score_genetic)
+data_cor_pcw19_HFGA_A4_IBD = data.frame(median.genes = (cor(x=meta.data.IBD_pcw19_HFGA_A4$`-log10(p.val_genetic)`,y=meta.data.IBD_pcw19_HFGA_A4$`median(genes)`,method = "spearman")))
+data_cor_pcw19_HFGA_A4_IBD = cbind(data_cor_pcw19_HFGA_A4_IBD,data.frame(median.umi = (cor(x=meta.data.IBD_pcw19_HFGA_A4$`-log10(p.val_genetic)`,y=meta.data.IBD_pcw19_HFGA_A4$`median(umi)`,method = "spearman"))))
+data_cor_pcw19_HFGA_A4_IBD = cbind(data_cor_pcw19_HFGA_A4_IBD,data.frame(median.score_genetic = (cor(x=meta.data.IBD_pcw19_HFGA_A4$`-log10(p.val_genetic)`,y=meta.data.IBD_pcw19_HFGA_A4$`median(score_genetic)`,method = "spearman"))))
+data_cor_pcw19_HFGA_A4_IBD$trait <- "IBD"
+
+
+# spearman: between -log10(p.val_genetic) & median(genes), median(umi), median(score_genetic)
+data_cor_pcw19_HFGA_A4_LID = data.frame(median.genes = (cor(x=meta.data.LID_pcw19_HFGA_A4$`-log10(p.val_genetic)`,y=meta.data.LID_pcw19_HFGA_A4$`median(genes)`,method = "spearman")))
+data_cor_pcw19_HFGA_A4_LID = cbind(data_cor_pcw19_HFGA_A4_LID,data.frame(median.umi = (cor(x=meta.data.LID_pcw19_HFGA_A4$`-log10(p.val_genetic)`,y=meta.data.LID_pcw19_HFGA_A4$`median(umi)`,method = "spearman"))))
+data_cor_pcw19_HFGA_A4_LID = cbind(data_cor_pcw19_HFGA_A4_LID,data.frame(median.score_genetic = (cor(x=meta.data.LID_pcw19_HFGA_A4$`-log10(p.val_genetic)`,y=meta.data.LID_pcw19_HFGA_A4$`median(score_genetic)`,method = "spearman"))))
+data_cor_pcw19_HFGA_A4_LID$trait <- "LID"
+
+data_cor_pcw19_HFGA_A4_all <- rbind(data_cor_pcw19_HFGA_A4_CD,data_cor_pcw19_HFGA_A4_IBD)
+data_cor_pcw19_HFGA_A4_all <- rbind(data_cor_pcw19_HFGA_A4_all,data_cor_pcw19_HFGA_A4_LID)
+data_cor_pcw19_HFGA_A4_all <- rbind(data_cor_pcw19_HFGA_A4_all,data_cor_pcw19_HFGA_A4_UC)
+```
+
+## median.genes
+```{r}
+
+# basic histogram
+p <- ggplot(data_cor_pcw19_HFGA_A4_all, aes(x=median.genes)) + 
+  geom_histogram(binwidth=0.05,color="black", fill="grey") + 
+  xlim(-2,2) +
+  theme_minimal()
+
+p
+```
+
+
+## median.umi
+```{r}
+
+# basic histogram
+p <- ggplot(data_cor_pcw19_HFGA_A4_all, aes(x=median.umi)) + 
+  geom_histogram(binwidth=0.05,color="black", fill="grey") + 
+  xlim(-2,2) +
+  theme_minimal()
+
+p
+```
+
+## median.score_genetic
+```{r}
+
+# basic histogram
+p <- ggplot(data_cor_pcw19_HFGA_A4_all, aes(x=median.score_genetic)) + 
+  geom_histogram(binwidth=0.05,color="black", fill="grey") + 
+  xlim(-2,2) +
+  theme_minimal()
+
+p
+```
+
+
+
+
+
+# Merge all histogram
+```{r}
+data_cor_adult_HFGA_A1_all$dataset <- "adult_HFGA_A1"
+data_cor_adult_HFGA_A1_all
+data_cor_adult_RRST_349_B1_all$dataset <- "adult_RRST_349_B1"
+data_cor_adult_RRST_349_B1_all
+data_cor_mouse_healing_ctrl_all$dataset <- "mouse_healing_ctrl"
+data_cor_mouse_healing_ctrl_all
+data_cor_pcw12_HFGA_A8_all$dataset <- "pcw12_HFGA_A8"
+data_cor_pcw12_HFGA_A8_all
+data_cor_pcw19_HFGA_A4_all$dataset <- "pcw19_HFGA_A4"
+data_cor_pcw19_HFGA_A4_all
+
+#Merge
+data_cor_intestine_all_traits <- rbind(data_cor_adult_HFGA_A1_all,data_cor_adult_RRST_349_B1_all)
+data_cor_intestine_all_traits <- rbind(data_cor_intestine_all_traits,data_cor_mouse_healing_ctrl_all)
+data_cor_intestine_all_traits <- rbind(data_cor_intestine_all_traits,data_cor_pcw12_HFGA_A8_all)
+data_cor_intestine_all_traits <- rbind(data_cor_intestine_all_traits,data_cor_pcw19_HFGA_A4_all)
+
+#Save data
+#saveRDS(data_cor_intestine_all_traits, file = "pval_data_cor_organs_all_traits_spearman/data_cor_intestine_all_traits_spearman.rds")
+#write.matrix(data_cor_intestine_all_traits,file="pval_data_cor_organs_all_traits_spearman/data_cor_intestine_all_traits_spearman.csv",sep = ";")
+
+```
+
+
+## median.genes
+```{r}
+
+# basic histogram
+p <- ggplot(data_cor_intestine_all_traits, aes(x=median.genes)) + 
+  geom_histogram(binwidth=0.05,color="black", fill="grey") + 
+  xlim(-2,2) +
+  theme_minimal()
+
+p
+```
+Median Genes
+```{r}
+# basic histogram
+data_cor_intestine_all_traits_no_na <- na.exclude(data_cor_intestine_all_traits)
+
+p <- ggplot(data_cor_intestine_all_traits_no_na, aes(x=median.genes)) + 
+  geom_histogram(bins = (length(data_cor_intestine_all_traits_no_na$median.genes))*2,color="black", fill="grey") + 
+  xlim(-2,2) +
+  theme_minimal()+
+  geom_vline(aes(xintercept=median(median.genes)),color="blue", linetype="dashed", size=1)
+
+p
+
+print("median")
+median(data_cor_intestine_all_traits_no_na$median.genes)
+print("mean")
+mean(data_cor_intestine_all_traits_no_na$median.genes)
+print("standard deviation")
+sd(data_cor_intestine_all_traits_no_na$median.genes)
+```
+
+
+## median.umi
+```{r}
+
+# basic histogram
+p <- ggplot(data_cor_intestine_all_traits, aes(x=median.umi)) + 
+  geom_histogram(binwidth=0.05,color="black", fill="grey") + 
+  xlim(-2,2) +
+  theme_minimal()
+
+p
+```
+
+Median UMI
+```{r}
+# basic histogram
+data_cor_intestine_all_traits_no_na <- na.exclude(data_cor_intestine_all_traits)
+
+p <- ggplot(data_cor_intestine_all_traits_no_na, aes(x=median.umi)) + 
+  geom_histogram(bins = (length(data_cor_intestine_all_traits_no_na$median.umi))*2,color="black", fill="grey") + 
+  xlim(-2,2) +
+  theme_minimal()+
+  geom_vline(aes(xintercept=median(median.umi)),color="blue", linetype="dashed", size=1)
+
+p
+
+print("median")
+median(data_cor_intestine_all_traits_no_na$median.umi)
+print("mean")
+mean(data_cor_intestine_all_traits_no_na$median.umi)
+print("standard deviation")
+sd(data_cor_intestine_all_traits_no_na$median.umi)
+```
+
+
+## median.score_genetic
+```{r}
+
+# basic histogram
+p <- ggplot(data_cor_intestine_all_traits, aes(x=median.score_genetic)) + 
+  geom_histogram(binwidth=0.05,color="black", fill="grey") + 
+  xlim(-2,2) +
+  theme_minimal()
+
+p
+```
+
+Median score genetic
+```{r}
+# basic histogram
+data_cor_intestine_all_traits_no_na <- na.exclude(data_cor_intestine_all_traits)
+
+p <- ggplot(data_cor_intestine_all_traits_no_na, aes(x=median.score_genetic)) + 
+  geom_histogram(bins = (length(data_cor_intestine_all_traits_no_na$median.score_genetic))*2,color="black", fill="grey") + 
+  xlim(-2,2) +
+  theme_minimal()+
+  geom_vline(aes(xintercept=median(median.score_genetic)),color="blue", linetype="dashed", size=1)
+
+p
+
+print("median")
+median(data_cor_intestine_all_traits_no_na$median.score_genetic)
+print("mean")
+mean(data_cor_intestine_all_traits_no_na$median.score_genetic)
+print("standard deviation")
+sd(data_cor_intestine_all_traits_no_na$median.score_genetic)
+```
+
+
+# Merge all Boxplot
+
+## median.genes
+```{r}
+# Boxplot
+
+data_cor_intestine_all_traits %>%
+  ggplot( aes(x=trait, y=median.genes, fill=trait)) +
+    geom_boxplot() +
+    scale_fill_viridis(discrete = TRUE, alpha=0.6) +
+    geom_point(color="black", size=2, alpha=0.9) +
+    theme_classic() +
+    ggtitle("Spearman cor. with -log10(p-value)")
+
+```
+
+
+## median.umi
+```{r}
+# Boxplot
+
+data_cor_intestine_all_traits %>%
+  ggplot( aes(x=trait, y=median.umi, fill=trait)) +
+    geom_boxplot() +
+    scale_fill_viridis(discrete = TRUE, alpha=0.6) +
+    geom_point(color="black", size=2, alpha=0.9) +
+    theme_classic() +
+    ggtitle("Spearman cor. with -log10(p-value)")
+```
+
+
+## median.score_genetic
+```{r}
+# Boxplot
+
+data_cor_intestine_all_traits %>%
+  ggplot( aes(x=trait, y=median.score_genetic, fill=trait)) +
+    geom_boxplot() +
+    scale_fill_viridis(discrete = TRUE, alpha=0.6) +
+    geom_point(color="black", size=2, alpha=0.9) +
+    theme_classic() +
+    ggtitle("Spearman cor. with -log10(p-value)")
+```
+
+# Notes
+```{r}
+sessionInfo()
+```
+

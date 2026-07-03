@@ -1,0 +1,7 @@
+median.genes;median.umi;median.score_genetic;trait;dataset
+-0.4000000       ;-0.4454545       ;0.9818182        ;CKD              ;human_JCI        
+NA               ;NA               ;NA               ;IKD              ;human_JCI        
+-0.5871807       ;-0.5963554       ;0.9816927        ;CKD              ;mouse_10X_coronal
+-0.6542997       ;-0.6741270       ;0.9170110        ;IKD              ;mouse_10X_coronal
+ 0.1868132       ; 0.2967033       ;0.9780220        ;CKD              ;mouse_JCI        
+ 0.3186813       ; 0.2395604       ;0.9956044        ;IKD              ;mouse_JCI        

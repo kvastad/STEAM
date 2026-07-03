@@ -1,0 +1,400 @@
+---
+title: "OpenTarget_gene_sets_sliding_window_selection_adult_brain_all_supercluster_term"
+output: html_document
+date: '`r format(Sys.Date(), "%B %d, %Y")`'
+---
+
+Notes: Loads the Metacell dataset, runs SCTransform, and reads in the Open Targets trait data, and filter to only include genes present in the dataset.
+
+Load libraries
+```{r}
+library(Seurat)
+library(SeuratObject)
+library(dplyr)
+library(tidyverse)
+```
+
+
+Load SC se object:
+```{r}
+se <- readRDS("Seurat_objects/MetaCell.rds")
+se
+table(se$supercluster_term)
+```
+
+
+Collect QC metrics
+```{r}
+se[["percent.mt"]] <- PercentageFeatureSet(se, pattern = "^MT-")
+se[["percent.rb"]] <- PercentageFeatureSet(se, pattern = "^RPL|^RPS")
+```
+
+
+Plot QC metrics
+```{r, fig.width=10, fig.height=20}
+VlnPlot(se, features = c("nFeature_RNA", "nCount_RNA", "percent.mt", "percent.rb"), ncol = 1, group.by = "supercluster_term")
+```
+
+
+```{r, fig.width=10, fig.height=20}
+RidgePlot(se, features = c("nFeature_RNA", "nCount_RNA", "percent.mt", "percent.rb"), ncol = 1, group.by = "supercluster_term")
+```
+
+
+
+Normalize data: se <- SCTransform(se,return.only.var.genes = T)
+```{r, message=FALSE, include=FALSE}
+se <- SCTransform(se,return.only.var.genes = T)
+```
+
+
+Save filtered and normalized se object
+```{r, eval=FALSE}
+saveRDS(se,file = "Seurat_objects/MetaCell_normalized.RDS")
+```
+
+
+Load normalized SC se object:
+```{r}
+se <- readRDS("Seurat_objects/MetaCell_normalized.RDS")
+se
+table(se$supercluster_term)
+```
+
+
+Load OpenTarget files: OBS! Update file location for relevant OpenTargets files
+```{r}
+get_opentarget <- function (opentarget_dir = paste0(getwd(),"/OpenTargets"), mouse_genes = NULL ){
+  OT.files <- list()
+  disease.names <- character()
+  i <- 1
+  column.names <- c("Gene_symbol","Overall_assoc.score","Genetic_assoc.","Somatic_mutation","Drugs","Pathways_system_biology","Text_mining","RNA_expression","Animal_models","Target_name")
+  
+  if (!is.null(mouse_genes)){
+    
+
+      conversion.table <- read.table(mouse_genes,
+                                     sep = "\t",
+                                     header = TRUE) 
+      #if mouse_genes dataframe is specified, load it
+
+  }
+  
+  for (OT.file in list.files(opentarget_dir)){
+    if (grepl("diseases_", OT.file)){
+      print(OT.file)
+  
+      df <- read.table(paste(opentarget_dir, OT.file, sep= "/"),
+                     sep= "\t",
+                     header=TRUE,
+                     quote = "")
+    
+      names(df) <- column.names  # rename columns
+      
+      df[df == "No data"] <- NA #Re-name N/A
+    
+      
+    
+      names(df) <- column.names  # rename columns
+      
+      df[df == "No data"] <- NA #Re-name N/A
+      
+      if (!is.null(mouse_genes)){
+        df$Gene_symbol <- conversion.table[match(df$Gene_symbol,conversion.table$hgnc_symbol),]$mgi_symbol #convert human to mouse annotation
+        OT.files[[i]] <- df
+        } else {
+          OT.files[[i]] <- df
+        }
+      i <- i+1
+      disease.name <- sub(".*diseases_","", OT.file)
+      disease.name <- gsub(".tsv", "", disease.name)
+      disease.names <- append(disease.names, disease.name)
+    }
+  }
+
+  names(OT.files) <-  disease.names
+  OT.files <- map(OT.files, ~.x %>%
+                    distinct())
+  return(OT.files)
+}
+```
+
+OBS! Update file location for relevant OpenTargets files
+```{r}
+OpenTargets.path <- "OpenTargets/"
+OT.files.human <-get_opentarget(opentarget_dir = OpenTargets.path)
+
+```
+
+#Clean out genes not present in the Seurat object AND removes duplicates
+```{r, clean OT.files.human from duplicates}
+OT.files.human <- map(OT.files.human, ~.x %>%
+  dplyr::select(Gene_symbol, Overall_assoc.score, Genetic_assoc.,Drugs, Animal_models)%>%
+  distinct() %>%
+  filter(!is.na(Gene_symbol)&Gene_symbol %in% rownames(se)) %>%
+    group_by(Gene_symbol)%>%
+  slice(which.max(Overall_assoc.score))%>% #==> when there is a gene mentioned twice, only keep the row where the overall association score is the highest ==> reason for duplicates is that multiple human genes have the same mouse homolog etc...
+    ungroup())
+
+# saveRDS(OT.files.human, file = paste("OpenTargets", sample,"OT_files_list.rds", sep = "/"))
+
+
+```
+
+
+Gene sets for HUMAN
+```{r, create gene sets from the }
+all_gene_sets <- list()
+list.names <- character()
+i <- 1
+j <- 1
+for (df in OT.files.human){
+  ## Genes overall association score
+  GWAS_OpenTarget_Overall_assoc.score_xxx <- arrange(df, desc(Overall_assoc.score))
+  GWAS_OpenTarget_Overall_assoc.score_xxx <- GWAS_OpenTarget_Overall_assoc.score_xxx[!is.na(GWAS_OpenTarget_Overall_assoc.score_xxx$Overall_assoc.score),]$Gene_symbol
+  ## Genes genetic association score
+  GWAS_OpenTarget_Genetic_assoc._xxx <- arrange(df, desc(Genetic_assoc.))
+  GWAS_OpenTarget_Genetic_assoc._xxx <- GWAS_OpenTarget_Genetic_assoc._xxx[!is.na(GWAS_OpenTarget_Genetic_assoc._xxx$Genetic_assoc.),]$Gene_symbol
+  print(length(GWAS_OpenTarget_Genetic_assoc._xxx))
+  ## Genes drug target
+  GWAS_OpenTarget_Drugs_xxx <- arrange(df, desc(Drugs))
+  # print(dim(GWAS_OpenTarget_Drugs_xxx_top100_[!is.na("Drugs"),]))
+  GWAS_OpenTarget_Drugs_xxx <- GWAS_OpenTarget_Drugs_xxx[!is.na(GWAS_OpenTarget_Drugs_xxx$Drugs),]$Gene_symbol
+  all_gene_sets[[i]] <- unique(GWAS_OpenTarget_Overall_assoc.score_xxx)
+  all_gene_sets[[i+1]] <- unique(GWAS_OpenTarget_Genetic_assoc._xxx)
+  all_gene_sets[[i+2]] <- unique(GWAS_OpenTarget_Drugs_xxx)
+  list.names <- append(list.names,(c(gsub("xxx", names(OT.files.human[j]),"GWAS_OpenTarget_Overall_assoc.score_xxx"),
+                            gsub("xxx", names(OT.files.human[j]),"GWAS_OpenTarget_Genetic_assoc._xxx"),
+                            gsub("xxx", names(OT.files.human[j]),"GWAS_OpenTarget_Drugs_xxx"))))
+  j <- j+1
+  i <- i+3
+}
+names(all_gene_sets) <- list.names
+```
+
+
+```{r, overlapping windows function}
+
+splitWithOverlap <- function(vec, seg.length, move) {
+  starts = seq(1, length(vec), by=move)
+  ends   = starts + seg.length - 1
+  ends[ends > length(vec)] = length(vec)
+
+  lapply(1:length(starts), function(i) vec[starts[i]:ends[i]])
+}
+```
+
+
+```{r, apply the splitWithOverlap function}
+win.size <- 50
+move.size <- 10
+windows.list <- lapply(all_gene_sets, splitWithOverlap, seg.length = win.size, move = move.size)
+```
+
+BRAIN (Human): ASD
+```{r}
+
+#All
+OpenTargets_ASD_Genetic <- unlist(all_gene_sets[2])
+OpenTargets_ASD_Drugs <- unlist(all_gene_sets[3])
+
+#Subset
+window50_rank_list_ASD_Genetic <- windows.list[[2]]
+
+#Re-name
+Rank_names <- rep("ASD_Genetic_Rank", length(window50_rank_list_ASD_Genetic))
+Rank_names <- paste0(Rank_names,sep=1:length(Rank_names))
+Rank_names <- paste0(Rank_names,sep="_")
+names(window50_rank_list_ASD_Genetic) <- Rank_names
+
+#Subset
+window50_rank_list_ASD_Drugs <- windows.list[[3]]
+
+#Re-name
+Rank_names <- rep("ASD_Drugs_Rank", length(window50_rank_list_ASD_Drugs))
+Rank_names <- paste0(Rank_names,sep=1:length(Rank_names))
+Rank_names <- paste0(Rank_names,sep="_")
+names(window50_rank_list_ASD_Drugs) <- Rank_names
+
+
+```
+
+
+BRAIN (Human): ADHD
+```{r}
+
+#All
+OpenTargets_ADHD_Genetic <- unlist(all_gene_sets[5])
+OpenTargets_ADHD_Drugs <- unlist(all_gene_sets[6])
+
+#Subset
+window50_rank_list_ADHD_Genetic <- windows.list[[5]]
+
+#Re-name
+Rank_names <- rep("ADHD_Genetic_Rank", length(window50_rank_list_ADHD_Genetic))
+Rank_names <- paste0(Rank_names,sep=1:length(Rank_names))
+Rank_names <- paste0(Rank_names,sep="_")
+names(window50_rank_list_ADHD_Genetic) <- Rank_names
+
+#Subset
+window50_rank_list_ADHD_Drugs <- windows.list[[6]]
+
+#Re-name
+Rank_names <- rep("ADHD_Drugs_Rank", length(window50_rank_list_ADHD_Drugs))
+Rank_names <- paste0(Rank_names,sep=1:length(Rank_names))
+Rank_names <- paste0(Rank_names,sep="_")
+names(window50_rank_list_ADHD_Drugs) <- Rank_names
+
+
+```
+
+
+BRAIN (Human): ALZ
+```{r}
+
+#All
+OpenTargets_ALZ_Genetic <- unlist(all_gene_sets[8])
+OpenTargets_ALZ_Drugs <- unlist(all_gene_sets[9])
+
+#Subset
+window50_rank_list_ALZ_Genetic <- windows.list[[8]]
+
+#Re-name
+Rank_names <- rep("ALZ_Genetic_Rank", length(window50_rank_list_ALZ_Genetic))
+Rank_names <- paste0(Rank_names,sep=1:length(Rank_names))
+Rank_names <- paste0(Rank_names,sep="_")
+names(window50_rank_list_ALZ_Genetic) <- Rank_names
+
+#Subset
+window50_rank_list_ALZ_Drugs <- windows.list[[9]]
+
+#Re-name
+Rank_names <- rep("ALZ_Drugs_Rank", length(window50_rank_list_ALZ_Drugs))
+Rank_names <- paste0(Rank_names,sep=1:length(Rank_names))
+Rank_names <- paste0(Rank_names,sep="_")
+names(window50_rank_list_ALZ_Drugs) <- Rank_names
+
+
+```
+
+BRAIN (Human): BIP
+```{r}
+
+#All
+OpenTargets_BIP_Genetic <- unlist(all_gene_sets[11])
+OpenTargets_BIP_Drugs <- unlist(all_gene_sets[12])
+
+#Subset
+window50_rank_list_BIP_Genetic <- windows.list[[11]]
+
+#Re-name
+Rank_names <- rep("BIP_Genetic_Rank", length(window50_rank_list_BIP_Genetic))
+Rank_names <- paste0(Rank_names,sep=1:length(Rank_names))
+Rank_names <- paste0(Rank_names,sep="_")
+names(window50_rank_list_BIP_Genetic) <- Rank_names
+
+#Subset
+window50_rank_list_BIP_Drugs <- windows.list[[12]]
+
+#Re-name
+Rank_names <- rep("BIP_Drugs_Rank", length(window50_rank_list_BIP_Drugs))
+Rank_names <- paste0(Rank_names,sep=1:length(Rank_names))
+Rank_names <- paste0(Rank_names,sep="_")
+names(window50_rank_list_BIP_Drugs) <- Rank_names
+
+
+```
+
+
+BRAIN (Human): SCZ
+```{r}
+
+#All
+OpenTargets_SCZ_Genetic <- unlist(all_gene_sets[14])
+OpenTargets_SCZ_Drugs <- unlist(all_gene_sets[15])
+
+#Subset
+window50_rank_list_SCZ_Genetic <- windows.list[[14]]
+
+#Re-name
+Rank_names <- rep("SCZ_Genetic_Rank", length(window50_rank_list_SCZ_Genetic))
+Rank_names <- paste0(Rank_names,sep=1:length(Rank_names))
+Rank_names <- paste0(Rank_names,sep="_")
+names(window50_rank_list_SCZ_Genetic) <- Rank_names
+
+#Subset
+window50_rank_list_SCZ_Drugs <- windows.list[[15]]
+
+#Re-name
+Rank_names <- rep("SCZ_Drugs_Rank", length(window50_rank_list_SCZ_Drugs))
+Rank_names <- paste0(Rank_names,sep=1:length(Rank_names))
+Rank_names <- paste0(Rank_names,sep="_")
+names(window50_rank_list_SCZ_Drugs) <- Rank_names
+
+
+```
+
+
+Save: OBS OBS OBS!!! Make sure to update the name. If Human "OpenTargets_..." If Human "Human_OpenTargets_..."
+```{r, eval=FALSE}
+
+#ASD
+write.table(OpenTargets_ASD_Genetic,file = "OpenTargets_gene_sets/Human_OpenTargets_ASD_Genetic.csv", row.names = F, col.names = F)
+
+write.table(OpenTargets_ASD_Drugs,file = "OpenTargets_gene_sets/Human_OpenTargets_ASD_Drugs.csv", row.names = F, col.names = F)
+
+saveRDS(window50_rank_list_ASD_Genetic,file = "OpenTargets_windowLists/Human_window50_rank_list_ASD_Genetic.RDS")
+
+saveRDS(window50_rank_list_ASD_Drugs,file = "OpenTargets_windowLists/Human_window50_rank_list_ASD_Drugs.RDS")
+
+
+#ADHD
+write.table(OpenTargets_ADHD_Genetic,file = "OpenTargets_gene_sets/Human_OpenTargets_ADHD_Genetic.csv", row.names = F, col.names = F)
+
+write.table(OpenTargets_ADHD_Drugs,file = "OpenTargets_gene_sets/Human_OpenTargets_ADHD_Drugs.csv", row.names = F, col.names = F)
+
+saveRDS(window50_rank_list_ADHD_Genetic,file = "OpenTargets_windowLists/Human_window50_rank_list_ADHD_Genetic.RDS")
+
+saveRDS(window50_rank_list_ADHD_Drugs,file = "OpenTargets_windowLists/Human_window50_rank_list_ADHD_Drugs.RDS")
+
+
+
+#ALZ
+write.table(OpenTargets_ALZ_Genetic,file = "OpenTargets_gene_sets/Human_OpenTargets_ALZ_Genetic.csv", row.names = F, col.names = F)
+
+write.table(OpenTargets_ALZ_Drugs,file = "OpenTargets_gene_sets/Human_OpenTargets_ALZ_Drugs.csv", row.names = F, col.names = F)
+
+saveRDS(window50_rank_list_ALZ_Genetic,file = "OpenTargets_windowLists/Human_window50_rank_list_ALZ_Genetic.RDS")
+
+saveRDS(window50_rank_list_ALZ_Drugs,file = "OpenTargets_windowLists/Human_window50_rank_list_ALZ_Drugs.RDS")
+
+
+#BIP
+write.table(OpenTargets_BIP_Genetic,file = "OpenTargets_gene_sets/Human_OpenTargets_BIP_Genetic.csv", row.names = F, col.names = F)
+
+write.table(OpenTargets_BIP_Drugs,file = "OpenTargets_gene_sets/Human_OpenTargets_BIP_Drugs.csv", row.names = F, col.names = F)
+
+saveRDS(window50_rank_list_BIP_Genetic,file = "OpenTargets_windowLists/Human_window50_rank_list_BIP_Genetic.RDS")
+
+saveRDS(window50_rank_list_BIP_Drugs,file = "OpenTargets_windowLists/Human_window50_rank_list_BIP_Drugs.RDS")
+
+
+#SCZ
+write.table(OpenTargets_SCZ_Genetic,file = "OpenTargets_gene_sets/Human_OpenTargets_SCZ_Genetic.csv", row.names = F, col.names = F)
+
+write.table(OpenTargets_SCZ_Drugs,file = "OpenTargets_gene_sets/Human_OpenTargets_SCZ_Drugs.csv", row.names = F, col.names = F)
+
+saveRDS(window50_rank_list_SCZ_Genetic,file = "OpenTargets_windowLists/Human_window50_rank_list_SCZ_Genetic.RDS")
+
+saveRDS(window50_rank_list_SCZ_Drugs,file = "OpenTargets_windowLists/Human_window50_rank_list_SCZ_Drugs.RDS")
+
+
+
+```
+
+
+SessionInfo
+```{r}
+sessionInfo()
+```
+

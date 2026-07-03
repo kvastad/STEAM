@@ -1,0 +1,29 @@
+median.genes;median.umi;median.score_genetic;trait;dataset
+NA               ;NA               ;NA               ;CHOL             ;human_JBO0018    
+ 0.25714286      ; 0.37142857      ;1.0000000        ;CIRR             ;human_JBO0018    
+ 0.37142857      ; 0.42857143      ;0.9428571        ;LD               ;human_JBO0018    
+NA               ;NA               ;NA               ;LDL              ;human_JBO0018    
+ 0.77142857      ; 0.71428571      ;1.0000000        ;NAFLD            ;human_JBO0018    
+ 0.62105900      ; 0.82807867      ;0.6210590        ;CAD              ;human_JBO0018    
+ 0.72471379      ; 0.81167945      ;0.9856108        ;MI               ;human_JBO0018    
+NA               ;NA               ;NA               ;CHOL             ;human_JBO0022    
+-0.80000000      ;-0.80000000      ;1.0000000        ;CIRR             ;human_JBO0022    
+-1.00000000      ;-1.00000000      ;1.0000000        ;LD               ;human_JBO0022    
+NA               ;NA               ;NA               ;LDL              ;human_JBO0022    
+ 0.80000000      ; 0.80000000      ;0.8000000        ;NAFLD            ;human_JBO0022    
+ 0.63245553      ; 0.63245553      ;0.9486833        ;CAD              ;human_JBO0022    
+ 1.00000000      ; 1.00000000      ;0.8000000        ;MI               ;human_JBO0022    
+NA               ;NA               ;NA               ;CHOL             ;mouse_JBO002     
+-0.65714286      ;-0.65714286      ;1.0000000        ;CIRR             ;mouse_JBO002     
+-0.60000000      ;-0.60000000      ;0.9428571        ;LD               ;mouse_JBO002     
+ 0.29277002      ; 0.29277002      ;0.6831301        ;LDL              ;mouse_JBO002     
+-0.94285714      ;-0.94285714      ;0.9428571        ;NAFLD            ;mouse_JBO002     
+-0.77142857      ;-0.77142857      ;1.0000000        ;CAD              ;mouse_JBO002     
+-0.14285714      ;-0.14285714      ;1.0000000        ;MI               ;mouse_JBO002     
+NA               ;NA               ;NA               ;CHOL             ;mouse_zonation_C1
+-0.37142857      ;-0.08571429      ;1.0000000        ;CIRR             ;mouse_zonation_C1
+-0.60000000      ;-0.48571429      ;1.0000000        ;LD               ;mouse_zonation_C1
+-0.41403934      ;-0.62105900      ;0.6210590        ;LDL              ;mouse_zonation_C1
+-0.37142857      ;-0.25714286      ;1.0000000        ;NAFLD            ;mouse_zonation_C1
+-0.81968860      ;-0.69825325      ;0.9411239        ;CAD              ;mouse_zonation_C1
+-0.08571429      ;-0.14285714      ;1.0000000        ;MI               ;mouse_zonation_C1

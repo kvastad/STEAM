@@ -1,0 +1,21 @@
+﻿Enrichment;Trait;Structures;Gene set;Comment
+n.s. genetic all;CAD;5;Genetic_all;adult_ACH004
+significant genetic all;CAD;0;Genetic_all;adult_ACH004
+N/A;CAD;5;Genetic_top;adult_ACH004
+n.s. drugs all;CAD;0;Drugs_all;adult_ACH004
+significant drugs all;CAD;5;Drugs_all;adult_ACH004
+n.s. genetic all;CHD;0;Genetic_all;adult_ACH004
+significant genetic all;CHD;5;Genetic_all;adult_ACH004
+n.s. genetic top;CHD;0;Genetic_top;adult_ACH004
+significant genetic top;CHD;5;Genetic_top;adult_ACH004
+n.s. drugs all;CHD;0;Drugs_all;adult_ACH004
+significant drugs all;CHD;5;Drugs_all;adult_ACH004
+n.s. genetic all;LDL;5;Genetic_all;adult_ACH004
+significant genetic all;LDL;0;Genetic_all;adult_ACH004
+N/A;LDL;5;Genetic_top;adult_ACH004
+n.s. drugs all;LDL;0;Drugs_all;adult_ACH004
+n.s. genetic all;MI;5;Genetic_all;adult_ACH004
+significant genetic all;MI;0;Genetic_all;adult_ACH004
+N/A;MI;5;Genetic_top;adult_ACH004
+n.s. drugs all;MI;3;Drugs_all;adult_ACH004
+significant drugs all;MI;2;Drugs_all;adult_ACH004

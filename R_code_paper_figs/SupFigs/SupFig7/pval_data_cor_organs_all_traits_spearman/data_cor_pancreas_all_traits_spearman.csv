@@ -1,0 +1,7 @@
+median.genes;median.umi;median.score_genetic;trait;dataset
+-0.75000000            ;-0.7142857             ;1.0000000              ;T1D                    ;pancreas_human_15PCW_S1
+-0.14414999            ;-0.3243375             ;0.9910312              ;T2D                    ;pancreas_human_15PCW_S1
+ 0.12613124            ;-0.0360375             ;0.8108437              ;T1D                    ;pancreas_human_18PCW_S1
+ 0.03571429            ; 0.4285714             ;1.0000000              ;T2D                    ;pancreas_human_18PCW_S1
+-0.48181206            ;-0.4818121             ;0.8524367              ;T1D                    ;pancreas_human_20PCW_S1
+-0.39285714            ;-0.3928571             ;1.0000000              ;T2D                    ;pancreas_human_20PCW_S1

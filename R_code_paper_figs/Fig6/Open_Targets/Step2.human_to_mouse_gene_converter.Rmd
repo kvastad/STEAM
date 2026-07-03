@@ -1,0 +1,105 @@
+---
+title: "Step2. Human-to-Mouse file"
+output: 
+  rmarkdown::html_document:
+    toc: true
+    toc_float: true
+    number_sections: true
+    theme: readable
+vignette: >
+  %\VignetteIndexEntry{My Standalone Vignette}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+In this vignette we generate a file to convert human gene names to mouse.
+
+# Download data
+
+```{r, message=FALSE, warning=FALSE}
+library(biomaRt)
+library(dplyr)
+library(tidyverse)
+library(data.table)
+```
+
+
+Download annotations for converting gene symbols between human and mouse. Download latest annotation of the human and mouse gene names. (Does not have Ensembl annotation).
+```{r, eval=FALSE}
+url2 <- "https://www.informatics.jax.org/downloads/reports/HMD_HumanPhenotype.rpt"
+raw.file2 <- "data/Human_to_mouse_genes/mouse_human_genes_HMD_HumanPhenotype.tsv"
+
+download.file(url2, raw.file2 )
+```
+
+Or load annotations if already downloaded.
+```{r, message=FALSE, warning=FALSE}
+raw.file2 <- read.table("data/Human_to_mouse_genes/mouse_human_genes_HMD_HumanPhenotype.tsv", sep ="\t", header = F)
+```
+
+
+# Filter
+
+Pre-process and format data.
+```{r, read table}
+df2 <- raw.file2
+df2$V6 <- NULL
+df2$V5 <- NULL
+columns <- c("hgnc_symbol",	"h_entrez_id", "mgi_symbol", "mgi_accession_id")
+colnames(df2) <- columns
+mts <- df2[df2$mgi_symbol %like% "mt-",]
+df2[rownames(mts),]$hgnc_symbol <- paste0("MT-",df2[rownames(mts),]$hgnc_symbol)
+df2[rownames(mts),]$hgnc_symbol
+df2[df2$mgi_symbol %like% "mt-",]
+```
+
+# Ensembl gene IDs
+
+Get the Ensembl gene IDs.
+```{r, biomaRt for ensembl gene ids}
+human <- useMart('ensembl',dataset='hsapiens_gene_ensembl')
+mouse <- useMart('ensembl',dataset='mmusculus_gene_ensembl')
+human_genes <- getBM(attributes = c("ensembl_gene_id","hgnc_symbol"), mart = human)
+mouse_genes <- getBM(attributes = c("ensembl_gene_id","mgi_symbol"), mart = mouse)
+listEnsemblArchives()
+```
+
+
+Add the Ensembl gene IDs. Note that the dataset increases because the same hgnc symbol can have multiple Ensembl gene IDs.
+```{r, merge symbols and ensembl gene ids}
+dim(df2)
+head(df2)
+
+df2 <- df2 %>%
+  left_join(human_genes) %>%
+  left_join(mouse_genes) %>%
+  distinct()
+
+dim(df2)
+head(df2)
+```
+
+
+Save.
+```{r, eval=FALSE}
+write.table(df2, file = "data/Human_to_mouse_genes/mouse_human_genes_20250826.tsv", row.names = F,  sep ="\t")
+```
+
+
+<details>
+  <summary>Click to show Session Info</summary>
+
+```{r}
+sessionInfo()
+```
+
+</details>
+
+
+
+
+
+
+
+
+

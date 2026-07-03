@@ -1,0 +1,62 @@
+---
+title: "Visium_HD_dataset_16um_Seurat_object_clustering_STEAM_permats_MetaSpots"
+output: html_document
+date: '`r format(Sys.Date(), "%B %d, %Y")`'
+---
+
+
+Load libraries
+```{r}
+library(Seurat)
+library(arrow)
+library(dplyr)
+library(STEAM)
+library(future)
+library(parallel)
+library(MASS)
+```
+
+
+Load data
+
+```{r}
+se <- readRDS(file = "MetasSpot_objects/metaspot_seurat_normalized.rds")
+se
+```
+
+
+
+```{r}
+head(se[[]])
+table(se$cluster_anno)
+```
+
+
+```{r}
+VlnPlot(se, features = "nCount_RNA", pt.size = 0, group.by = "cluster_anno")
+VlnPlot(se, features = "nFeature_RNA", pt.size = 0, group.by = "cluster_anno")
+```
+
+
+```{r}
+perm.mat.par <- generate_permutation_matrix(se, gnum = 50, permutation_nr = 10000, cluster_anno = "cluster_anno", workers = 3)
+```
+
+
+```{r}
+perm.mat.par[1:5,1:5]
+```
+
+
+```{r}
+saveRDS(perm.mat.par, file = "permutation_matrices_MetaSpots/perm.mat.par_p10000_g50.rds")
+write.matrix(perm.mat.par, file=paste0("permutation_matrices_MetaSpots/perm.mat.par_p10000_g50.csv"), sep = ";")
+```
+
+
+
+# Notes
+```{r}
+sessionInfo()
+```
+

@@ -1,0 +1,144 @@
+---
+title: "Visium_HD_dataset_16um_seurat_object_filtered_MetaSpots"
+output: html_document
+date: '`r format(Sys.Date(), "%B %d, %Y")`'
+---
+
+
+# Load libraries
+
+
+```{r}
+library(Seurat)
+library(arrow)
+library(dplyr)
+library(STEAM)
+library(future)
+```
+
+
+# Load data
+
+
+```{r}
+se <- readRDS(file = "Seurat_objects/mouse_coronal_HD_016um_filtered.rds")
+se
+```
+
+
+```{r}
+se_spatial_clusters <- readRDS(file = "spatial_clusters/mouse_coronal_HD_016um_spatial_clusters.rds")
+head(se_spatial_clusters)
+```
+
+
+```{r}
+se$seurat_cluster.016um <- se_spatial_clusters$seurat_cluster.016um
+head(se[[]])
+```
+
+
+
+```{r}
+se <- SetIdent(se, value = "seurat_cluster.016um")
+SpatialDimPlot(se)
+```
+
+
+```{r}
+VlnPlot(se, features = "nCount_Spatial.016um", pt.size = 0, group.by = "seurat_cluster.016um")
+VlnPlot(se, features = "nFeature_Spatial.016um", pt.size = 0, group.by = "seurat_cluster.016um")
+```
+
+
+# Generate MetaSpot clusters
+
+
+Check number of cell per cell type of the cluster annotation you want to create MetaSpots from.
+```{r}
+table(se$seurat_cluster.016um)
+```
+
+```{r}
+se$cluster_anno <- se$seurat_cluster.016um
+table(se$cluster_anno)
+```
+
+```{r, warning=FALSE}
+plan("sequential")
+
+metaspots <- generate_metacell_clusters(
+   se = se,
+   cluster_anno = "cluster_anno",
+   num_cells_per_metacell = 50,
+   pca_dims = 10,
+   initial_resolution = 0.1
+ )
+```
+
+
+Save MetaSpot object
+```{r}
+saveRDS(metaspots, file = "MetasSpot_objects/metaspots.rds")
+```
+
+
+Sort the MetaSpots alphabetically.
+```{r}
+metaspots <- sort_metacells(se, metacells = metaspots, cluster_anno = "cluster_anno")
+```
+
+
+Plot the MetaCluster distribution
+```{r}
+plot_metaclusters(metaspots, show_mean = T, show_median = T)
+```
+
+
+# Aggregrate MetaSpot clusters
+
+
+Aggregates the expression data across clusters (MetaSpots) by summing counts within each cluster of each cell type, and create a MetaSpot Seurat object.
+```{r, warning=FALSE}
+metaspot_seurat <- aggregate_metacells(cell_type_clusters = metaspots$metacells, cluster_col = "cluster_anno")
+table(metaspot_seurat$cluster_anno)
+```
+
+```{r}
+metaspot_seurat
+```
+
+
+```{r}
+VlnPlot(metaspot_seurat, features = c("nFeature_RNA", "nCount_RNA"), ncol = 1, group.by = "cluster_anno")
+```
+
+
+Save the MetaSpot Seurat object for downstream analysis!
+```{r}
+saveRDS(metaspot_seurat, file = "MetasSpot_objects/metaspot_seurat.rds")
+```
+
+
+Normalize data with SCTransform.
+```{r}
+options(future.globals.maxSize = 4 * 1024^3)
+metaspot_seurat <- JoinLayers(metaspot_seurat)
+metaspot_seurat_normalized <- SCTransform(metaspot_seurat,assay = "RNA",return.only.var.genes = T)
+```
+
+```{r}
+metaspot_seurat_normalized
+```
+
+Save the normalized MetaSpot Seurat object for downstream analysis!
+```{r}
+saveRDS(metaspot_seurat_normalized, file = "MetasSpot_objects/metaspot_seurat_normalized.rds")
+```
+
+
+# Notes
+```{r}
+sessionInfo()
+```
+

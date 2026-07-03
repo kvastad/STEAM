@@ -1,0 +1,485 @@
+---
+title: "STEAM_window70_ALZ_[10X_Visium_mouse_brain_coronal]"
+author: "Linda Kvastad"
+date: '`r format(Sys.Date(), "%B %d, %Y")`'
+output:
+ html_document:
+    toc: true
+    toc_depth: 3
+    toc_float: true
+---
+
+# Load and Normalize data
+
+Load libraries:
+```{r, message=FALSE}
+library(STutility)
+library(dplyr)
+library(RColorBrewer)
+library(scales)
+library(reshape2)
+library(corrplot)
+library(lawstat)
+library(MASS)
+library(viridis)
+library(STEAM)
+```
+
+Load ST data:
+```{r}
+
+infoTable <- read.csv("spatial_data/infoTable.csv", sep = ";")
+
+
+se <- InputFromTable(infotable = infoTable, 
+                      minUMICountsPerGene = 100, 
+                      minSpotsPerGene = 5,
+                      minUMICountsPerSpot = 500,
+                      platform =  "Visium")
+
+```
+
+
+Load image:
+```{r}
+se <- LoadImages(se, time.resolve = FALSE)
+```
+
+View image:
+```{r, fig.height=4, fig.width=5}
+ImagePlot(se, method = "raster", annotate = FALSE)
+```
+
+
+# Spatial clusters  {.tabset}
+
+Normalize data: se <- SCTransform(se,return.only.var.genes = T)
+```{r, message=FALSE, include=FALSE}
+se <- SCTransform(se,return.only.var.genes = T)
+```
+
+Load cluster annotations
+```{r}
+seurat_clusters <- read.csv(file = "spatial_structures/seurat_clusters.csv", sep = ";")
+```
+
+Add annotations to seurat object
+```{r}
+rownames(seurat_clusters) <- seurat_clusters$Barcode
+seurat_clusters$Barcode <- NULL
+se$seurat_clusters <- seurat_clusters
+se$seurat_clusters_plot <- as.factor(se$seurat_clusters) # For plotting of spatial structures
+head(se[[]])
+```
+
+## Plot seurat_clusters
+```{r, fig.height=4, fig.width=5}
+n <- 19
+qual_col_pals = brewer.pal.info[brewer.pal.info$category == 'qual',]
+col_vector = unlist(mapply(brewer.pal, qual_col_pals$maxcolors, rownames(qual_col_pals)))
+col_vector[6] <- "black"
+col_vector[8] <- "lightpink"
+col_vector[10] <- "firebrick1"
+col_vector[11] <- "darkmagenta"
+col_vector[14] <- "darkorange2"
+col_vector[18] <- "deepskyblue"
+  
+col_vector <- col_vector[1:19]
+
+se <- SetIdent(se, value = "seurat_clusters_plot")
+ST.FeaturePlot(object = se, features = "seurat_clusters_plot", pt.size = 1, cols = col_vector)
+```
+
+## FeatureOverlay seurat_clusters
+```{r, fig.width=5, fig.height=4}
+spot_alpha = 0.5
+point.size = 1
+
+FeatureOverlay(se, 
+               features = c("seurat_clusters_plot"),
+               pt.alpha = spot_alpha,
+               pt.size = point.size,
+               add.alpha=T,
+               ncols = 1,
+               cols = col_vector)
+```
+
+
+
+
+# OpenTargets gene sets
+
+Load OpenTargets gene sets
+```{r class.source = 'fold-show'}
+
+OpenTargets_ALZ_Genetic_ <- as.character(t(read.table(file = "OpenTargets_gene_sets/Mouse_OpenTargets_ALZ_Genetic.csv")))
+
+OpenTargets_ALZ_Drugs_ <- as.character(t(read.table(file = "OpenTargets_gene_sets/Mouse_OpenTargets_ALZ_Drugs.csv")))
+length(OpenTargets_ALZ_Drugs_)
+
+```
+
+
+```{r}
+# Extract gene names from the Seurat object
+gene_names <- rownames(se)
+length(gene_names)
+
+# Check gene list size before filtering
+length(OpenTargets_ALZ_Genetic_)
+
+# Remove genes not present in the Seurat object from the gene lists
+OpenTargets_ALZ_Genetic_ <- unique(OpenTargets_ALZ_Genetic_[OpenTargets_ALZ_Genetic_ %in% gene_names])
+
+# Check gene list size after filtering
+length(OpenTargets_ALZ_Genetic_)
+```
+
+
+
+# STEAM
+
+
+```{r}
+window_rank_list_ALZ_Genetic <- generate_sliding_windows(OpenTargets_ALZ_Genetic_, window_size = 70, step_size = 10, disease_abbr = "ALZ", ot_gene_set_label = "Genetic")
+```
+
+
+```{r}
+all_gene_sets_OpenTargets <- list(OpenTargets_ALZ_Genetic_=OpenTargets_ALZ_Genetic_)
+```
+
+
+```{r}
+all_gene_sets <- all_gene_sets_OpenTargets
+all_gene_sets <- append(all_gene_sets,window_rank_list_ALZ_Genetic)
+```
+
+
+```{r}
+score.mat <- matrix(data = NA, nrow = length(all_gene_sets), ncol = 1, dimnames = list(names(all_gene_sets), "% of genes present"))
+
+for (i in 1:length(all_gene_sets)) {
+  genes <- unlist(all_gene_sets[i]) 
+  score.mat[i] <- mean(genes %in% rownames(se))
+  se <- AddModuleScore(se,list(genes), ctrl = 100, name = list(names(all_gene_sets[i])))
+}
+
+score.mat*100
+```
+
+
+
+Load perm.mat from NULL gene sets
+```{r class.source = 'fold-show'}
+perm.mat.window.data <- readRDS(file = "Permutation_matrices/perm.mat_p10000_g70.RDS")
+```
+
+
+```{r}
+#Example code on how to update cluster names if needed
+cluster_names <- rep("", length(table(se$seurat_clusters)))
+cluster_names <- paste0(cluster_names,as.character(0:(length(table(se$seurat_clusters))-1)))
+
+colnames(perm.mat.window.data) <- cluster_names
+
+perm.mat.window.data[1:5,1:5]
+```
+
+
+```{r}
+perm.mat.window.data <- as.data.frame(perm.mat.window.data)
+
+perm.mat.window.data <- setNames(
+  lapply(as.list(perm.mat.window.data), identity),
+  colnames(perm.mat.window.data)
+)
+```
+
+
+
+```{r}
+window_results.g <- window_rank_enrichment_analysis(
+   se = se,
+   perm.mat.window.data = perm.mat.window.data,
+   window_rank_list = window_rank_list_ALZ_Genetic,
+   ot_gene_set_label = "Genetic",
+   disease_abbr = "ALZ",
+   cluster_anno = "seurat_clusters",
+   imputation = "dynamic"#,
+   #log_file = "data/mouse_coronal/log_files/log_file_pval_mat_genetic_windows.txt"
+ )
+
+head(window_results.g)
+```
+
+
+```{r}
+rank_plot_for_clusters(
+   window_results = window_results.g,
+   perm.mat.window = perm.mat.window.data,
+   ylim = c(-0.3, 0.9)
+ )
+```
+
+
+```{r}
+rank_plot_for_clusters(
+   window_results = window_results.g,
+   perm.mat.window = perm.mat.window.data,
+   clusters_to_plot = 14,
+   ylim = c(-0.3, 0.9)
+ )
+
+```
+
+
+```{r, eval=T}
+
+pdf("STEAM_plots/window70_top90genes_ALZ_cluster14.pdf", width = 5, height = 4)
+
+rank_plot_for_clusters(
+   window_results = window_results.g,
+   perm.mat.window = perm.mat.window.data,
+   clusters_to_plot = 14,
+   ylim = c(-0.3, 0.9)
+ )
+
+
+dev.off()
+
+```
+
+
+
+
+```{r}
+OpenTargets_ALZ_Genetic_topGenes_ <- OpenTargets_ALZ_Genetic_[1:90]
+```
+
+
+```{r}
+all_gene_sets_OpenTargets_top <- list(OpenTargets_ALZ_Genetic_topGenes_=OpenTargets_ALZ_Genetic_topGenes_)
+```
+
+
+```{r}
+score.mat.top <- matrix(data = NA, nrow = length(all_gene_sets_OpenTargets_top), ncol = 1, dimnames = list(names(all_gene_sets_OpenTargets_top), "% of genes present"))
+
+for (i in 1:length(all_gene_sets_OpenTargets_top)) {
+  genes <- unlist(all_gene_sets_OpenTargets_top[i]) 
+  score.mat.top[i] <- mean(genes %in% rownames(se))
+  se <- AddModuleScore(se,list(genes), ctrl = 100, name = list(names(all_gene_sets_OpenTargets_top[i])))
+}
+
+score.mat.top*100
+```
+
+
+
+Load perm.mat from NULL gene sets
+```{r class.source = 'fold-show'}
+perm.mat.genetic.top.data <- readRDS(file = "Permutation_matrices/perm.mat_p10000_g90.RDS")
+```
+
+
+```{r}
+#Example code on how to update cluster names if needed
+cluster_names <- rep("", length(table(se$seurat_clusters)))
+cluster_names <- paste0(cluster_names,as.character(0:(length(table(se$seurat_clusters))-1)))
+#cluster_names <- paste0("cluster_", cluster_names)
+
+colnames(perm.mat.genetic.top.data) <- cluster_names
+
+perm.mat.genetic.top.data[1:5,1:5]
+```
+
+
+```{r}
+perm.mat.genetic.top.data <- as.data.frame(perm.mat.genetic.top.data)
+perm.mat.genetic.top.data[1:5,1:5]
+perm.mat.window.data <- as.data.frame(perm.mat.window.data)
+perm.mat.window.data[1:5,1:5]
+```
+
+```{r}
+colnames(perm.mat.window.data) <- cluster_names
+perm.mat.window.data[1:5,1:5]
+```
+
+
+
+```{r}
+pval_mat.top <- spatial_trait_enrichment_analysis(
+   se = se,
+   perm.mat.label.data = perm.mat.genetic.top.data,
+   perm.mat.window.data = perm.mat.window.data,
+   window_rank_list_abr_label = window_rank_list_ALZ_Genetic,
+   gene_list = "OpenTargets_ALZ_Genetic_topGenes_1",
+   cluster_anno = "seurat_clusters",
+   imputation = "dynamic"#,
+   #log_file = "data/mouse_coronal/log_files/log_file_pval_mat_genetic_top.txt"
+ )
+
+head(pval_mat.top)
+```
+
+
+```{r}
+pval_mat.top <- as.data.frame(t(pval_mat.top$p_val_mat))
+pval_mat.top$p.val.adj <- p.adjust(pval_mat.top$p.val, method = "bonferroni")
+pval_mat.top <- t(pval_mat.top)
+
+head(pval_mat.top)
+```
+
+
+```{r}
+se$seurat_clusters <- as.numeric(as.character(se$seurat_clusters))
+se$p.val.g.top <- se$seurat_clusters
+se$p.val.adj.g.top <- se$seurat_clusters
+
+clusters <- sort(unique(se$seurat_clusters))
+
+for (i in clusters) {
+  idx <- as.integer(i) + 1
+  se$p.val.g.top[se$seurat_clusters == i] <- as.numeric(pval_mat.top[1, idx])
+  se$p.val.adj.g.top[se$seurat_clusters == i] <- as.numeric(pval_mat.top[2, idx])
+}
+```
+
+
+```{r}
+se$seurat_clusters <- as.numeric(as.character(se$seurat_clusters))
+se$neg.log10.p.val.g.top <- se$seurat_clusters
+se$neg.log10.p.val.adj.g.top <- se$seurat_clusters
+
+clusters <- sort(unique(se$seurat_clusters))
+
+for (i in clusters) {
+  idx <- as.integer(i) + 1
+  se$neg.log10.p.val.g.top[se$seurat_clusters == i] <- -log10(as.numeric(pval_mat.top[1, idx]))
+  se$neg.log10.p.val.adj.g.top[se$seurat_clusters == i] <- -log10(as.numeric(pval_mat.top[2, idx]))
+}
+```
+
+
+```{r, fig.width=5, fig.height=4}
+ST.FeaturePlot(
+  object = se,
+  features = "neg.log10.p.val.adj.g.top",
+  pt.size.factor = 2
+) + scale_fill_viridis_c()
+```
+
+
+
+```{r, eval=T}
+
+pdf("STEAM_plots/Spatial_p.adj_ALZ_window70_top90genes.pdf", width = 5, height = 4)
+
+ST.FeaturePlot(
+  object = se,
+  features = "neg.log10.p.val.adj.g.top",
+  pt.size.factor = 2
+) + scale_fill_viridis_c()
+
+dev.off()
+
+```
+
+
+```{r}
+library(ggplot2)
+library(viridis)
+
+# Convert matrix to data frame
+df <- data.frame(
+  cluster = colnames(pval_mat.top),
+  p.val = as.numeric(pval_mat.top["p.val", ]),
+  p.val.adj = as.numeric(pval_mat.top["p.val.adj", ])
+)
+
+# Transform p-values
+df$log10_pval <- -log10(df$p.val)
+df$log10_padj <- -log10(df$p.val.adj)
+
+# Order clusters by significance (most significant = leftmost)
+df$cluster <- factor(
+  df$cluster,
+  levels = df$cluster[order(df$p.val.adj, decreasing = FALSE)]
+)
+
+# Lollipop plot
+p <- ggplot(df, aes(x = cluster, y = log10_padj, fill = log10_padj)) +
+  
+  # stems
+  geom_segment(
+    aes(
+      x = cluster,
+      xend = cluster,
+      y = 0,
+      yend = log10_padj
+    ),
+    color = "grey70",
+    linewidth = 1
+  ) +
+  
+  # points
+  geom_point(
+    shape = 21,
+    size = 5,
+    color = "black"
+  ) +
+  
+  # significance threshold line at adjusted p = 0.05
+  geom_hline(
+    yintercept = -log10(0.05),
+    color = "grey40",
+    linetype = "dashed",
+    linewidth = 1
+  ) +
+  
+  scale_fill_viridis_c(
+    option = "viridis",
+    direction = 1,
+    name = expression(-log[10]("p.adj"))
+  ) +
+  
+  labs(
+    x = "Spatial clusters",
+    y = expression(-log[10]("p.adj")),
+    title = "Spatial trait enrichment: ALZ"
+  ) +
+  
+  theme_classic() +
+  theme(
+    axis.text.x = element_text(
+      angle = 45,
+      hjust = 1
+    )
+  )
+
+p
+```
+
+
+
+```{r, eval=T}
+
+pdf("STEAM_plots/Spatial_p.adj_ALZ_window70_top90genes_lollipop.pdf", width = 7, height = 4)
+
+p
+
+dev.off()
+
+```
+
+
+# Notes
+
+Session info
+```{r}
+sessionInfo()
+```
+

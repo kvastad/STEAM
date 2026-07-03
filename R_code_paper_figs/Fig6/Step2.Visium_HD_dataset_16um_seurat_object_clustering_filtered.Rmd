@@ -1,0 +1,70 @@
+---
+title: "Visium_HD_dataset_16um_Seurat_object_clustering_filtered"
+output: html_document
+date: '`r format(Sys.Date(), "%B %d, %Y")`'
+---
+
+
+Load libraries
+```{r}
+library(Seurat)
+library(arrow)
+library(dplyr)
+```
+
+
+Load data
+```{r}
+se <- readRDS(file = "Seurat_objects/mouse_coronal_HD_016um_NormalizeData_filtered.rds")
+se
+```
+
+
+
+```{r}
+se <- FindVariableFeatures(se)
+se <- ScaleData(se)
+se <- RunPCA(se, reduction.name = "pca.016um")
+se <- FindNeighbors(se, reduction = "pca.016um", dims = 1:20)
+se <- FindClusters(se, resolution = 0.6, cluster.name = "seurat_cluster.016um")
+```
+
+
+```{r}
+ElbowPlot(se, reduction = "pca.016um", ndims = 50)
+```
+
+
+```{r}
+se <- RunTSNE(se, reduction = "pca.016um", reduction.name = "tsne.016um", dims = 1:20)
+```
+
+
+```{r}
+DimPlot(se, reduction = "tsne.016um", group.by = "seurat_cluster.016um", label = TRUE)
+```
+
+
+```{r}
+SpatialDimPlot(se)
+```
+
+
+```{r}
+VlnPlot(se, features = "nCount_Spatial.016um", pt.size = 0, group.by = "seurat_cluster.016um")
+VlnPlot(se, features = "nFeature_Spatial.016um", pt.size = 0, group.by = "seurat_cluster.016um")
+```
+
+
+Save Seurat object
+```{r}
+saveRDS(se, file = "Seurat_objects/mouse_coronal_HD_016um_Clusters_filtered.rds")
+```
+
+
+
+# Notes
+```{r}
+sessionInfo()
+```
+
