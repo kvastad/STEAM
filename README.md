@@ -22,7 +22,7 @@ library(STEAM)
 To install the latest stable STEAM R-package version:
 
 ```
-devtools::install_github("kvastad/steamR@v0.1.0")
+devtools::install_github("kvastad/steamR@v0.1.1")
 ```
 
 For STEAM R-package vignettes, visit: https://kvastad.github.io/steamR/
